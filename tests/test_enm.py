@@ -2,6 +2,7 @@ import pytest
 from src.enm import Enm
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
 
 @pytest.fixture
 def enm():
@@ -166,6 +167,25 @@ def test_create_df(enm):
          6.92307692e-01]])
     #assert got.shape==asked.shape
     np.testing.assert_array_almost_equal(np.abs(got),np.abs(asked))
+
+
+# def test_plot_network_spring(enm):
+#     adj = np.array([[0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+#         [0, 0, 0, 0, 0, 1, 1, 0, 1, 0],
+#         [0, 0, 0, 0, 0, 1, 1, 1, 0, 0],
+#         [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+#         [0, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+#         [1, 1, 1, 1, 1, 0, 1, 0, 1, 1],
+#         [1, 1, 1, 1, 0, 1, 0, 1, 1, 0],
+#         [1, 0, 1, 1, 1, 0, 1, 0, 0, 1],
+#         [1, 1, 0, 1, 0, 1, 1, 0, 0, 1],
+#         [1, 0, 0, 1, 0, 1, 0, 1, 1, 0]])
+#     enm.G = nx.from_numpy_array(adj)
+#     enm.giant_component()
+#     plot_network_spring
+
+
+
 def is_dataframe_big(dataframe):
 
     # Lets check if this dataframe has over a million rows

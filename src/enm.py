@@ -5,10 +5,13 @@ import prody
 import igraph
 import numpy as np
 
+from .visualization.visualize import *
+
+
 class Enm():
     def __init__(self, name):
         self.name = name
-        self.figure_path = f"../figures/"
+        self.figure_path = f"../reports/figures/"
     def print_name(self):
         print(self.name)
 
@@ -101,44 +104,14 @@ class Enm():
     def foo(self):
         return 'foo'#
 
-    def plot_network_spring(self, **kwargs):
-        import matplotlib.pyplot as plt
-        from matplotlib.lines import Line2D
+    def plot_network_spring(self,**kwargs):
         Gc = self.graph_gc
-        spring_pos=Gc.nodes(data='pos')
-        legend_elements = [Line2D([0], [0], marker='o', color='red', label='Genes',
-                                markerfacecolor='red', markersize=10,linestyle="None"),
-            Line2D([0], [0], marker='o', color='black', label='PCC>0.2',
-                                markerfacecolor='black', markersize=0,linestyle="-")
-        ]
-        fig, ax = plt.subplots(figsize=(5,5))
-        nx.draw_networkx_nodes(Gc, #node_color=['#00b4d9' if x in hng.iloc[:,0].tolist() else (1,0,0,0.01) for x in Gc.nodes],
-                                #node_size =[100 if x in hng.iloc[:,0].tolist() else 10 for x in Gc.nodes],
-                                #alpha=0.1,
-                                node_size=kwargs.pop('node_size',0.2),
-                                #alpha=0.5,
-                                node_color=kwargs.pop('node_color','white'),
-                                pos=spring_pos,
-                                label='Genes',
-                            #node_shape=matplotlib.markers.MarkerStyle(marker='o',fillstyle='full')
-                                )
-        nx.draw_networkx_edges(Gc,
-                alpha=kwargs.pop('edge_alpha',0.2),
-                width=kwargs.pop('edge_width',0.1),
-                edge_color=kwargs.pop('edge_color','white'),
-                pos=spring_pos,
-                label='PCC>0.2')
-        ax.set_facecolor(kwargs.pop('facecolor',"#000000"))
-        #plot_go_contours(Gc,ax,go_df_list[i],1,clabels=True,level=0.01)
-        plot_legend = kwargs.pop('plot_legend',False)
-        if plot_legend:
-            plt.legend(handles=legend_elements,fontsize=14,loc='lower right')
-        #
-        #plt.title(f'Costanzo 2016 profile similarity network',fontsize=20)
-        #plt.legend()
-        fig.savefig(f"{self.figure_path}/{kwargs.pop('figure_name','plot')}.{kwargs.pop('figure_extension','png')}") 
-        return ax 
-        # plt.close()
+        if nx.get_node_attributes(Gc,'pos')=={}:
+            self.spring_pos()
+        
+        plot_network_spring(Gc, self.figure_path, **kwargs)
+
+
 def betweenness_ig(g, normalized=False):
     n = g.vcount()
     btw = g.betweenness()
