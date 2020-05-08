@@ -9,8 +9,6 @@ def enm():
     """ Returns empty Enm object with name Empty"""
     return Enm('Empty')
 
-def test_enm_foo(enm):
-    assert enm.foo() == 'foo'
 
 # def test_read_network(enm):
 #     fname, path = enm.read_network('this/random/file/path.csv')
