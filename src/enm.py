@@ -186,7 +186,9 @@ class Enm():
         """
         heatmap_annotated(self.prs_mat,self.figure_path)
 
-
+    def plot_eigenvector(self,eigen_id=0,sorted=False,**kwargs):
+        data= self.df.iloc[:,(eigen_id+2)]
+        plot_eigenvector(data,sorted=sorted,figure_path=self.figure_path,color_id=eigen_id)
 
 def betweenness_ig(g, normalized=False):
     n = g.vcount()
@@ -229,7 +231,7 @@ def rewire_network(Gc, **kwargs):
 #def rewire_network():
 
         
-
+#TODO add option to save the rewire results
 def simulate_rewire(Gc,rewired=False, rewire_df_name=None,arr_name=None, **kwargs):
     """This function reads rewired network GNM data or calls rewire function
 
@@ -256,7 +258,7 @@ def simulate_rewire(Gc,rewired=False, rewire_df_name=None,arr_name=None, **kwarg
             if rewire_df_name is None or arr_name is None:
                 raise ValueError('Rewired dataframe path or arr_name is not given ')
             rewire_df = pd.read_csv(rewire_df_name)
-            arr = np.loadtxt(arr_name) 
+            arr = np.load(arr_name) 
     else:
         
 
@@ -280,7 +282,7 @@ def simulate_rewire(Gc,rewired=False, rewire_df_name=None,arr_name=None, **kwarg
                 Gc_rew = rewire_network(Gc,**kwargs)
                 enm_rew = Enm('rewired')
 
-                enm_rew.graph = Gc_rew
+                enm_rew.G = Gc_rew
                 enm_rew.giant_component()
                 enm_rew.gnm_analysis()
                 res = enm_rew.prs_mat
@@ -295,7 +297,7 @@ def simulate_rewire(Gc,rewired=False, rewire_df_name=None,arr_name=None, **kwarg
             # eff_hist_list.append(eff_rew)
             # sens_hist_list.append(eff_rew)
             betweenness = enm_rew.df.btw.values#betweenness_nx(Gc_rew, normalized=True)
-            clustering_coeff = enm_rew.df.eff_trans_pearson.values
+            clustering_coeff = enm_rew.df.trans.values
             rewire_df_itr = pd.DataFrame([[pearsonr(eff_rew, degree)[0], pearsonr(sens_rew, degree)[0],
                                         spearmanr(eff_rew, degree)[0], spearmanr(sens_rew, degree)[0],
                                         pearsonr(eff_rew, betweenness)[0], pearsonr(sens_rew, betweenness)[0],
@@ -313,5 +315,10 @@ def simulate_rewire(Gc,rewired=False, rewire_df_name=None,arr_name=None, **kwarg
             # if i % 1 == 0:
             #     print(i)
         #rewire_df.to_csv(outpath+'/rewire_df.csv')
+        save = kwargs.pop('save',False)
+        output_name = kwargs.pop('output_name','rewire_data')
+        if save:
+            rewire_df.to_csv(f"../data/interim/{output_name}.csv")
+            np.save(f"../data/interim/{output_name}.npy",arr)
 
     return arr, rewire_df

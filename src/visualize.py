@@ -16,6 +16,24 @@ params = {'legend.fontsize': 'x-large',
          'ps.fonttype': 42}
 plt.rcParams.update(params)
 
+
+#TODO Add eigenvector plotting functions, with shading capability
+#TODO Add GO kernel plotting function
+
+def plot_eigenvector(data,figure_path,sorted=False,**kwargs):
+    mode_colors = kwargs.pop('mode_colors',['orange','blue','lightblue','tab:brown','darkgreen','m','crimson'])
+
+    fig, ax = plt.subplots(figsize=kwargs.pop('figsize',(5,5)))
+    ax.plot(data,'-o',c=mode_colors[kwargs.pop('color_id',0)])
+    ax.xlabel(kwargs.pop('x_label','Nodes'))
+    ax.ylabel(kwargs.pop('y_label','Eigenvector'))
+    #plt.title('Most collective mode')
+    ax.axhline(0,linestyle='--',c='r')
+    fig.savefig(f"{figure_path}/{kwargs.pop('figure_name','eigenplot')}.{kwargs.pop('figure_extension','png')}") 
+
+    return ax
+
+    
 def plot_network_spring(Gc, figure_path, **kwargs):
     """Plots networkx object using spring_layout and a legend for nodes and edges
 
@@ -102,9 +120,14 @@ def plot_scatter(df,x,y, figure_path, **kwargs):
     :rtype: Axes
     """
 
+    hue=kwargs.pop('hue',None)
+#TODO ============== Add categorical hue 
     fig, ax = plt.subplots(figsize=kwargs.pop('figsize',(5,5)))
     sns.set_style("ticks")
-    sns.scatterplot(x=x,y=y,data=df)#,edgecolor=None,hue='cat_4',hue_order=sorted(combined_df.cat_4.unique()))
+    if hue is None:
+        sns.scatterplot(x=x,y=y,data=df,edgecolor=None)#,hue='cat_4',hue_order=sorted(combined_df.cat_4.unique()))
+    else:
+        sns.scatterplot(x=x,y=y,data=df,edgecolor=None,hue=hue,hue_order=sorted(df[hue].unique()))
     #plt.ylim(0,0.005)
     #plt.xlim(0,)
     plt.ylabel(kwargs.pop('y_label',y))
@@ -125,9 +148,9 @@ def plot_correlation_density(df,rewire_df,x,y,figure_path, **kwargs):
     :type df: pandas dataframe
     :param rewire_df: dataframe for simulated values. needs to have correlation between x and y
     :type rewire_df: pandas dataframe
-    :param x: column name for first variable
+    :param x: column name for first variable, sens or eff
     :type x: string
-    :param y: column name for second variable
+    :param y: column name for second variable, deg, btw or trans
     :type y: string
     :param figure_path: folder to save figure. automatically saves figure
     :type figure_path: string
