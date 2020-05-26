@@ -6,7 +6,7 @@ from matplotlib.lines import Line2D
 import seaborn as sns
 import scipy.cluster.hierarchy as sch
 from scipy.spatial import distance
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import pearsonr, spearmanr, gaussian_kde
 figsize = (5, 5)
 #matplotlib.rcParams['pdf.fonttype'] = 42
 #matplotlib.rcParams['ps.fonttype'] = 42
@@ -24,7 +24,7 @@ plt.rcParams.update(params)
 # TODO Add eigenvector plotting functions, with shading capability
 # TODO Add GO kernel plotting function
 
-def plot_vector(data, figure_path, sorted=False, **kwargs):
+def plot_vector(data, figure_path, sorted=False, x_label='Nodes', y_label='Eigenvector',**kwargs):
     mode_colors = kwargs.pop('mode_colors', [
                              'orange', 'blue', 'lightblue', 'tab:brown', 'darkgreen', 'm', 'crimson'])
 
@@ -34,8 +34,8 @@ def plot_vector(data, figure_path, sorted=False, **kwargs):
                 c=mode_colors[kwargs.pop('color_id', 0)], zorder=1)
     else:
         ax.plot(data, '-o', c=mode_colors[kwargs.pop('color_id', 0)])
-    ax.set_xlabel(kwargs.pop('x_label', 'Nodes'))
-    ax.set_ylabel(kwargs.pop('y_label', 'Eigenvector'))
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
     #plt.title('Most collective mode')
     ax.axhline(0, linestyle='--', c='r')
 
@@ -53,7 +53,7 @@ def plot_vector(data, figure_path, sorted=False, **kwargs):
     return ax
 
 
-def plot_network_spring(Gc, figure_path, **kwargs):
+def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_list=[0.1],**kwargs):
     """Plots networkx object using spring_layout and a legend for nodes and edges
 
     :param Gc:  The network to plot
@@ -63,6 +63,13 @@ def plot_network_spring(Gc, figure_path, **kwargs):
     :return: returns Axes for downstream pipeline
     :rtype: Axes
     """
+    mode_colors = kwargs.pop('mode_colors', [
+                             'orange', 'blue', 'lightblue', 'tab:brown', 'darkgreen', 'm', 'crimson'])
+
+
+    if plot_go and go_df_list is None:
+        plot_go=False
+        print('GO dataframe list is not given with kw=go_df_list. GO contours are not plotted')
 
     spring_pos = Gc.nodes(data='pos')
     node_color = kwargs.pop('node_color', 'white')
@@ -89,6 +96,14 @@ def plot_network_spring(Gc, figure_path, **kwargs):
                            pos=spring_pos,
                            label='PCC>0.2')
     ax.set_facecolor(kwargs.pop('facecolor', "#000000"))
+
+    if plot_go:
+        for i,go_df in enumerate(go_df_list):
+            plot_go_contours(Gc,ax,go_df,1,color=mode_colors[i],clabels=False,level=level_list[i])
+            legend_elements.append(
+            Line2D([0], [0], marker='o', color=mode_colors[i], label='',
+                           markersize=0,linestyle="-")
+                    )
     # plot_go_contours(Gc,ax,go_df_list[i],1,clabels=True,level=0.01)
     plot_legend = kwargs.pop('plot_legend', False)
     if plot_legend:
@@ -102,7 +117,7 @@ def plot_network_spring(Gc, figure_path, **kwargs):
     # plt.close()
 
 
-def plot_collectivity(coll, coll_index_sorted, figure_path, **kwargs):
+def plot_collectivity(coll, coll_index_sorted, figure_path, x_label='Modes', y_label='Collectivity', **kwargs):
     """[summary]
 
     :param coll: list of collectivity values calculated by prody.calcCollectivity
@@ -125,8 +140,8 @@ def plot_collectivity(coll, coll_index_sorted, figure_path, **kwargs):
 
     # plt.axhline(np.quantile(coll,0.99),c='r')
     #plt.title('GNM modes collectivity')
-    plt.xlabel(kwargs.pop('xlabel', 'Modes'))
-    plt.ylabel(kwargs.pop('ylabel', 'Collectivity'))
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
     plt.savefig(
         f"{figure_path}/{kwargs.pop('figure_name','coll')}.{kwargs.pop('figure_extension','png')}", transparent=True)
     return ax
@@ -188,7 +203,8 @@ def plot_correlation_density(df, rewire_df, x, y, figure_path, **kwargs):
     :return: returns Axes object for downstream pipeline
     :rtype: Axes
     """
-    fig, ax = plt.subplots()
+    figsize = kwargs.pop('figsize',(5,5))
+    fig, ax = plt.subplots(figsize=figsize)
     #plt.hist([x for x,y in deg_sens_rew], label='Randomized')
     #sns.distplot([x for x,y in deg_sens_rew],label='Randomized', kde=False)
 
@@ -199,9 +215,12 @@ def plot_correlation_density(df, rewire_df, x, y, figure_path, **kwargs):
     #sns.distplot([x for x,y in deg_sens_rew],label='Randomized', ax=second_ax, kde=True, hist=False)
     # sns.distplot(rewire_df_nodegseq.sens_deg_spearman,label='Randomized2',hist=False)
     correlation = kwargs.pop('correlation', 'pearson')
-    sns.distplot(rewire_df[f'{x}_{y}_{correlation}'],
-                 label='Randomized', ax=second_ax, kde=True, hist=False)
+    #print(correlation)
+    labels = kwargs.pop("labels",['Keeping degree','Barabasi-Albert', 'Erdos-renyi'])
 
+    for itr,t in enumerate(rewire_df):
+        sns.distplot(t[f'{x}_{y}_{correlation}'], label=labels[itr],
+                     ax=second_ax, kde=True, hist=False)
     # Removing Y ticks from the second axis
     second_ax.set_yticks([])
     # sns.distplot()
@@ -320,3 +339,38 @@ def heatmap_annotated(prs_mat, figure_path, **kwargs):
         plt.show()
 
     # return ax
+
+def plot_go_contours(Gc, ax,go_df, k =1,clabels=False,level=1e-6,pos=None,**kwargs):
+    color_ = kwargs.pop('color','#00000F')
+    if pos is None:
+        pos = dict(Gc.nodes.data('pos'))
+    
+    #x, y = [x, y for x,y in Gc.nodes.data('pos')]
+    min_pos = np.min([pos[key] for key in pos],axis=0)
+    max_pos = np.max([pos[key] for key in pos],axis=0)
+    labels = nx.get_node_attributes(Gc, 'orf_name')
+    labels_dict = {k: v for v, k in labels.items()}
+    for i in  range(1):#range(np.min([go_df.shape[0],5])):
+        nodes = go_df.iloc[i,:].study_items.split(', ')
+
+        nodes_indices = [labels_dict[node] for node in nodes if node in labels_dict.keys()]
+        pos3 = {idx: pos[node_index] for idx, node_index in enumerate(nodes_indices)}
+        pos3 = np.vstack(list(pos3.values()))
+        pos3 = remove_outliers(pos3,k)
+        kernel = gaussian_kde(pos3.T)
+        [X, Y] = np.mgrid[min_pos[0]:max_pos[0]:100j,min_pos[1]:max_pos[1]:100j]
+        positions = np.vstack([X.ravel(), Y.ravel()])
+        Z = np.reshape(kernel(positions).T, X.shape)
+
+        C = ax.contour(X, Y, Z, [level],colors=color_)#, colors=[tuple(process_colors[n_process, :])], alpha=1)
+        if clabels:
+            fmt = {}
+            strs = [go_df.iloc[i,:]['name']]
+            for l, s in zip(C.levels, strs):
+                fmt[l] = s
+    #        print(i)
+            plt.clabel(C, C.levels, inline=False, fmt=fmt, fontsize=18,use_clabeltext=True)
+
+def remove_outliers(arr, k):
+    mu, sigma = np.mean(arr, axis=0), np.std(arr, axis=0, ddof=1)
+    return arr[np.all(np.abs((arr - mu) / sigma) < k, axis=1)]

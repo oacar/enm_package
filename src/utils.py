@@ -18,7 +18,9 @@ def create_goea(obo_fname = '../data/raw/ontology/go-basic.obo', background='../
     gaf = '../data/raw/ontology/sgd.gaf'
     obodag = GODag(obo_fname)
     objanno = GafReader(gaf)
-    ns2assoc = objanno.get_ns2assc()
+#    ns2assoc = objanno.get_ns2assc()
+
+    ns2assoc_excl = objanno.get_ns2assc( ev_exclude = {'HGI' , 'IGI'})
 
     bg = pd.read_csv(background, header=None)
     bg_list = list(bg.iloc[:, 0])  # .to_list()
@@ -28,12 +30,13 @@ def create_goea(obo_fname = '../data/raw/ontology/go-basic.obo', background='../
     geneid2name = pd.Series(sgd_info.iloc[:,3].values,index=sgd_info.iloc[:,0]).to_dict()
     goeaobj = GOEnrichmentStudyNS(
         geneids,  # List of mouse protein-coding genes
-        ns2assoc,  # geneid/GO associations
+        ns2assoc_excl,  # geneid/GO associations
         obodag,  # Ontologies
         propagate_counts=False,
         alpha=0.05,  # default significance cut-off
         methods=['fdr_bh'], prt=None)
-    return goeaobj, geneid2name
+
+    return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl
 
 def go_findenrichment( query, outname=None,background='../data/raw/ontology/sgd_costanzogenes', species='yeast',**kwargs):
     goeaobj, geneid2name = create_goea()
@@ -44,5 +47,19 @@ def go_findenrichment( query, outname=None,background='../data/raw/ontology/sgd_
 
 #    if outname is not None:
     goeaobj.wr_tsv(outname, goea_results_sig, itemid2name=geneid2name)
-
+    go_df = goea_to_pandas(goea_results_sig)
     return goeaobj, goea_results_sig,geneid2name
+
+def goea_to_pandas(goea_results_sig):
+    """ Converts goea object from goatools GO enrichment test to a Pandas dataframe
+    :param goea_results_sig: Significant GO term objects
+    :type goea_results_sig: list of GOEnrichmentStudy
+    :return: Dataframe
+    :rtype: Pandas DataFrame
+    """
+    go_df_n = pd.DataFrame([[getattr(i,x) for x in i.get_prtflds_default()] for i  in goea_results_sig], columns=goea_results_sig[0].get_prtflds_default())
+    orf_names = []
+    for i in go_df_n.study_items:
+        orf_names.append([geneid2name[_id] for _id in i])
+    go_df_n.study_items = orf_names
+    return df 

@@ -262,7 +262,7 @@ def rewire_network(Gc, **kwargs):
         if random_network_type == 'ba':
             Gc_rewired = nx.barabasi_albert_graph(n=len(Gc.nodes), m=7)
         elif random_network_type == 'er':
-            Gc_rewired = nx.erdos_renyi_graph(len(Gc.nodes), 0.1)
+            Gc_rewired = nx.erdos_renyi_graph(len(Gc.nodes), 0.004)
     else:
         Gc_rewired = Gc.copy()
         swp_count = nx.connected_double_edge_swap(
