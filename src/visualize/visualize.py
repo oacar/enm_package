@@ -26,14 +26,16 @@ plt.rcParams.update(params)
 
 def plot_vector(data, figure_path, sorted=False, x_label='Nodes', y_label='Eigenvector',**kwargs):
     mode_colors = kwargs.pop('mode_colors', [
-                             'orange', 'blue', 'lightblue', 'tab:brown', 'darkgreen', 'm', 'crimson'])
+                             'orange', 'blue', 'lightblue', 'tab:brown', 'darkgreen', 'm', 'crimson','darkred'])
 
     fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (5, 5)))
+    color_id = kwargs.pop('color_id', 0)
+
     if sorted:
         ax.plot(np.sort(data), '-o',
-                c=mode_colors[kwargs.pop('color_id', 0)], zorder=1)
+                c=mode_colors[color_id], zorder=1)
     else:
-        ax.plot(data, '-o', c=mode_colors[kwargs.pop('color_id', 0)])
+        ax.plot(data, '-o', c=mode_colors[color_id])
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     #plt.title('Most collective mode')
@@ -44,9 +46,15 @@ def plot_vector(data, figure_path, sorted=False, x_label='Nodes', y_label='Eigen
         # (range(len(data)), key=lambda k: np.abs(data)[k], reverse=False)
         index_sorted = np.argsort(np.abs(np.sort(data)))
     #    print(index_sorted[:round(len(data)*0.05)])
-        ax.fill_between(index_sorted[:round(len(data)*0.05)], ax.get_ylim()[0], ax.get_ylim()[1],  # where=y > threshold,
+        if color_id == -1:
+            ax.fill_between(index_sorted[:round(len(data)*0.95)], ax.get_ylim()[0], ax.get_ylim()[1],  # where=y > threshold,
+                        color='grey', alpha=0.5)  # , transform=ax.get_xaxis_transform())
+        else:
+            ax.fill_between(index_sorted[:round(len(data)*0.05)], ax.get_ylim()[0], ax.get_ylim()[1],  # where=y > threshold,
                         color='grey', alpha=0.5)  # , transform=ax.get_xaxis_transform())
 
+
+    plt.tight_layout()
     fig.savefig(
         f"{figure_path}/{kwargs.pop('figure_name','eigenplot')}.{kwargs.pop('figure_extension','png')}")
 
@@ -101,18 +109,22 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
         for i,go_df in enumerate(go_df_list):
             plot_go_contours(Gc,ax,go_df,1,color=mode_colors[i],clabels=False,level=level_list[i])
             legend_elements.append(
-            Line2D([0], [0], marker='o', color=mode_colors[i], label='',
+            Line2D([0], [0], marker='o', color=mode_colors[i], label=f'{go_df.name[0]}',
                            markersize=0,linestyle="-")
                     )
     # plot_go_contours(Gc,ax,go_df_list[i],1,clabels=True,level=0.01)
     plot_legend = kwargs.pop('plot_legend', False)
     if plot_legend:
-        plt.legend(handles=legend_elements, fontsize=14, loc='lower right')
-    #
+        lgd = ax.legend(handles=legend_elements, fontsize=14,loc='center left', bbox_to_anchor=(1.0, 0.5))
+    
+    frame = lgd.get_frame()
+    frame.set_color('black')
+    for text in lgd.get_texts():
+        text.set_color("white") 
     #plt.title(f'Costanzo 2016 profile similarity network',fontsize=20)
     # plt.legend()
     fig.savefig(
-        f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}")
+        f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_extra_artists=(lgd,),bbox_inches='tight')
     return ax
     # plt.close()
 
@@ -132,9 +144,9 @@ def plot_collectivity(coll, coll_index_sorted, figure_path, x_label='Modes', y_l
 
     mode_colors = kwargs.pop('mode_colors', [
                              'orange', 'blue', 'lightblue', 'tab:brown', 'darkgreen', 'm', 'crimson'])
-    fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (4, 4)))
-    plt.scatter(coll_index_sorted[:7], [
-                coll[i] for i in coll_index_sorted[:7]], s=20, color=mode_colors, zorder=2)
+    fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (5, 5)))
+    plt.scatter(coll_index_sorted[0], [
+        coll[i] for i in [coll_index_sorted[0]]], s=20, color=mode_colors[0], zorder=2)
     plt.scatter(0, coll[0], s=20, c='darkred', zorder=2)
     plt.plot(range(len(coll)), coll, c='tab:cyan', linewidth=0.5, zorder=1)
 
@@ -142,8 +154,9 @@ def plot_collectivity(coll, coll_index_sorted, figure_path, x_label='Modes', y_l
     #plt.title('GNM modes collectivity')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
+    plt.tight_layout()
     plt.savefig(
-        f"{figure_path}/{kwargs.pop('figure_name','coll')}.{kwargs.pop('figure_extension','png')}", transparent=True)
+        f"{figure_path}/{kwargs.pop('figure_name','coll')}.{kwargs.pop('figure_extension','png')}", transparent=False)
     return ax
 
 
@@ -182,6 +195,7 @@ def plot_scatter(df, x, y, figure_path, **kwargs):
     # plt.axis('off')
     #plt.axhline(np.quantile(df_['eff'],0.99),c='r',label='99% Effectiveness')
     plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+    plt.tight_layout()
     fig.savefig(
         f"{figure_path}/{kwargs.pop('figure_name','scatter')}.{kwargs.pop('figure_extension','png')}", transparent=True)
     return ax
@@ -231,14 +245,15 @@ def plot_correlation_density(df, rewire_df, x, y, figure_path, **kwargs):
     else:
         plt.axvline(spearmanr(df[x], df[y])[0], c=color_real, label=label_real)
     # plt.ylabel('Counts')
-    ax.yaxis.set_label_text('Counts')
+    ax.yaxis.set_label_text('Density')
     ax.xaxis.set_label_text(f"{np.where(x=='eff','Effectiveness','Sensitivity')} {np.where(y=='deg','Degree',np.where(y=='btw', 'Betweenness','Transitivity'))} correlation")
 
     ax.yaxis.set_label_position("left")
-    plt.legend()
-    plt.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+    lgd = second_ax.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+#    plt.legend()
+#    plt.tight_layout()
     figure_name = kwargs.pop('figure_name',f'correlation_density_{x}_{y}')
-    fig.savefig(f"{figure_path}/{figure_name}.{kwargs.pop('figure_extension','png')}", transparent=True)
+    fig.savefig(f"{figure_path}/{figure_name}.{kwargs.pop('figure_extension','png')}", transparent=False,bbox_extra_artists=(lgd,),bbox_inches='tight')
     return ax
 
 
@@ -352,9 +367,12 @@ def plot_go_contours(Gc, ax,go_df, k =1,clabels=False,level=1e-6,pos=None,**kwar
     labels_dict = {k: v for v, k in labels.items()}
     for i in  range(1):#range(np.min([go_df.shape[0],5])):
         nodes = go_df.iloc[i,:].study_items.split(', ')
-
+        if len(nodes)<5:
+            nodes = go_df.iloc[i+1,:].study_items.split(', ')
+           
         nodes_indices = [labels_dict[node] for node in nodes if node in labels_dict.keys()]
         pos3 = {idx: pos[node_index] for idx, node_index in enumerate(nodes_indices)}
+#        print(pos3)
         pos3 = np.vstack(list(pos3.values()))
         pos3 = remove_outliers(pos3,k)
         kernel = gaussian_kde(pos3.T)
