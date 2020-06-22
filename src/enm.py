@@ -5,9 +5,9 @@ import pandas as pd
 import prody
 import numpy as np
 import igraph
+from tqdm import tqdm
 
-
-from .visualize.visualize import plot_collectivity,plot_correlation_density,plot_network_spring,plot_scatter,plot_vector,heatmap_annotated
+from .visualize.visualize import plot_collectivity,plot_correlation_density,plot_network_spring,plot_scatter,plot_vector,heatmap_annotated, plot_fiedler_data
 #from .utilities import *
 
 
@@ -93,16 +93,19 @@ class Enm():
         degree = [deg for id, deg in list(self.graph_gc.degree)]
         self.degree = degree
 
-    def laplacian_matrix(self):
+    def laplacian_matrix(self, normalized=False):
         """get Laplacian matrix of the giant component. Wrapper around networkx.laplacian_matrix
         """
-        self.L = nx.laplacian_matrix(self.graph_gc, weight=None).todense()
+        if normalized:
+            self.L = nx.normalized_laplacian_matrix(self.graph_gc,weight=None).todense()
+        else:
+            self.L = nx.laplacian_matrix(self.graph_gc, weight=None).todense()
 
-    def get_gnm(self):
+    def get_gnm(self, **kwargs):
         """Calculate GNM modes and collectivity values
         """
         if self.L is None:
-            self.laplacian_matrix()
+            self.laplacian_matrix(**kwargs)
         gnm = prody.GNM()
         gnm.setKirchhoff(self.L)
 
@@ -153,10 +156,42 @@ class Enm():
         df_['smallest_eigenvec'] = self.gnm.getEigvecs()[:, 0]
         self.df = df_
 
-    def gnm_analysis(self):
+    def fiedler_evaluation(self, figure_name = "lost_edges_node_counts", figure_extension = 'png', plot=False, **kwargs):
+        """This function evaluates fiedler vector cut. Using eigenvectors of Laplacian, calculates 2 subnetworks and return
+        the number of edges lost between 2 subnetworks with the cut and number of nodes in the smaller subnetwork
+        """
+        gc = self.graph_gc
+        eigvecs = self.gnm.getEigvecs()
+        orf_names = self.df.orf_name
+        lost_edges = [ ]
+        adj = nx.adjacency_matrix(gc).todense()
+        orf_names = self.df.orf_name
+        g_ig = igraph.Graph.Adjacency((adj > 0).tolist(), "UNDIRECTED")
+        g_ig.vs['name'] = orf_names
+
+        for i in tqdm(range(len(gc.nodes)-1)):
+            cl1 = [orf_names[i] for i, j in enumerate(eigvecs[:,i]) if j>0]
+            cl2 = [orf_names[i] for i, j in enumerate(eigvecs[:,i]) if j<0]
+            cg1 = g_ig.induced_subgraph(cl1)
+            cg2 = g_ig.induced_subgraph(cl2)
+            #cg1 = nx.induced_subgraph(gc, cl1)
+            #cg2 = nx.induced_subgraph(gc,cl2)
+            #lost_edges.append( len(gc.edges)-(len(cg2.edges)+len(cg1.edges)))
+            lost_edges.append( len(gc.edges)-(len(cg2.es)+len(cg1.es)))
+
+        node_counts_c1 = np.minimum(np.count_nonzero(eigvecs>0, axis=0),np.count_nonzero(eigvecs<0, axis=0))
+        node_counts_c2 = np.maximum(np.count_nonzero(eigvecs>0, axis=0),np.count_nonzero(eigvecs<0, axis=0))
+#        data = {'lost_edges':lost_edges, 'node_counts_c1':node_counts_c1}
+        self.lost_edges =  lost_edges#data
+        self.node_counts_c1 = node_counts_c1
+        if plot:
+            plot_fiedler_data(self, figure_name= figure_name, figure_extension=figure_extension)
+
+
+    def gnm_analysis(self, **kwargs):
         """Wrapper to run gnm, prs and create_df
         """
-        self.get_gnm()
+        self.get_gnm(**kwargs)
         self.get_prs()
         self.create_df()
 
@@ -244,7 +279,7 @@ def betweenness_ig(g, normalized=False):
 
 def betweenness_nx(g, normalized=False):
     adj = nx.adjacency_matrix(g).todense()
-    g_ig = igraph.Graph.Adjacency((adj > 0).tolist())
+    g_ig = igraph.Graph.Adjacency((adj > 0).tolist(),'UNDIRECTED')
     return betweenness_ig(g_ig, normalized)
 
 
@@ -321,7 +356,7 @@ def simulate_rewire(Gc, rewired=False, rewire_df_name=None, arr_name=None, **kwa
 
                 enm_rew.G = Gc_rew
                 enm_rew.giant_component()
-                enm_rew.gnm_analysis()
+                enm_rew.gnm_analysis(**kwargs)
                 res = enm_rew.prs_mat
                 #Gc_rew = enm_rew.graph_gc
                 degree = enm_rew.degree

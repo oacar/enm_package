@@ -47,7 +47,7 @@ def plot_vector(data, figure_path, sorted=False, x_label='Nodes', y_label='Eigen
         index_sorted = np.argsort(np.abs(np.sort(data)))
     #    print(index_sorted[:round(len(data)*0.05)])
         if color_id == -1:
-            ax.fill_between(index_sorted[:round(len(data)*0.95)], ax.get_ylim()[0], ax.get_ylim()[1],  # where=y > threshold,
+            ax.fill_between(index_sorted[:round(len(data)*0.05)], ax.get_ylim()[0], ax.get_ylim()[1],  # where=y > threshold,
                         color='grey', alpha=0.5)  # , transform=ax.get_xaxis_transform())
         else:
             ax.fill_between(index_sorted[:round(len(data)*0.05)], ax.get_ylim()[0], ax.get_ylim()[1],  # where=y > threshold,
@@ -94,7 +94,7 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
                            # alpha=0.5,
                            node_color=node_color,
                            pos=spring_pos,
-                           label='Genes',
+                           label='Genes', **kwargs
                            # node_shape=matplotlib.markers.MarkerStyle(marker='o',fillstyle='full')
                            )
     nx.draw_networkx_edges(Gc,
@@ -102,7 +102,7 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
                            width=kwargs.pop('edge_width', 0.1),
                            edge_color=edge_color,
                            pos=spring_pos,
-                           label='PCC>0.2')
+                           label='PCC>0.2', **kwargs)
     ax.set_facecolor(kwargs.pop('facecolor', "#000000"))
 
     if plot_go:
@@ -117,14 +117,18 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
     if plot_legend:
         lgd = ax.legend(handles=legend_elements, fontsize=14,loc='center left', bbox_to_anchor=(1.0, 0.5))
     
-    frame = lgd.get_frame()
-    frame.set_color('black')
-    for text in lgd.get_texts():
-        text.set_color("white") 
-    #plt.title(f'Costanzo 2016 profile similarity network',fontsize=20)
+        frame = lgd.get_frame()
+        frame.set_color('black')
+        for text in lgd.get_texts():
+            text.set_color("white") 
+        #plt.title(f'Costanzo 2016 profile similarity network',fontsize=20)
     # plt.legend()
-    fig.savefig(
-        f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_extra_artists=(lgd,),bbox_inches='tight')
+        fig.savefig(
+            f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_extra_artists=(lgd,),bbox_inches='tight')
+    else:
+        fig.savefig(
+            f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_inches='tight')
+
     return ax
     # plt.close()
 
@@ -277,16 +281,15 @@ def heatmap_annotated(prs_mat, figure_path, **kwargs):
    # Y = sch.linkage(D, method='centroid')
     # orientation='left' is reponsible for making the
     # dendrogram appear to the left
-    Z1 = sch.dendrogram(row_linkage, orientation='left',
-                        link_color_func=lambda k: 'black')
+    Z1 = sch.dendrogram(row_linkage, orientation='left')#                        link_color_func=lambda k: 'black')
     ax1.set_xticks([])
     ax1.set_yticks([])
     plt.axis('off')
     # top side dendogram
     ax2 = fig.add_axes([0.3, 0.71, 0.6, 0.2])
     #Y = sch.linkage(D, method='single')
-    Z2 = sch.dendrogram(col_linkage, color_threshold=0,
-                        link_color_func=lambda k: 'black')
+    Z2 = sch.dendrogram(col_linkage, color_threshold=0)#,
+#                        link_color_func=lambda k: 'black')
     ax2.set_xticks([])
     ax2.set_yticks([])
     plt.axis('off')
@@ -336,7 +339,7 @@ def heatmap_annotated(prs_mat, figure_path, **kwargs):
     plt.colorbar(im, ax=ax_colorbar)
     plt.axis('off')
     # plt.show()
-    outname = f"{figure_path}/{kwargs.pop('figure_name','correlation_density_{x}_{y}')}.{kwargs.pop('figure_extension','png')}"
+    outname = f"{figure_path}/{kwargs.pop('figure_name','prs_heatmap')}.{kwargs.pop('figure_extension','png')}"
     if outname is not None:
         plt.savefig(outname)
 
@@ -392,3 +395,53 @@ def plot_go_contours(Gc, ax,go_df, k =1,clabels=False,level=1e-6,pos=None,**kwar
 def remove_outliers(arr, k):
     mu, sigma = np.mean(arr, axis=0), np.std(arr, axis=0, ddof=1)
     return arr[np.all(np.abs((arr - mu) / sigma) < k, axis=1)]
+
+def plot_fiedler_data(enm,figure_name = "lost_edges_node_counts", figure_extension = 'png', **kwargs):
+    figsize = kwargs.pop('figsize',(6,12))
+
+    lost_edges=enm.lost_edges
+    node_counts_c1 = enm.node_counts_c1
+    fig,(ax1,ax2,ax3) = plt.subplots(3,2,figsize=figsize)
+
+    ax1[0].plot(lost_edges,'o')
+    ax1[0].set_xlabel('Modes')
+    ax1[0].set_ylabel('Lost Edges')
+    ax1[1].plot(node_counts_c1/len(enm.graph_gc.nodes),'o')
+    ax1[1].set_xlabel('Modes')
+    ax1[1].set_ylabel('Smaller Cluster size')
+    #ax1[2].plot(node_counts_c1,lost_edges,'o')
+    #ax1[2].set_xlabel('Smaller Cluster size')
+    #ax1[2].set_ylabel('Lost Edges')
+
+    ax2[0].plot(enm.coll,lost_edges,'o')
+    ax2[0].set_xlabel('Collectivity')
+    ax2[0].set_ylabel('Lost Edges')
+    ax2[1].plot(enm.coll,node_counts_c1,'o')
+    ax2[1].set_xlabel('Collectivity')
+    ax2[1].set_ylabel('Smaller cluster size')
+
+
+    ax3[0].plot(enm.gnm.getEigvals(),lost_edges,'o')
+    ax3[0].set_xlabel('Lambda')
+    ax3[0].set_ylabel('Lost Edges')
+
+    ax3[1].plot(enm.gnm.getEigvals(),node_counts_c1,'o')
+    ax3[1].set_xlabel('Lambda')
+    ax3[1].set_ylabel('Smaller cluster size')
+
+
+    fig.tight_layout()
+    fig.savefig(f'{enm.figure_path}/{figure_name}.{figure_extension}',bbox_to_anchor='tight')
+    plt.close()
+
+def plot_lambda_collectivity(lambda_, coll_,figure_path,**kwargs):
+    figure_name = kwargs.pop('figure_name','lambda_coll')
+    figure_extension = kwargs.pop('figure_extension','png')
+    fig,ax = plt.subplots(figsize=kwargs.pop('figsize',(7,7)))
+    ax.scatter(lambda_, coll_, c='tab:cyan', linewidth=0.5, zorder=1)
+    ax.set_xlabel('Lambda')
+    ax.set_ylabel('Collectivity')
+    plt.tight_layout()
+    fig.savefig(f"{figure_path}/{figure_name}.{figure_extension}")
+    plt.close()
+
