@@ -11,24 +11,26 @@ from src.utils import *
 from Bio import SeqIO
 
 
-figure_path = 'reports/figures/pcc_0601'
+figure_path = 'reports/figures/pcc_0603'
 enm = Enm('enm')
 enm.read_network('data/interim/costanzo_pcc_ALL',sep=',')
-enm.gnm_analysis()
+enm.gnm_analysis(normalized=True)
 
 enm.figure_path=figure_path
-enm.output_path = 'data/interim/pcc_0601/'
+enm.output_path = 'data/interim/pcc_0603/'
 
-from src.visualize.visualize import plot_lambda_collectivity
-
-plot_lambda_collectivity(enm.gnm.getEigvals(),enm.coll,figure_path)
-
-enm.simulate_rewire(output_name='rewire_data',save=True)
-enm.simulate_rewire(output_name='rewire_data_nodegseq', save=True, nodegseq=True)
-enm.simulate_rewire(output_name='rewire_data_er', save=True, nodegseq=True,random_network_type='er')
+enm.simulate_rewire(output_name='rewire_data',save=True, normalized=True)
+enm.simulate_rewire(output_name='rewire_data_nodegseq', save=True, nodegseq=True, normalized=True)
+enm.simulate_rewire(output_name='rewire_data_er', save=True, nodegseq=True,random_network_type='er', normalized=True)
 
 with open(f"{enm.output_path}/pcc.pickle",'wb') as f:
     pickle.dump(enm,f)
+
+
+## ---- 
+from src.visualize.visualize import plot_lambda_collectivity
+
+plot_lambda_collectivity(enm.gnm.getEigvals(),enm.coll,figure_path)
 
 
 #enm

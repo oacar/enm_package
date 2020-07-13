@@ -93,7 +93,7 @@ class Enm():
         degree = [deg for id, deg in list(self.graph_gc.degree)]
         self.degree = degree
 
-    def laplacian_matrix(self, normalized=False):
+    def laplacian_matrix(self, normalized=False,**kwargs):
         """get Laplacian matrix of the giant component. Wrapper around networkx.laplacian_matrix
         """
         if normalized:
@@ -122,12 +122,13 @@ class Enm():
 
         self.coll_index_sorted = coll_index_sorted
 
-    def get_prs(self):
+    def get_prs(self,**kwargs):
         """Calculate Perturbation response matrix
         """
         try:
+            no_diag = kwargs.pop('no_diag','True')
             prs_mat, _, _ = prody.calcPerturbResponse(
-                self.gnm, suppress_diag=True)
+                self.gnm, no_diag=no_diag)
         except Exception as e:
             raise AttributeError('GNM is not calculated yet. Call get_gnm() first')
         self.prs_mat = prs_mat
@@ -192,7 +193,7 @@ class Enm():
         """Wrapper to run gnm, prs and create_df
         """
         self.get_gnm(**kwargs)
-        self.get_prs()
+        self.get_prs(**kwargs)
         self.create_df()
 
     def plot_network_spring(self, **kwargs):
