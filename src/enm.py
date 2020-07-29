@@ -277,10 +277,13 @@ def betweenness_ig(g, normalized=False):
     else:
         return btw
 
-
-def betweenness_nx(g, normalized=False):
+def igraph_network(g):
     adj = nx.adjacency_matrix(g).todense()
     g_ig = igraph.Graph.Adjacency((adj > 0).tolist(),'UNDIRECTED')
+    return g_ig
+
+def betweenness_nx(g, normalized=False):
+    g_ig = igraph_network(g)
     return betweenness_ig(g_ig, normalized)
 
 
@@ -350,22 +353,35 @@ def simulate_rewire(Gc, rewired=False, rewire_df_name=None, arr_name=None, **kwa
                                           'eff_trans_pearson', 'sens_trans_pearson', 'eff_trans_spearman',
                                           'sens_trans_spearman'])
         e_list = []
-        for i in tqdm(range(int(sim_num))):
+#        for i in tqdm(range(int(sim_num))):
+        success = 0
+        i=0
+        maxtry=100
+        while success<(sim_num) or i==maxtry:
+            print(i)
+            i=i+1
             try:
                 Gc_rew = rewire_network(Gc, **kwargs)
+#                print(Gc_rew)
                 enm_rew = Enm('rewired')
 
+                
                 enm_rew.G = Gc_rew
                 enm_rew.giant_component()
+#                print(enm_rew.graph_gc)
                 enm_rew.gnm_analysis(**kwargs)
                 res = enm_rew.prs_mat
+#                print(res)
                 #Gc_rew = enm_rew.graph_gc
                 degree = enm_rew.degree
                 e_list.append(enm_rew)
+                success = success+1
+                #i=i+1
             except Exception as e:
-                pass
+                print('error')
+                continue
 
-            arr[:, :, i] = res
+            arr[:, :, (success-1)] = res
             eff_rew = enm_rew.df.eff.values
             sens_rew = enm_rew.df.sens.values
             # eff_hist_list.append(eff_rew)
