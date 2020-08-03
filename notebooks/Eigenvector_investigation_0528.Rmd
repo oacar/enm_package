@@ -1,0 +1,57 @@
+---
+itle: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width=4,fig.height = 4)
+```
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+eigvecs <- data.table::fread('../data/interim/eigvecs.txt')%>%rownames_to_column('id')%>%mutate(id=as.numeric(id))
+eigvals <- data.table::fread('../data/interim/eigvals.txt')
+#getwd()
+
+eig_l0 <- eigvecs[,2]#%>%pull()
+eig_l1116 <- eigvecs[,1118]#%>%pull()
+```
+
+
+```{r}
+ggplot(eigvecs,aes(x=id,y=sort(V1)))+geom_point()+geom_hline(aes(yintercept=0,color='red'))
+
+
+ggplot(eigvecs,aes(x=id,y=sort(V1117)))+geom_point()+geom_hline(aes(yintercept=0,color='red'))
+```
+
+```{r}
+summary(eig_l0)
+summary(eig_l1116)
+```
+
+```{r}
+library(igraph)
+g_file = read_csv('../data/interim/costanzo_pcc_ALL')
+g = graph_from_data_frame(g_file,directed = FALSE)%>%igraph::simplify()
+gc = induced_subgraph(g,V(g)[components(g)$membership==1])
+# ee = embed_laplacian_matrix(gc,5182)
+# L = laplacian_matrix(gc)
+enm_df = read_csv('../data/interim/enm_df.csv')
+tictoc::tic()
+lost.edges <- c()
+for(i in 1:(vcount(gc)-1)){#seq_along(V(gc))){
+  if (i ==vcount(gc)){
+    next
+  }
+   c1 = induced.subgraph(gc,V(gc)[enm_df$orf_name[eigvecs[,i+1]>0]])
+   c2= induced.subgraph(gc,V(gc)[enm_df$orf_name[eigvecs[,i+1]<0]])
+   lost.edges <- c(lost.edges, (ecount(gc)-ecount(c1)-ecount(c2)))
+  print(i,length(lost.edges))
+   }
+tictoc::toc()
+plot(lost.edges)
+```

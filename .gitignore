@@ -91,3 +91,8 @@ target/
 #Figures
 reports/figures
 .Rproj.user
+.Rhistory
+.Rproj
+.RData
+.vim
+*.Rproj

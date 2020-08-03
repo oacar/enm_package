@@ -11,14 +11,15 @@ from src.visualize.visualize import plot_correlation_density, plot_vector, plot_
 from mlxtend.evaluate import permutation_test 
 
 # Random collectivity
-data_path = 'data/interim/pcc_0525/'
+data_path = 'data/interim/pcc_0603/'
 with open(f'{data_path}/rewire_data_er.pickle','rb') as f:
     e_er = pickle.load(f)
 with open(f'{data_path}/pcc.pickle','rb') as f:
     e_pcc = pickle.load(f)
 with open(f'{data_path}/rewire_data_nodegseq.pickle','rb') as f:
     e_nodegseq = pickle.load(f)
-figure_path = e_er[0].figure_path = e_pcc.figure_path = e_nodegseq[0].figure_path = 'reports/figures/pcc_0601/'
+figure_path = e_er[0].figure_path = e_pcc.figure_path = e_nodegseq[0].figure_path = 'reports/figures/pcc_0603/'
+figure_path =e_pcc.figure_path ='reports/figures/pcc_0603/'
 e_pcc.e_list[0].figure_path=figure_path
 e_er[0].plot_collectivity(figure_name = 'coll_er', figure_extension='png')
 e_pcc.plot_collectivity(figure_name = 'coll_pcc', figure_extension='png')
@@ -27,12 +28,14 @@ e_pcc.e_list[0].plot_collectivity(figure_name = 'coll_keepingdegseq', figure_ext
 
 plot_lambda_collectivity(e_pcc.gnm.getEigvals(),e_pcc.coll,figure_path,figure_name ='lambda_coll_real')
 plot_lambda_collectivity(e_er[0].gnm.getEigvals(),e_er[0].coll,figure_path,figure_name ='lambda_coll_er')
+plot_lambda_collectivity(e_nodegseq[0].gnm.getEigvals(),e_nodegseq[0].coll,figure_path,figure_name ='lambda_coll_nodegseq')
 plot_lambda_collectivity(e_pcc.e_list[0].gnm.getEigvals(),e_pcc.e_list[0].coll,figure_path,figure_name ='lambda_coll_keepingdegseq')
 #General plots
 e_pcc.plot_network_spring()
 e_pcc.plot_vector(sorted=True)
 e_pcc.plot_scatter(x='deg',y='eff',figure_name='deg_eff',figure_extension='pdf')
 e_pcc.plot_scatter(x='deg',y='sens',figure_name='deg_sens',figure_extension='pdf')
+e_pcc.plot_scatter(x='eff',y='sens',figure_name='eff_sens',figure_extension='pdf')
 
 # correlation_density
 er_df = pd.read_csv(f'{data_path}/rewire_data_er.csv')
