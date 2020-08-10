@@ -82,11 +82,16 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
     spring_pos = Gc.nodes(data='pos')
     node_color = kwargs.pop('node_color', 'white')
     edge_color = kwargs.pop('edge_color', 'white')
-    legend_elements = [Line2D([0], [0], marker='o', color=node_color, label=kwargs.pop('node_label', 'Genes'),
+    legend_elements = kwargs.pop('legend_elements',None)
+    plot_legend = kwargs.pop('plot_legend',False)
+    if legend_elements is None and plot_legend:
+        print('ss')
+        legend_elements = [Line2D([0], [0], marker='o', color=node_color, label=kwargs.pop('node_label', 'Genes'),
                               markerfacecolor=node_color, markersize=10, linestyle="None"),
                        Line2D([0], [0], marker='o', color=edge_color, label=kwargs.pop('edge_label', 'PCC>0.2'),
                               markerfacecolor=edge_color, markersize=0, linestyle="-")
                        ]
+
     fig, ax = plt.subplots(figsize=kwargs.pop(
         'figsize', (5, 5)))  # figsize=(5,5))
     nx.draw_networkx_nodes(Gc,
@@ -117,10 +122,10 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
     if plot_legend:
         lgd = ax.legend(handles=legend_elements, fontsize=14,loc='center left', bbox_to_anchor=(1.0, 0.5))
     
-        frame = lgd.get_frame()
-        frame.set_color('black')
-        for text in lgd.get_texts():
-            text.set_color("white") 
+ #       frame = lgd.get_frame()
+#        frame.set_color('black')
+  #      for text in lgd.get_texts():
+   #         text.set_color("white") 
         #plt.title(f'Costanzo 2016 profile similarity network',fontsize=20)
     # plt.legend()
         fig.savefig(
