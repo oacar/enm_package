@@ -196,6 +196,37 @@ class Enm():
         self.get_prs(**kwargs)
         self.create_df()
 
+    def get_category(self, strain_ids_df_file):
+        """ Uses costanzo strain id file to determine categories. File is created by pgsNetwork project earlier
+            
+        """
+        strain_ids = pd.read_csv(strain_ids_df_file)
+        combined_df = pd.merge(self.df, strain_ids, left_on='orf_name',right_on='Allele Gene name')
+        combined_df['group']=np.where(combined_df.cat.isna(),'essential','nonessential')
+        combined_df = combined_df.fillna({'cat':'essential'})
+        cat_change_dict = {'essential': 'Essential',
+                  'na.nq.nxes':'Nonessential\nquery and array',
+                  'nxes.only':'Nonessential \nquery crossed \n with Essential',
+                  'nq.nxes':'Nonessential query',
+                  'na.nq':'Nonessential\nquery and array',
+                  'na.nxes':'Nonessential\nquery and array',
+                  'nq.only':'Nonessential query',
+                  'na.only':'Nonessential array'}
+        combined_df['cat_']= combined_df['cat'].map(cat_change_dict)
+        self.df = combined_df
+        #db_connection_str = 'mysql+pymysql://oma21:dktgp2750@localhost:3306/ANNE'
+        #db_connection = sql.create_engine(db_connection_str)
+        #db_df = pd.read_sql('SELECT * FROM SUMMARY_2012', con=db_connection)
+        #combined_df = pd.merge(combined_df, db_df, left_on='Systematic gene name', right_on='orf_name')
+    def get_node_distances(self):
+        dist_to_center = {}
+        if len(nx.get_node_attributes(self.graph_gc, 'pos')) == 0:
+            self.spring_pos()
+
+        pos = self.graph_gc.nodes('pos')
+        for i,val_i in enumerate(self.nodes):
+            dist_to_center[val_i]=np.linalg.norm(pos[val_i])
+        self.dist_to_center = dist_to_center
     def plot_network_spring(self, **kwargs):
         """Plot network with spring layout
         """
