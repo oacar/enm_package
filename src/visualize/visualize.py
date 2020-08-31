@@ -61,7 +61,7 @@ def plot_vector(data, figure_path, sorted=False, x_label='Nodes', y_label='Eigen
     return ax
 
 
-def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_list=[0.1],**kwargs):
+def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_list=[0.1],ax=None,**kwargs):
     """Plots networkx object using spring_layout and a legend for nodes and edges
 
     :param Gc:  The network to plot
@@ -92,14 +92,15 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
                               markerfacecolor=edge_color, markersize=0, linestyle="-")
                        ]
 
-    fig, ax = plt.subplots(figsize=kwargs.pop(
-        'figsize', (5, 5)))  # figsize=(5,5))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.pop(
+         'figsize', (5, 5)))  # figsize=(5,5))
     nx.draw_networkx_nodes(Gc,
                            node_size=kwargs.pop('node_size', 0.2),
                            # alpha=0.5,
                            node_color=node_color,
                            pos=spring_pos,
-                           label='Genes', **kwargs
+                           label='Genes', ax=ax, **kwargs
                            # node_shape=matplotlib.markers.MarkerStyle(marker='o',fillstyle='full')
                            )
     nx.draw_networkx_edges(Gc,
@@ -107,7 +108,7 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
                            width=kwargs.pop('edge_width', 0.1),
                            edge_color=edge_color,
                            pos=spring_pos,
-                           label='PCC>0.2', **kwargs)
+                           label='PCC>0.2',ax=ax, **kwargs)
     ax.set_facecolor(kwargs.pop('facecolor', "#000000"))
 
     if plot_go:
@@ -128,10 +129,10 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
    #         text.set_color("white") 
         #plt.title(f'Costanzo 2016 profile similarity network',fontsize=20)
     # plt.legend()
-        fig.savefig(
+        plt.savefig(
             f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_extra_artists=(lgd,),bbox_inches='tight')
     else:
-        fig.savefig(
+        plt.savefig(
             f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_inches='tight')
 
     return ax
