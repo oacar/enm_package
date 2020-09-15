@@ -308,9 +308,11 @@ def betweenness_ig(g, normalized=False):
     else:
         return btw
 
-def igraph_network(g):
+def igraph_network(g,orf_names=None):
     adj = nx.adjacency_matrix(g).todense()
     g_ig = igraph.Graph.Adjacency((adj > 0).tolist(),'UNDIRECTED')
+    if orf_names is not None:
+        g_ig.vs['name'] = orf_names
     return g_ig
 
 def betweenness_nx(g, normalized=False):
@@ -387,8 +389,8 @@ def simulate_rewire(Gc, rewired=False, rewire_df_name=None, arr_name=None, **kwa
 #        for i in tqdm(range(int(sim_num))):
         success = 0
         i=0
-        maxtry=100
-        while success<(sim_num) or i==maxtry:
+        maxtry=sim_num*10
+        while success<(sim_num) and i<=maxtry:
             print(i)
             i=i+1
             try:
