@@ -1,0 +1,202 @@
+---
+title: "Paper figures"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reticulate)
+#use_python("/home/oma21/miniconda3/envs/enm/bin/python")
+use_condaenv('enm')
+setwd('../')
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import networkx as nx
+import numpy as np
+import pandas as pd
+import plotnine as p9
+import pickle 
+import os
+import re
+import itertools as itr
+from src.enm import Enm
+
+with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
+    e_pcc = pickle.load(f)
+with open(f'data/interim/yuri/yuri.pickle','rb') as f:
+    e_yuri = pickle.load(f)
+with open(f'data/interim/huri/huri.pickle','rb') as f:
+    e_huri = pickle.load(f)
+
+pcc_df = e_pcc.df
+yuri_df = e_yuri.df
+huri_df = e_huri.df
+```
+
+```{r}
+pcc_df = py$pcc_df
+yuri_df = py$yuri_df
+huri_df = py$huri_df
+library(tidyverse)
+library(cowplot)
+library(ggpubr)
+```
+
+```{r}
+p1 = ggplot(pcc_df, aes(x=deg,y=eff))+
+    geom_point(aes(color=cat_))+
+    xlab('Degree')+
+    ylab('Effectiveness')+
+    stat_cor(method='pearson')   +
+    guides(color=guide_legend(title="Experiment categories"))+
+    theme_bw()
+p2 = ggplot(pcc_df, aes(x=deg,y=sens))+
+    geom_point(aes(color=cat_))+
+    xlab('Degree')+
+    ylab('Sensitivity')+
+    stat_cor(method='spearman')   +
+    guides(color=guide_legend(title="Experiment categories"))+
+    theme_bw()
+lgn = cowplot::get_legend(p2)
+
+plot_grid(p1+theme(legend.position=''),
+          p2+theme(legend.position=''),
+          lgn, nrow=1, labels=c('A','B',''))
+
+```
+
+```{r}
+pcc_rewire_df = read_csv('data/interim/pcc_0909/rewire_data.csv')
+yuri_rewire_df = read_csv('data/interim/yuri/rewire_data.csv')
+huri_rewire_df = read_csv('data/interim/huri/rewire_data.csv')
+
+rewire_df = pcc_rewire_df%>%mutate(data='pcc')%>%bind_rows(
+                                                           yuri_rewire_df%>%mutate(data='yuri'))%>%
+        bind_rows(huri_rewire_df%>%mutate(data='huri'))
+```
+
+```{r}
+network_labels  <- c('Costanzo 2016','Yeast PPI','HuRI')
+#p3 = ggplot(rewire_df, aes(x=eff_deg_pearson))+
+#    stat_density(geom = "line", trim=TRUE)+
+##    geom_histogram(binwidth = 0.001)+
+#    geom_vline(xintercept=0.9,color='red')+
+#    theme_bw()
+
+combined_rewire_df <- rewire_df%>%select(data, eff_deg_pearson,sens_deg_spearman)%>%mutate(type = 'random')%>% 
+    bind_rows(
+    data.frame(sens_deg_spearman= c(cor(pcc_df$deg, pcc_df$sens,method='spearman'),cor(yuri_df$deg,yuri_df$sens,method='spearman'),cor(huri_df$deg,huri_df$sens,method='spearman')), eff_deg_pearson= c(cor(pcc_df$deg, pcc_df$eff),cor(yuri_df$deg,yuri_df$eff),cor(huri_df$deg,huri_df$eff)), type='real',data=c('pcc','yuri','huri')))%>%
+    mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
+
+p3 = combined_rewire_df%>%
+    ggplot(aes(x=data,y=eff_deg_pearson,color=type))+
+#    geom_boxplot()+
+#    geom_jitter()+
+    geom_point(position=position_jitterdodge(dodge.width=0.9), aes(shape=data))+
+    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    xlab('')+ylab('Effectiveness degree correlation')+
+    theme_bw()+
+    theme(axis.text.x=element_blank())
+p4 = combined_rewire_df%>%
+    ggplot(aes(x=data,y=sens_deg_spearman,color=type))+
+#    geom_boxplot()+
+#    geom_jitter(aes(color=type))+
+    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    geom_point(position=position_jitterdodge(dodge.width=0.9), aes(shape=data))+
+    xlab('')+ylab('Sensitivity degree correlation')+
+    theme_bw()+
+    theme(axis.text.x=element_blank())+
+    scale_shape_discrete(labels=network_labels)+
+    scale_color_discrete(labels=c('Rewired network', 'Real network'))
+
+
+lgn34  <- cowplot::get_legend(p4)
+    theme(axis.text.x=element_blank())
+plot_grid(p1+theme(legend.position=''),
+          p2+theme(legend.position=''),
+          lgn,
+          p3+theme(legend.position=''),
+ p4+theme(legend.position=''), lgn34,
+ nrow=2, labels=c('A','B','','C','D',''))
+ggsave('tmp.png')
+```
+
+
+```{r deletion}
+pcc_deletion = read_csv('data/interim/deletion_analysis_0911/pcc_deletion.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='pcc')
+yuri_deletion = read_csv('data/interim/deletion_analysis_0911/yuri_deletion.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='yuri')
+huri_deletion = read_csv('data/interim/deletion_analysis_0911/huri_deletion.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='huri')
+
+deletion_df  <- bind_rows(pcc_deletion, yuri_deletion, huri_deletion)%>%mutate(group = fct_relevel(group,c('pcc','yuri','huri')))
+
+facet_labels  <- network_labels
+names(facet_labels) <- c("pcc",'yuri','huri')
+
+
+library(MESS)
+auc_data <- deletion_df%>%
+    group_by(group, variable_0)%>%
+    summarise(auc=MESS::auc(gc_size,range), r = range[min(which(gc_size < 0.05))])%>%
+    ungroup()%>%
+    mutate(variable_0=fct_reorder(variable_0, auc, min))
+
+auc_plot <- auc_data%>%
+    ggplot(aes(x=variable_0,y=r))+
+    geom_point(aes(color=variable_0))+#, position=position_jitterdodge())+
+    geom_line(aes(group=group),color='grey')+
+    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    theme_bw()+
+    ylab("AUC")+
+    xlab("Deletion parameter")+
+    labs(color = "Deletion\nparameter")+
+    scale_x_discrete(labels = c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Sensitivity"))+
+    scale_colour_brewer(palette = "Set1", labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Sensitivity"))+
+   theme(legend.position='right')
+
+deletion_plot <- deletion_df %>% mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+    ggplot(aes(x=range, y= gc_size, color = variable_0  ))+
+#    geom_point(size=1)+
+        geom_line()+
+    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('Ratio of deleted nodes')+
+    ylab('Giant component ratio')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    theme_bw()+
+    theme(legend.position='right')
+
+deletion_lgn <- cowplot::get_legend(auc_plot)
+plot_grid(deletion_plot+    theme(legend.position='')
+, auc_plot+    theme(legend.position='')
+,deletion_lgn, nrow=1, rel_widths =c(0.45, 0.45,.1), labels=c('A','B'))
+ggsave('tmp.png',width=12)
+
+```
+
