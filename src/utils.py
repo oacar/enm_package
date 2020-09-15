@@ -2,7 +2,9 @@ import os
 import networkx as nx
 import pandas as pd 
 import prody
+import copy
 import numpy as np
+import random
 
 from goatools.obo_parser import GODag
 from goatools.anno.genetogo_reader import Gene2GoReader
@@ -64,3 +66,81 @@ def goea_to_pandas(goea_results_sig, geneid2name):
         orf_names.append([geneid2name[_id] for _id in i])
     go_df_n.study_items = orf_names
     return go_df_n 
+
+def network_chance_deletion(list_of_nodes,Gc,out_dict):
+    random_hinges = list_of_nodes#df_.sort_values('deg',ascending=False).iloc[0:i,0].tolist()
+#    gc_copy = igraph_network(Gc)
+    gc_copy=copy.deepcopy(Gc)
+    gc_copy.delete_vertices(random_hinges)
+    ig = gc_copy
+    #Gc_random_hinge_deleted = nx.induced_subgraph(Gc,[n for n in Gc.nodes if n not in random_hinges])
+    random_hinge_connected_components = len(ig.components())#nx.number_connected_components(Gc_random_hinge_deleted)
+    Gc_hinges_removed = len(ig.components().giant().vs)#max(nx.connected_component_subgraphs(Gc_random_hinge_deleted), key=len)
+    out_dict['num_of_comp'].append(random_hinge_connected_components)
+    out_dict['gc_size'].append(Gc_hinges_removed)
+
+def sequential_deletion(Gc,df_,step=10):
+    deg_sorted_deletion = {'num_of_comp':[], 'gc_size':[]}
+    hinge_sorted_deletion= {'num_of_comp':[], 'gc_size':[]}
+    rand_deletion =  {'num_of_comp':[], 'gc_size':[]}
+    btw_sorted_deletion =  {'num_of_comp':[], 'gc_size':[]}
+    eff_sorted_deletion= {'num_of_comp':[], 'gc_size':[]}
+    hinge_sorted_deletion_rev= {'num_of_comp':[], 'gc_size':[]}
+    sens_sorted_deletion =  {'num_of_comp':[], 'gc_size':[]}
+    eigenvec_centr_sorted_deletion =  {'num_of_comp':[], 'gc_size':[]}
+    closeness_centr_sorted_deletion =  {'num_of_comp':[], 'gc_size':[]}
+    sens_sorted_deletion_rev =  {'num_of_comp':[], 'gc_size':[]}
+
+    rand_nodes = random.sample([n for n in Gc.nodes],len(Gc.nodes)-1)
+    range_ = range(1,len(Gc.nodes)-1,step)
+    Gc = igraph_network(Gc, orf_names=df_.orf_name.values)
+    #m#ax_node_num_rand_hinge_comp_list = [ ]
+    for i in tqdm(range_):
+        #degree
+#        print(i)
+        network_chance_deletion(df_.sort_values('deg',ascending=False).iloc[0:i,0].tolist(), Gc, deg_sorted_deletion)
+#        print('Degree deletion successfull')
+
+        #eigenvec_hinge
+#        network_chance_deletion(df_.reindex(df_[0].abs().sort_values().index).iloc[0:i,0].tolist(), Gc, hinge_sorted_deletion)
+
+        #random
+        network_chance_deletion(rand_nodes[0:i], Gc, rand_deletion)
+
+        #effectiveness
+        network_chance_deletion(df_.reindex(df_['eff'].abs().sort_values(ascending=False).index).iloc[0:i,0].tolist(), Gc, eff_sorted_deletion)
+
+        #eigenvec_hinge descending
+#        network_chance_deletion(df_.reindex(df_[0].abs().sort_values(ascending=False).index).iloc[0:i,0].tolist(), Gc, hinge_sorted_deletion_rev)
+
+        #sensitivity
+        network_chance_deletion(df_.reindex(df_['sens'].abs().sort_values(ascending=False).index).iloc[0:i,0].tolist(), Gc, sens_sorted_deletion)
+
+        #sensitivity rev
+#        network_chance_deletion(df_.reindex(df_['sens'].abs().sort_values(ascending=True).index).iloc[0:i,0].tolist(), Gc, sens_sorted_deletion_rev)
+
+        #betweenness
+        network_chance_deletion(df_.reindex(df_['btw'].abs().sort_values(ascending=False).index).iloc[0:i,0].tolist(), Gc,btw_sorted_deletion)
+
+        #eigenvector centrality
+        network_chance_deletion(df_.reindex(df_['eigenvec_centr'].abs().sort_values(ascending=False).index).iloc[0:i,0].tolist(), Gc,eigenvec_centr_sorted_deletion)
+
+        #closeness
+        network_chance_deletion(df_.reindex(df_['closeness_centr'].abs().sort_values(ascending=False).index).iloc[0:i,0].tolist(), Gc,closeness_centr_sorted_deletion)
+
+    dd = {'deg_sorted_deletion':deg_sorted_deletion,
+#     'hinge_sorted_deletion':hinge_sorted_deletion,
+     'rand_deletion':rand_deletion,
+     'eff_sorted_deletion':eff_sorted_deletion,
+     'sens_sorted_deletion':sens_sorted_deletion,
+     'btw_sorted_deletion':btw_sorted_deletion,
+#     'hinge_sorted_deletion_rev':hinge_sorted_deletion_rev,
+          'closeness_centr_sorted_deletion':closeness_centr_sorted_deletion,
+#          'sens_sorted_deletion_rev':sens_sorted_deletion_rev,
+          'eigenvec_centr_sorted_deletion':eigenvec_centr_sorted_deletion,
+        'range':range_}
+    dd_df  = pd.DataFrame.from_dict({(outerKey, innerKey): values for outerKey, innerDict in dd.items() if outerKey!='range' for innerKey, values in innerDict.items()})
+    dd_df['range'] = range_
+    dd_df = dd_df.melt('range')
+    return dd_df
+
