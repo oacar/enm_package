@@ -144,3 +144,33 @@ def sequential_deletion(Gc,df_,step=10):
     dd_df = dd_df.melt('range')
     return dd_df
 
+def sample_nodes(sample_space, size=1):
+    return   np.random.choice(sample_space, size=size, replace=False)
+
+def get_degree_distribution(df):
+    return df.groupby('deg').count().to_dict()['orf_name']   
+
+def sample_nodes_with_degree(gnm_df , nodes_df ):
+    deg_dist = get_degree_distribution(nodes_df)
+    sampled_nodes = []
+    for deg, count in deg_dist.items():
+        sample_space = gnm_df.loc[(gnm_df.deg == deg)&(gnm_df.orf_name.isin(nodes_df.orf_name.values)==False),'orf_name'].values
+        nds = sample_nodes(sample_space,size=count)
+        sampled_nodes.extend(nds)
+#        print(nds, deg, count, len(nds))
+    return gnm_df.loc[gnm_df.orf_name.isin(sampled_nodes)]
+
+def get_in_to_out_edge_ratio(G, nodes_df):
+    flat_list_ego = np.unique([item for sublist in [list(nx.ego_graph(G,i,radius=1).nodes) for i in nodes_df.orf_name.values] for item in sublist])
+    #rat = len([i for i in flat_list_ego if i in sensors['orf_name'].values ])/len([i for i in flat_list_ego if i not in sensors['orf_name'].values ])
+    rat = len([i for i in flat_list_ego if i in nodes_df['orf_name'].values ])/len(flat_list_ego)
+    return rat
+
+def get_random_in_to_out_ratio(gnm_df, df , G):
+    random_ratio_list = []
+    for i in range(100):
+        rand_nodes = sample_nodes_with_degree(gnm_df, df)
+    #    print(len(rand_nodes))
+        random_ratio_list.append(get_in_to_out_edge_ratio(G, rand_nodes))
+    return random_ratio_list
+
