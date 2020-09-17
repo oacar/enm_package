@@ -29,20 +29,25 @@ from src.enm import Enm
 
 with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
     e_pcc = pickle.load(f)
-with open(f'data/interim/yuri/yuri.pickle','rb') as f:
+with open(f'data/interim/yuri_0916/yuri.pickle','rb') as f:
     e_yuri = pickle.load(f)
-with open(f'data/interim/huri/huri.pickle','rb') as f:
+with open(f'data/interim/huri_0916/huri.pickle','rb') as f:
     e_huri = pickle.load(f)
 
 pcc_df = e_pcc.df
+pcc_gc = e_pcc.graph_gc
+pcc_gc_pos = (dict(pcc_gc.nodes(data='pos')))
 yuri_df = e_yuri.df
 huri_df = e_huri.df
 ```
 
 ```{r}
-pcc_df = py$pcc_df
-yuri_df = py$yuri_df
-huri_df = py$huri_df
+pcc_df = py$pcc_df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.))
+yuri_df = py$yuri_df%>%mutate(data='yuri')%>%mutate(sens_norm = sens/nrow(.))
+huri_df = py$huri_df%>%mutate(data='huri')%>%mutate(sens_norm = sens/nrow(.))
+
+combined_df = bind_rows(pcc_df, yuri_df,huri_df)%>%
+    mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
 library(tidyverse)
 library(cowplot)
 library(ggpubr)
@@ -56,7 +61,7 @@ p1 = ggplot(pcc_df, aes(x=deg,y=eff))+
     stat_cor(method='pearson')   +
     guides(color=guide_legend(title="Experiment categories"))+
     theme_bw()
-p2 = ggplot(pcc_df, aes(x=deg,y=sens))+
+p2 = ggplot(pcc_df, aes(x=deg,y=sens_norm))+
     geom_point(aes(color=cat_))+
     xlab('Degree')+
     ylab('Sensitivity')+
@@ -124,7 +129,7 @@ plot_grid(p1+theme(legend.position=''),
           p3+theme(legend.position=''),
  p4+theme(legend.position=''), lgn34,
  nrow=2, labels=c('A','B','','C','D',''))
-ggsave('tmp.png')
+ggsave('reports/figures/paper_figures_0916/fig2.png')
 ```
 
 
@@ -196,7 +201,49 @@ deletion_lgn <- cowplot::get_legend(auc_plot)
 plot_grid(deletion_plot+    theme(legend.position='')
 , auc_plot+    theme(legend.position='')
 ,deletion_lgn, nrow=1, rel_widths =c(0.45, 0.45,.1), labels=c('A','B'))
-ggsave('tmp.png',width=12)
+ggsave('reports/figures/paper_figures_0916/fig3.png',width=12)
 
 ```
+
+# Sensor connectivity and neighbor degree
+```{r}
+sensor_connectivity_df <- read_csv('data/interim/sensor_connectivity_0915/sensor_connectivity_df.csv')%>%
+    mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
+
+#library(ggridges)
+
+#sensor_connectivity_df %>%
+#    filter(type=='random')%>%
+#    ggplot(aes(x=ratio,y=data))+
+##    facet_grid(rows=vars(data))+
+##    geom_histogram(bins=50)
+#    geom_density_ridges()
+#ggsave('tmp.png',width=12)
+
+#p3 = 
+sensor_connectivity_plot <- 
+    ggplot()+
+    geom_boxplot(data=sensor_connectivity_df%>%filter(type=='random'),
+                 aes(x=data,y=ratio,color=type))+
+#    geom_jitter()+
+    geom_point(data=sensor_connectivity_df%>%filter(type=='real'),
+            aes(x=data,y=ratio,color=type, group=data))+
+               #position=position_jitter(), aes(shape=data))+
+    scale_color_discrete(labels=c('Random sampled set', 'Sensors'))+
+    scale_x_discrete(labels=network_labels)+
+  guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    xlab('Network type')+ylab('Ratio of between group edges\nto outgroup edges')+
+    theme_bw()
+neighbor_degree_plot <- combined_df%>%
+    ggplot(aes(x=neighbor_degree,y=sens_norm))+
+    facet_grid(rows=vars(data),labeller = labeller(data=facet_labels))+
+    geom_point()+
+    theme_bw()+
+    xlab('Average neighbor degree')+
+    ylab('Sensitivity')
+plot_grid(neighbor_degree_plot, sensor_connectivity_plot, nrow=2 , labels=c('A','B'))
+ggsave('reports/figures/paper_figures_0916/fig4.png')
+
+```
+
 
