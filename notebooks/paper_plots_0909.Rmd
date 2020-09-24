@@ -159,13 +159,14 @@ auc_data <- deletion_df%>%
 
 auc_plot <- auc_data%>%
     ggplot(aes(x=variable_0,y=r))+
-    geom_point(aes(color=variable_0))+#, position=position_jitterdodge())+
-    geom_line(aes(group=group),color='grey')+
+    geom_bar(aes(fill=variable_0),stat='identity')+
+ #   geom_point(aes(color=variable_0))+#, position=position_jitterdodge())+
+#    geom_line(aes(group=group),color='grey')+
     facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
     theme_bw()+
-    ylab("AUC")+
+    ylab("Cost of fractioning the network (AUC)")+
     xlab("Deletion parameter")+
-    labs(color = "Deletion\nparameter")+
+    labs(fill = "Deletion\nparameter")+
     scale_x_discrete(labels = c(
                                 "Degree",
                                 "Betweenness",
@@ -174,7 +175,7 @@ auc_plot <- auc_data%>%
                                 "Eigencentrality",
                                 "Random",
                                 "Sensitivity"))+
-    scale_colour_brewer(palette = "Set1", labels= c(
+    scale_fill_brewer(palette = "Set1", labels= c(
                                 "Degree",
                                 "Betweenness",
                                 "Effectiveness",
@@ -200,7 +201,7 @@ deletion_plot <- deletion_df %>% mutate(variable_0 = fct_relevel(variable_0, lev
 deletion_lgn <- cowplot::get_legend(auc_plot)
 plot_grid(deletion_plot+    theme(legend.position='')
 , auc_plot+    theme(legend.position='')
-,deletion_lgn, nrow=1, rel_widths =c(0.45, 0.45,.1), labels=c('A','B'))
+,deletion_lgn, nrow=1, rel_widths =c(0.4, 0.5,.1), labels=c('A','B'))
 ggsave('reports/figures/paper_figures_0916/fig3.png',width=12)
 
 ```
@@ -235,15 +236,50 @@ sensor_connectivity_plot <-
     xlab('Network type')+ylab('Ratio of between group edges\nto outgroup edges')+
     theme_bw()
 neighbor_degree_plot <- combined_df%>%
-    ggplot(aes(x=neighbor_degree,y=sens_norm))+
-    facet_grid(rows=vars(data),labeller = labeller(data=facet_labels))+
+    ggplot(aes(x=sens_norm,y=neighbor_degree))+
+    facet_grid(cols=vars(data),labeller = labeller(data=facet_labels))+
     geom_point()+
     theme_bw()+
-    xlab('Average neighbor degree')+
-    ylab('Sensitivity')
+    ylab('Average neighbor degree')+
+    xlab('Sensitivity')
 plot_grid(neighbor_degree_plot, sensor_connectivity_plot, nrow=2 , labels=c('A','B'))
 ggsave('reports/figures/paper_figures_0916/fig4.png')
 
+```
+
+```{r}
+convert_networkx_to_igraph <- 			# 
+    function
+(
+ 	nx_object,
+    df
+)
+{
+    nx =  reticulate::import("networkx")
+    ig = igraph::graph.adjacency(nx$adjacency_matrix(nx_object), mode = 'undirected')
+    ig = igraph::set_vertex_attr(ig , name =  'orf_name', value  = (df$orf_name))
+    igraph::set_vertex_attr(ig, "pos", nxqjjj
+    ig
+  
+}
+```
+```{r}
+plot_network_spring <- 			# 
+    function
+(
+    gc , df , pos , ... 	
+)
+{
+ pcc_gc_ig = convert_networkx_to_igraph(gc, df)
+
+png('tmp.png')
+plot(pcc_gc_ig, vertex.size=1, vertex.label=NA, layout = pos)
+dev.off()
+ 
+}
+pcc_gc = py$pcc_gc
+pcc_gc_pos = matrix(unlist(py$pcc_gc_pos),ncol=2,byrow=TRUE)
+plot_network_spring(pcc_gc, pcc_df, pcc_gc_pos)
 ```
 
 
