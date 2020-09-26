@@ -42,19 +42,20 @@ huri_df = e_huri.df
 ```
 
 ```{r}
-pcc_df = py$pcc_df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.))
-yuri_df = py$yuri_df%>%mutate(data='yuri')%>%mutate(sens_norm = sens/nrow(.))
-huri_df = py$huri_df%>%mutate(data='huri')%>%mutate(sens_norm = sens/nrow(.))
-
-combined_df = bind_rows(pcc_df, yuri_df,huri_df)%>%
-    mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
 library(tidyverse)
 library(cowplot)
 library(ggpubr)
+
+pcc_df = py$pcc_df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.))
+yuri_df = py$yuri_df%>%mutate(data='yuri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.))
+huri_df = py$huri_df%>%mutate(data='huri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.))
+
+combined_df = bind_rows(pcc_df, yuri_df,huri_df)%>%
+    mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
 ```
 
 ```{r}
-p1 = ggplot(pcc_df, aes(x=deg,y=eff))+
+p1 = ggplot(pcc_df, aes(x=deg,y=eff_norm))+
     geom_point(aes(color=cat_))+
     xlab('Degree')+
     ylab('Effectiveness')+
@@ -67,13 +68,12 @@ p2 = ggplot(pcc_df, aes(x=deg,y=sens_norm))+
     ylab('Sensitivity')+
     stat_cor(method='spearman')   +
     guides(color=guide_legend(title="Experiment categories"))+
-    theme_bw()
+    theme_bw()+theme(legend.text = element_text(margin = margin(t=5, b = 5, unit = "pt")))
 lgn = cowplot::get_legend(p2)
-
-plot_grid(p1+theme(legend.position=''),
+fig3 = plot_grid(p1+theme(legend.position=''),
           p2+theme(legend.position=''),
-          lgn, nrow=1, labels=c('A','B',''))
-
+          lgn, nrow=1, labels=c('A','B',''),rel_widths=c(0.4,0.4,0.2))
+ggsave('reports/figures/paper_figures_0916/fig3.png', fig3, width=8,height=6)
 ```
 
 ```{r}
@@ -94,42 +94,45 @@ network_labels  <- c('Costanzo 2016','Yeast PPI','HuRI')
 #    geom_vline(xintercept=0.9,color='red')+
 #    theme_bw()
 
+facet_labels  <- network_labels
+names(facet_labels) <- c("pcc",'yuri','huri')
+
 combined_rewire_df <- rewire_df%>%select(data, eff_deg_pearson,sens_deg_spearman)%>%mutate(type = 'random')%>% 
     bind_rows(
     data.frame(sens_deg_spearman= c(cor(pcc_df$deg, pcc_df$sens,method='spearman'),cor(yuri_df$deg,yuri_df$sens,method='spearman'),cor(huri_df$deg,huri_df$sens,method='spearman')), eff_deg_pearson= c(cor(pcc_df$deg, pcc_df$eff),cor(yuri_df$deg,yuri_df$eff),cor(huri_df$deg,huri_df$eff)), type='real',data=c('pcc','yuri','huri')))%>%
     mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
 
-p3 = combined_rewire_df%>%
-    ggplot(aes(x=data,y=eff_deg_pearson,color=type))+
+p3 = 
+    ggplot()+
+    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
 #    geom_boxplot()+
 #    geom_jitter()+
-    geom_point(position=position_jitterdodge(dodge.width=0.9), aes(shape=data))+
+    geom_density(data =combined_rewire_df%>%filter(type!='real'),aes(x=eff_deg_pearson,color=type, y=..scaled..),linetype = "dashed")+
+    geom_vline(data =combined_rewire_df%>%filter(type=='real'),aes(xintercept=eff_deg_pearson,color=type))+
     guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
-    xlab('')+ylab('Effectiveness degree correlation')+
+    ylab('Density')+xlab('Effectiveness degree correlation')+
     theme_bw()+
-    theme(axis.text.x=element_blank())
-p4 = combined_rewire_df%>%
-    ggplot(aes(x=data,y=sens_deg_spearman,color=type))+
+    theme(panel.spacing = unit(2, "lines"))+
+    scale_y_continuous(expand = c(0, 0)) 
+p4 = 
+    ggplot()+
+    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
 #    geom_boxplot()+
-#    geom_jitter(aes(color=type))+
+#    geom_jitter()+
+    geom_density(data =combined_rewire_df%>%filter(type!='real'),aes(x=sens_deg_spearman,y=..scaled..,color=type),linetype = "dashed")+
+    geom_vline(data =combined_rewire_df%>%filter(type=='real'),aes(xintercept=sens_deg_spearman,color=type))+
     guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
-    geom_point(position=position_jitterdodge(dodge.width=0.9), aes(shape=data))+
-    xlab('')+ylab('Sensitivity degree correlation')+
+    ylab('Density')+xlab('Sensitivity degree correlation')+
     theme_bw()+
-    theme(axis.text.x=element_blank())+
-    scale_shape_discrete(labels=network_labels)+
-    scale_color_discrete(labels=c('Rewired network', 'Real network'))
-
-
+    theme(panel.spacing = unit(2, "lines"),legend.position='bottom')+
+    scale_color_discrete(labels=c('Rewired networks', 'Real networks'))+
+    scale_y_continuous(expand = c(0, 0)) 
 lgn34  <- cowplot::get_legend(p4)
-    theme(axis.text.x=element_blank())
-plot_grid(p1+theme(legend.position=''),
-          p2+theme(legend.position=''),
-          lgn,
+plot_grid(
           p3+theme(legend.position=''),
  p4+theme(legend.position=''), lgn34,
- nrow=2, labels=c('A','B','','C','D',''))
-ggsave('reports/figures/paper_figures_0916/fig2.png')
+ nrow=3, labels=c('A','B','','C','D',''), rel_heights = c(0.45,0.45,0.1))
+ggsave('reports/figures/paper_figures_0916/fig2.png',width=7)
 ```
 
 
@@ -146,9 +149,6 @@ huri_deletion = read_csv('data/interim/deletion_analysis_0911/huri_deletion.csv'
 
 deletion_df  <- bind_rows(pcc_deletion, yuri_deletion, huri_deletion)%>%mutate(group = fct_relevel(group,c('pcc','yuri','huri')))
 
-facet_labels  <- network_labels
-names(facet_labels) <- c("pcc",'yuri','huri')
-
 
 library(MESS)
 auc_data <- deletion_df%>%
@@ -158,13 +158,13 @@ auc_data <- deletion_df%>%
     mutate(variable_0=fct_reorder(variable_0, auc, min))
 
 auc_plot <- auc_data%>%
-    ggplot(aes(x=variable_0,y=r))+
+    ggplot(aes(x=variable_0,y=auc))+
     geom_bar(aes(fill=variable_0),stat='identity')+
  #   geom_point(aes(color=variable_0))+#, position=position_jitterdodge())+
 #    geom_line(aes(group=group),color='grey')+
     facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
     theme_bw()+
-    ylab("Cost of fractioning the network (AUC)")+
+    ylab("Robustness")+
     xlab("Deletion parameter")+
     labs(fill = "Deletion\nparameter")+
     scale_x_discrete(labels = c(
@@ -185,14 +185,19 @@ auc_plot <- auc_data%>%
                                 "Sensitivity"))+
    theme(legend.position='right')
 
+#combined_df %>% group_by(data)%>%summarise(deg_btw = cor(deg, btw),
+#                                           deg_eff = cor(deg,eff),
+#                                           deg_sens = cor(deg,sens),
+#                                           deg_eigen = cor(deg, eigenvec_centr),
+#                                           deg_closeness = cor(deg, closeness_centr))
 deletion_plot <- deletion_df %>% mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
     ggplot(aes(x=range, y= gc_size, color = variable_0  ))+
 #    geom_point(size=1)+
         geom_line()+
     facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
     scale_colour_brewer(palette = "Set1")+ 
-    xlab('Ratio of deleted nodes')+
-    ylab('Giant component ratio')+
+    xlab('% Deleted Nodes')+
+    ylab('% Giant Component Size')+
     scale_y_continuous(labels = scales::percent)+
     scale_x_continuous(labels = scales::percent)+
     theme_bw()+
@@ -202,7 +207,7 @@ deletion_lgn <- cowplot::get_legend(auc_plot)
 plot_grid(deletion_plot+    theme(legend.position='')
 , auc_plot+    theme(legend.position='')
 ,deletion_lgn, nrow=1, rel_widths =c(0.4, 0.5,.1), labels=c('A','B'))
-ggsave('reports/figures/paper_figures_0916/fig3.png',width=12)
+ggsave('reports/figures/paper_figures_0916/fig4.png',width=12)
 
 ```
 
@@ -243,7 +248,7 @@ neighbor_degree_plot <- combined_df%>%
     ylab('Average neighbor degree')+
     xlab('Sensitivity')
 plot_grid(neighbor_degree_plot, sensor_connectivity_plot, nrow=2 , labels=c('A','B'))
-ggsave('reports/figures/paper_figures_0916/fig4.png')
+ggsave('reports/figures/paper_figures_0916/fig5.png')
 
 ```
 
@@ -257,10 +262,10 @@ convert_networkx_to_igraph <- 			#
 {
     nx =  reticulate::import("networkx")
     ig = igraph::graph.adjacency(nx$adjacency_matrix(nx_object), mode = 'undirected')
-    ig = igraph::set_vertex_attr(ig , name =  'orf_name', value  = (df$orf_name))
-    igraph::set_vertex_attr(ig, "pos", nxqjjj
+    #ig = igraph::set_vertex_attr(ig , name =  'orf_name', value  = (df$orf_name))
+    ig = igraph::set_vertex_attr(ig , name =  'name', value  = (df$orf_name))
+    #igraph::set_vertex_attr(ig, "pos", nx_object$nodes('pos'))
     ig
-  
 }
 ```
 ```{r}
@@ -279,7 +284,24 @@ dev.off()
 }
 pcc_gc = py$pcc_gc
 pcc_gc_pos = matrix(unlist(py$pcc_gc_pos),ncol=2,byrow=TRUE)
-plot_network_spring(pcc_gc, pcc_df, pcc_gc_pos)
+
+pcc_gc_ig = convert_networkx_to_igraph(pcc_gc, pcc_df)
+
+get_subnetwork  <- function(gc, subset){
+    sub_gc_nodes = igraph::ego(gc, nodes= subset)%>%unlist%>%unique
+
+    sub_gc  <- igraph::induced_subgraph(gc, sub_gc_nodes)
+
+    sub_gc
+}
+
+pcc_sensors = pcc_df %>% filter(sens>quantile(sens,0.99))
+pcc_sensor_sub = get_subnetwork(pcc_gc_ig, pcc_sensors$orf_name)
+#plot_network_spring(pcc_gc, pcc_df, pcc_gc_pos)
+
+png('tmp.png', res=150, height=3, width=3,units='in')
+plot(pcc_sensor_sub, vertex.size = 2 , vertex.color = 'white', vertex.label.color='black',vertex.label.size=8, vertex.label.cex = 0.4, layout=igraph::layout.fruchterman.reingold)
+dev.off()
 ```
 
 
