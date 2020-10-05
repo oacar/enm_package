@@ -46,15 +46,86 @@ library(tidyverse)
 library(cowplot)
 library(ggpubr)
 
-pcc_df = py$pcc_df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.))
-yuri_df = py$yuri_df%>%mutate(data='yuri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.))
-huri_df = py$huri_df%>%mutate(data='huri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.))
-
+pcc_df = py$pcc_df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
+    py$e_pcc$e_list[[1]]$df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'random')
+)%>%mutate(group=fct_relevel(group, c('real','random')))
+yuri_df = py$yuri_df%>%mutate(data='yuri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
+    py$e_yuri$e_list[[1]]$df%>%mutate(data='yuri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'random')
+)%>%mutate(group=fct_relevel(group, c('real','random')))
+huri_df = py$huri_df%>%mutate(data='huri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
+    py$e_huri$e_list[[1]]$df%>%mutate(data='huri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'random')
+)%>%mutate(group=fct_relevel(group, c('real','random')))
 combined_df = bind_rows(pcc_df, yuri_df,huri_df)%>%
     mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
 ```
 
 ```{r}
+pcc_deg_eff = pcc_df %>% #pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=eff_norm))+
+    geom_point()+
+    facet_grid(rows = vars(group), scales='free') +
+    theme_bw()+
+    ylab("Effectiveness")+
+    xlab("Degree")+
+    stat_cor(method='pearson', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+pcc_deg_sens = pcc_df %>% #pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=sens_norm))+
+    geom_point()+
+    facet_grid(rows = vars(group), scales='free') +
+    theme_bw()+
+    ylab("Sensitivity")+
+    xlab("Degree")+
+    stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+yuri_deg_eff = yuri_df %>% #pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=eff_norm))+
+    geom_point()+
+    facet_grid(rows = vars(group), scales='free') +
+    theme_bw()+
+    ylab("Effectiveness")+
+    xlab("Degree")+
+    stat_cor(method='pearson', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+yuri_deg_sens = yuri_df %>% #pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=sens_norm))+
+    geom_point()+
+    facet_grid(rows = vars(group), scales='free') +
+    theme_bw()+
+    ylab("Sensitivity")+
+    xlab("Degree")+
+    stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+huri_deg_eff = huri_df %>% #pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=eff_norm))+
+    geom_point()+
+    facet_grid(rows = vars(group), scales='free') +
+    theme_bw()+
+    ylab("Effectiveness")+
+    xlab("Degree")+
+    stat_cor(method='pearson', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+huri_deg_sens = huri_df %>% #pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=sens_norm))+
+    geom_point()+
+    facet_grid(rows = vars(group), scales='free') +
+    theme_bw()+
+    ylab("Sensitivity")+
+    xlab("Degree")+
+    stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
+                   yuri_deg_eff, yuri_deg_sens,
+                   huri_deg_eff, huri_deg_sens,
+                   ncol=2)
+ggsave('tmp.png',width=10,height=10)
+
 p1 = ggplot(pcc_df, aes(x=deg,y=eff_norm))+
     geom_point(aes(color=cat_))+
     xlab('Degree')+
@@ -97,9 +168,9 @@ network_labels  <- c('Costanzo 2016','Yeast PPI','HuRI')
 facet_labels  <- network_labels
 names(facet_labels) <- c("pcc",'yuri','huri')
 
-combined_rewire_df <- rewire_df%>%select(data, eff_deg_pearson,sens_deg_spearman)%>%mutate(type = 'random')%>% 
+combined_rewire_df <- rewire_df%>%select(data, eff_deg_spearman,sens_deg_spearman)%>%mutate(type = 'random')%>% 
     bind_rows(
-    data.frame(sens_deg_spearman= c(cor(pcc_df$deg, pcc_df$sens,method='spearman'),cor(yuri_df$deg,yuri_df$sens,method='spearman'),cor(huri_df$deg,huri_df$sens,method='spearman')), eff_deg_pearson= c(cor(pcc_df$deg, pcc_df$eff),cor(yuri_df$deg,yuri_df$eff),cor(huri_df$deg,huri_df$eff)), type='real',data=c('pcc','yuri','huri')))%>%
+    data.frame(sens_deg_spearman= c(cor(pcc_df$deg, pcc_df$sens,method='spearman'),cor(yuri_df$deg,yuri_df$sens,method='spearman'),cor(huri_df$deg,huri_df$sens,method='spearman')), eff_deg_spearman= c(cor(pcc_df$deg, pcc_df$eff,method='spearman'),cor(yuri_df$deg,yuri_df$eff,method='spearman'),cor(huri_df$deg,huri_df$eff,method='spearman')), type='real',data=c('pcc','yuri','huri')))%>%
     mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
 
 p3 = 
@@ -107,8 +178,8 @@ p3 =
     facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
 #    geom_boxplot()+
 #    geom_jitter()+
-    geom_density(data =combined_rewire_df%>%filter(type!='real'),aes(x=eff_deg_pearson,color=type, y=..scaled..),linetype = "dashed")+
-    geom_vline(data =combined_rewire_df%>%filter(type=='real'),aes(xintercept=eff_deg_pearson,color=type))+
+    geom_density(data =combined_rewire_df%>%filter(type!='real'),aes(x=eff_deg_spearman,color=type, y=..scaled..),linetype = "dashed")+
+    geom_vline(data =combined_rewire_df%>%filter(type=='real'),aes(xintercept=eff_deg_spearman,color=type))+
     guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
     ylab('Density')+xlab('Effectiveness degree correlation')+
     theme_bw()+
