@@ -155,19 +155,32 @@ auc_data <- deletion_df%>%
     group_by(group, variable_0)%>%
     summarise(auc=MESS::auc(gc_size,range), r = range[min(which(gc_size < 0.05))])%>%
     ungroup()%>%
-    mutate(variable_0=fct_reorder(variable_0, auc, min))
+    mutate(variable_0=fct_reorder(variable_0, auc, min))%>%pivot_wider(-r, names_from=group, values_from=auc)
 
-auc_plot <- auc_data%>%
-    ggplot(aes(x=variable_0,y=auc))+
-    geom_bar(aes(fill=variable_0),stat='identity')+
- #   geom_point(aes(color=variable_0))+#, position=position_jitterdodge())+
-#    geom_line(aes(group=group),color='grey')+
-    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+auc_plot_pcc <- auc_data%>%
+    ggplot(aes(x=variable_0,y=pcc))+
+    geom_bar(aes(fill=variable_0,alpha = (variable_0  )),stat='identity')+
     theme_bw()+
     ylab("Robustness")+
     xlab("Deletion parameter")+
+    scale_alpha_manual(name='Deletion\nparameter', values = c(0.3,0.3,1,0.3,0.3,0.3,1), labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Sensitivity"), guide = 'legend')+
     labs(fill = "Deletion\nparameter")+
     scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R",
+                                "S"))+
+    scale_fill_brewer(name = 'Deletion\nparameter', palette = "Set1", guide='legend', labels= c(
                                 "Degree",
                                 "Betweenness",
                                 "Effectiveness",
@@ -175,6 +188,48 @@ auc_plot <- auc_data%>%
                                 "Eigencentrality",
                                 "Random",
                                 "Sensitivity"))+
+   theme(legend.position='bottom', legend.title=element_text(size=18), legend.text=element_text(size=14),legend.spacing.x = unit(1.0, 'cm'),legend.spacing.y = unit(1.0, 'cm'))
+auc_plot_yuri <- auc_data%>%
+    ggplot(aes(x=variable_0,y=yuri))+
+    geom_bar(aes(fill=variable_0,alpha = (variable_0 == "eff_sorted_deletion" | variable_0 == 'sens_sorted_deletion') ),stat='identity')+
+    theme_bw()+
+    ylab("Robustness")+
+    xlab("Deletion parameter")+
+    labs(fill = "Deletion\nparameter")+
+    scale_alpha_manual(name = '', values = c(0.3, 1), guide = FALSE)+
+    scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R",
+                                "S"))+
+    scale_fill_brewer(name='', palette = "Set1", labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Sensitivity"))+
+   theme(legend.position='right')
+auc_plot_huri<- auc_data%>%
+    ggplot(aes(x=variable_0,y=huri, alpha = (variable_0 == "eff_sorted_deletion" | variable_0 == 'sens_sorted_deletion') ))+
+    geom_bar(aes(fill=variable_0),stat='identity')+
+    theme_bw()+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    ylab("Robustness")+
+    xlab("Deletion parameter")+
+    labs(fill = "Deletion\nparameter")+
+    scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R",
+                                "S"))+
     scale_fill_brewer(palette = "Set1", labels= c(
                                 "Degree",
                                 "Betweenness",
@@ -184,30 +239,85 @@ auc_plot <- auc_data%>%
                                 "Random",
                                 "Sensitivity"))+
    theme(legend.position='right')
-
 #combined_df %>% group_by(data)%>%summarise(deg_btw = cor(deg, btw),
 #                                           deg_eff = cor(deg,eff),
 #                                           deg_sens = cor(deg,sens),
 #                                           deg_eigen = cor(deg, eigenvec_centr),
 #                                           deg_closeness = cor(deg, closeness_centr))
-deletion_plot <- deletion_df %>% mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
-    ggplot(aes(x=range, y= gc_size, color = variable_0  ))+
+deletion_plot_pcc <-  pcc_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+    ggplot(aes(x=range, y= gc_size, color = variable_0 , alpha = (variable_0 == "eff_sorted_deletion" | variable_0 == 'sens_sorted_deletion') ))+
 #    geom_point(size=1)+
-        geom_line()+
-    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
     scale_colour_brewer(palette = "Set1")+ 
     xlab('% Deleted Nodes')+
     ylab('% Giant Component Size')+
     scale_y_continuous(labels = scales::percent)+
     scale_x_continuous(labels = scales::percent)+
     theme_bw()+
-    theme(legend.position='right')
-
-deletion_lgn <- cowplot::get_legend(auc_plot)
-plot_grid(deletion_plot+    theme(legend.position='')
-, auc_plot+    theme(legend.position='')
-,deletion_lgn, nrow=1, rel_widths =c(0.4, 0.5,.1), labels=c('A','B'))
+    ggtitle('Costanzo 2016')+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme(legend.position='bottom',panel.border = element_blank(), axis.line = element_line())
+deletion_plot_yuri <-  yuri_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+ggplot(aes(x=range, y= gc_size, color = variable_0 ,alpha = (variable_0 == "eff_sorted_deletion" | variable_0 == 'sens_sorted_deletion')  ))+
+#    geom_point(size=1)+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('% Deleted Nodes')+
+    ggtitle('Yeast PPI')+
+    ylab('% Giant Component Size')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme_bw()+
+    theme(legend.position='right',panel.border = element_blank(), axis.line = element_line())
+deletion_plot_huri <-  huri_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+ggplot(aes(x=range, y= gc_size, color = variable_0 , alpha = (variable_0 == "eff_sorted_deletion" | variable_0 == 'sens_sorted_deletion')  ))+
+#    geom_point(size=1)+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('% Deleted Nodes')+
+    ylab('% Giant Component Size')+
+    ggtitle('HuRI')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme_bw()+
+    theme(legend.position='right',panel.border = element_blank(), axis.line = element_line())
+deletion_lgn <- cowplot::get_legend(auc_plot_pcc)
+pcc_with_inset = ggdraw(deletion_plot_pcc+    theme(legend.position=''))+
+  draw_plot(auc_plot_pcc+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("A", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+yuri_with_inset = ggdraw(deletion_plot_yuri+    theme(legend.position=''))+
+  draw_plot(auc_plot_yuri+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("B", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+huri_with_inset = ggdraw(deletion_plot_huri+    theme(legend.position=''))+
+  draw_plot(auc_plot_huri+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("C", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+plot_grid(pcc_with_inset, yuri_with_inset, huri_with_inset, ncol=3)%>%plot_grid(deletion_lgn,nrow=2, rel_heights=c(0.9,.1))
 ggsave('reports/figures/paper_figures_0916/fig4.png',width=12)
+
+
+plot_grid(deletion_plot_pcc+    theme(legend.position='')
+, auc_plot_pcc+    theme(legend.position='')
+,deletion_lgn, nrow=1, rel_widths =c(0.4, 0.5,.1), labels=c('A','B'))
 
 ```
 
@@ -267,41 +377,6 @@ convert_networkx_to_igraph <- 			#
     #igraph::set_vertex_attr(ig, "pos", nx_object$nodes('pos'))
     ig
 }
-```
-```{r}
-plot_network_spring <- 			# 
-    function
-(
-    gc , df , pos , ... 	
-)
-{
- pcc_gc_ig = convert_networkx_to_igraph(gc, df)
-
-png('tmp.png')
-plot(pcc_gc_ig, vertex.size=1, vertex.label=NA, layout = pos)
-dev.off()
- 
-}
-pcc_gc = py$pcc_gc
-pcc_gc_pos = matrix(unlist(py$pcc_gc_pos),ncol=2,byrow=TRUE)
-
-pcc_gc_ig = convert_networkx_to_igraph(pcc_gc, pcc_df)
-
-get_subnetwork  <- function(gc, subset){
-    sub_gc_nodes = igraph::ego(gc, nodes= subset)%>%unlist%>%unique
-
-    sub_gc  <- igraph::induced_subgraph(gc, sub_gc_nodes)
-
-    sub_gc
-}
-
-pcc_sensors = pcc_df %>% filter(sens>quantile(sens,0.99))
-pcc_sensor_sub = get_subnetwork(pcc_gc_ig, pcc_sensors$orf_name)
-#plot_network_spring(pcc_gc, pcc_df, pcc_gc_pos)
-
-png('tmp.png', res=150, height=3, width=3,units='in')
-plot(pcc_sensor_sub, vertex.size = 2 , vertex.color = 'white', vertex.label.color='black',vertex.label.size=8, vertex.label.cex = 0.4, layout=igraph::layout.fruchterman.reingold)
-dev.off()
 ```
 
 
