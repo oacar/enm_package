@@ -1,0 +1,504 @@
+---
+title: "Paper figures"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reticulate)
+#use_python("/home/oma21/miniconda3/envs/enm/bin/python")
+use_condaenv('enm')
+setwd('../')
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import networkx as nx
+import numpy as np
+import pandas as pd
+import plotnine as p9
+import pickle 
+import os
+import re
+import itertools as itr
+from src.enm import Enm
+
+with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
+    e_pcc = pickle.load(f)
+
+pcc_df = e_pcc.df
+pcc_gc = e_pcc.graph_gc
+pcc_gc_pos = (dict(pcc_gc.nodes(data='pos')))
+```
+
+```{r}
+library(tidyverse)
+library(cowplot)
+library(ggpubr)
+
+pcc_df = py$pcc_df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
+    py$e_pcc$e_list[[1]]$df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'random')
+)%>%mutate(group=fct_relevel(group, c('real','random')))
+combined_df = pcc_df
+
+random_dfs_list = lapply(list.files('data/interim/pcc_1020/random_dfs', full.names=T), data.table::fread)
+random_dfs_list = mapply(c, random_dfs_list, list.files('data/interim/pcc_1020/random_dfs'), SIMPLIFY=F)
+random_dfs_100 = data.table::rbindlist(random_dfs_list,fill=T)
+colnames(random_dfs_100)[length(colnames(random_dfs_100))] <- 'filename'
+```
+```{r}
+theme_fontsize = theme(axis.text = element_text(size = 14), axis.title = element_text(size = 20), legend.text = element_text(size=16))
+```
+
+Random mean calculations
+```{r}
+random_dfs_means = random_dfs_100%>%
+    group_by(filename)%>%
+    summarise(mean_eff = mean(eff), mean_sens = mean(sens), mean_btw = mean(btw))%>%
+    ungroup()
+real_mean_eff = mean(pcc_df$eff[pcc_df$group=='real'])
+real_mean_sens = mean(pcc_df$sens[pcc_df$group=='real'])
+
+eff_p = (sum(real_mean_eff<random_dfs_means$mean_eff)+1)/(length(random_dfs_means$mean_eff)+1)
+
+sens_p = (sum(real_mean_sens<random_dfs_means$mean_sens)+1)/(length(random_dfs_means$mean_sens)+1)
+```
+
+Degree - Eff - Sens distributions
+```{r}
+combined_df%>%filter(group=='real')%>%
+    ggplot(aes(x=deg, y = ..count../sum(..count..)))+
+#    facet_grid(rows=vars(data))+
+    geom_histogram(binwidth=1)+
+#    xlim(1,NA)+
+    ylim(NA, 0.1)
+
+
+degree_dens <- 
+    ggplot()+
+#    facet_grid(rows=vars(data))+
+    #geom_density()+
+    geom_line(data=     combined_df%>%filter(group=='real'),aes(x=deg,y=..scaled..,color=group),stat = 'density')+#, binwidth = 0.1) + 
+    geom_line(data=     combined_df%>%filter(group=='random'),aes(x=deg,y=..scaled..,color=group),stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
+    theme_bw()+
+    xlab('Degree')+
+    ylab('Density')+
+    coord_trans(x = "log10")+
+scale_x_continuous(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10", scales::math_format(10^.x))
+ ) +
+theme(panel.grid.minor = element_blank())+theme_fontsize
+eff_dens <- 
+    ggplot()+
+#    facet_grid(rows=vars(data), scales='free_y')+
+#    geom_density()+
+    geom_line(data= combined_df%>%filter(group=='real'),
+               aes(x=eff_norm ,y=..scaled.., color=group),
+               stat = 'density')+#, binwidth = 0.1) + 
+    geom_line(data= combined_df%>%filter(group=='random'),
+               aes(x=eff_norm ,y=..scaled..,color=group),
+               stat = 'density',linetype = "dashed" )+#, binwidth = 0.1) + 
+    #geom_histogram(binwidth=0.0001)+
+    theme_bw()+
+    ylab('Density')+
+    xlab('Effectiveness')+
+    coord_trans(x = "log10")+
+scale_x_continuous(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10", scales::math_format(10^.x))
+ ) +
+theme(panel.grid.minor = element_blank())+theme_fontsize+
+annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+sensitivity_dens <- 
+    ggplot()+
+#    facet_grid(rows=vars(data), scales='free_y')+
+#    geom_density()+
+    geom_line(data= combined_df%>%filter(group=='real'),
+               aes(x=sens_norm,y=..scaled.. , color=group),
+               stat = 'density')+#, binwidth = 0.1) + 
+    geom_line(data= combined_df%>%filter(group=='random'),
+               aes(x=sens_norm ,y=..scaled..,color=group),
+               stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
+    #geom_histogram(binwidth=0.0001)+
+    theme_bw()+
+    xlab('Sensitivity')+
+    ylab('Density')+
+    coord_trans(x = "log10")+
+    scale_color_discrete(labels=c('Rewired networks','Real network'))+
+scale_x_continuous(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10", scales::math_format(10^.x))
+ )+ 
+# scale_y_continuous(
+#   breaks = scales::trans_breaks("log1p", function(x) 10^(1+x)),
+#   labels = scales::trans_format("log10", scales::math_format(10^.x))
+# ) +
+theme(panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())+
+theme_fontsize+
+annotate("text", x = 0.001, y = 0.9, label=sprintf("p = %#.2f", sens_p), fontface='italic', size=6)
+dens_lgn = cowplot::get_legend(sensitivity_dens)
+dens_plots = cowplot::plot_grid(degree_dens+theme(legend.position='none'), eff_dens+theme(legend.position='none'), sensitivity_dens+theme(legend.position='none'), ncol=3,labels=c('A','B','C'))
+cowplot::plot_grid(dens_plots, dens_lgn,nrow=2,rel_heights=c(.9,.1))
+#ggsave('tmp.png')
+#ggsave('reports/figures/poster_figures_1023/fig3.png')
+#    coord_trans(x = "log10", y = "log1p")
+#    scale_x_continuous(trans = "log10")
+    #scale_x_log10()
+#    geom_histogram(binwidth=1)+
+#    xlim(1,NA)+
+#    ylim(NA, 0.1)
+    
+```
+
+```{r}
+real_random_labels = c('Real\nnetwork','Rewired\nnetwork')
+names(real_random_labels)  = c('real','random')
+pcc_deg_eff = pcc_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=eff_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Effectiveness")+
+    xlab("Degree")+
+    stat_cor(method='pearson', cor.coef.name='R', label.x.npc=0.1,size=6) +
+    theme(strip.text.y = element_text(angle = 0))+theme_fontsize+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+pcc_deg_sens = pcc_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=sens_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Sensitivity")+
+    xlab("Degree")+
+    stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1,size=6) +
+    theme(strip.text.y = element_text(angle = 0))+theme_fontsize+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
+                    labels = c('D','E'),
+                   ncol=2)
+```
+
+```{r}
+pcc_rewire_df = read_csv('data/interim/pcc_0909/rewire_data.csv')
+rewire_df = pcc_rewire_df%>%mutate(data='pcc')
+```
+
+```{r}
+network_labels  <- c('Costanzo 2016','Yeast PPI','HuRI')
+#p3 = ggplot(rewire_df, aes(x=eff_deg_pearson))+
+#    stat_density(geom = "line", trim=TRUE)+
+##    geom_histogram(binwidth = 0.001)+
+#    geom_vline(xintercept=0.9,color='red')+
+#    theme_bw()
+
+facet_labels  <- network_labels
+names(facet_labels) <- c("pcc",'yuri','huri')
+
+combined_rewire_df <- rewire_df%>%select(data, eff_deg_pearson,sens_deg_spearman)%>%mutate(type = 'random')%>% 
+    bind_rows(
+    data.frame(sens_deg_spearman= c(cor(pcc_df[pcc_df$group=='real',]$deg, pcc_df[pcc_df$group=='real',]$sens,method='spearman')), eff_deg_pearson= c(cor(pcc_df[pcc_df$group=='real',]$deg, pcc_df[pcc_df$group=='real',]$eff,method='pearson')), type='real',data=c('pcc')))
+p3 = 
+    ggplot()+
+#    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+#    geom_boxplot()+
+#    geom_jitter()+
+    geom_density(data =combined_rewire_df%>%filter(type!='real'),aes(x=eff_deg_pearson,color=type, y=..scaled..),linetype = "dashed")+
+    geom_vline(data =combined_rewire_df%>%filter(type=='real'),aes(xintercept=eff_deg_pearson,color=type))+
+    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    ylab('Density')+xlab('Effectiveness degree\ncorrelation')+
+    theme_bw()+theme_fontsize+
+    theme(panel.spacing = unit(2, "lines"))+
+    scale_y_continuous(expand = c(0, 0)) +
+    annotate("text", label="p = 0.009", x = 0.6, y= 0.9, fontface = 'italic', size=6)
+p4 = 
+    ggplot()+
+#    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+#    geom_boxplot()+
+#    geom_jitter()+
+    geom_density(data =combined_rewire_df%>%filter(type!='real'),aes(x=sens_deg_spearman,y=..scaled..,color=type),linetype = "dashed")+
+    geom_vline(data =combined_rewire_df%>%filter(type=='real'),aes(xintercept=sens_deg_spearman,color=type))+
+    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    ylab('Density')+xlab('Sensitivity degree\ncorrelation')+
+    theme_bw()+
+    theme(panel.spacing = unit(2, "lines"),legend.position='bottom')+
+    scale_color_discrete(labels=c('Rewired networks', 'Real network'))+
+    scale_y_continuous(expand = c(0, 0)) +theme_fontsize+
+    annotate("text", label="p = 0.009", x = -0.6, y= 0.9, fontface='italic',size=6)
+lgn34  <- cowplot::get_legend(p4)
+distr_plots <- plot_grid(
+          p3+theme(legend.position=''),
+ p4+theme(legend.position=''), nrow=1, labels=c('F','G'))
+plot_grid(dens_plots, deg_scatter_plots, distr_plots, lgn34,
+ nrow=4,rel_heights = c(0.4,0.25, 0.25,.1))
+ggsave('reports/figures/poster_figures_1023/fig4.png',width=9,height=12)
+```
+
+
+
+# Sensor connectivity and neighbor degree
+
+```{r}
+sensor_connectivity_df <- read_csv('data/interim/sensor_connectivity_0915/sensor_connectivity_df.csv')%>%
+    mutate(data= fct_relevel(data, c('pcc','yuri','huri')))%>%filter(data=='pcc')
+
+#library(ggridges)
+
+#sensor_connectivity_df %>%
+#    filter(type=='random')%>%
+#    ggplot(aes(x=ratio,y=data))+
+##    facet_grid(rows=vars(data))+
+##    geom_histogram(bins=50)
+#    geom_density_ridges()
+#ggsave('tmp.png',width=12)
+
+#p3 = 
+sensor_connectivity_plot <- 
+    ggplot()+
+#    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+#    geom_boxplot()+
+#    geom_jitter()+
+    geom_density(data =sensor_connectivity_df%>%filter(type!='real'),aes(x=ratio,color=type, y=..scaled..),linetype = "dashed")+
+    geom_vline(data =sensor_connectivity_df%>%filter(type=='real'),aes(xintercept=ratio,color=type))+
+    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    ylab('Density')+xlab('Ratio of between group edges to outgroup edges')+
+    theme_bw()+
+    scale_color_discrete(labels=c('Random sampled set', 'Sensors'))+
+    theme(legend.position='bottom')+
+    scale_y_continuous(expand = c(0, 0)) 
+
+#p3 = 
+    ggplot()+
+    geom_boxplot(data=sensor_connectivity_df%>%filter(type=='random'),
+                 aes(x=data,y=ratio,color=type))+
+#    geom_jitter()+
+    geom_vline(data=sensor_connectivity_df%>%filter(type=='real'),
+            aes(x=data,y=ratio,color=type, group=data))+
+               #position=position_jitter(), aes(shape=data))+
+    scale_color_discrete(labels=c('Random sampled set', 'Sensors'))+
+#    scale_x_discrete(labels=network_labels)+
+  guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    xlab('Network type')+ylab('Ratio of between group edges\nto outgroup edges')+
+    theme_bw()
+
+neighbor_degree_plot <- combined_df%>%filter(group=='real')%>%group_by(data)%>%
+    mutate(is_sensor = factor(ifelse(sens_norm>quantile(sens_norm,0.99),TRUE,FALSE), levels=c(TRUE,FALSE)))%>%
+#    mutate(is_sensor = fct_relevel(is_sensor,c(TRUE,FALSE)))%>%
+    ggplot(aes(x=is_sensor,y=(neighbor_degree)))+
+#    facet_grid(cols=vars(data),labeller = labeller(data=facet_labels))+
+#    geom_point()+
+    geom_boxplot()+
+    theme_bw()+
+    ylab('Average neighbor degree')+
+    xlab('')+ stat_compare_means()+
+    scale_x_discrete(labels=c('Sensor', 'Not Sensor'))
+plot_grid(neighbor_degree_plot, sensor_connectivity_plot, nrow=2 , labels=c('A','B'))
+ggsave('reports/figures/poster_figures_1023/fig5.png',width=5)
+
+#combined_df%>%filter(group=='real'&data=='huri')%>%mutate(is_sensor = ifelse(sens_norm>quantile(sens_norm,0.99),TRUE,FALSE))%>%
+#    coin::independence_test(neighbor_degree~is_sensor, data=.)
+
+```
+
+```{r}
+convert_networkx_to_igraph <- 			# 
+    function
+(
+ 	nx_object,
+    df
+)
+{
+    nx =  reticulate::import("networkx")
+    ig = igraph::graph.adjacency(nx$adjacency_matrix(nx_object), mode = 'undirected')
+    #ig = igraph::set_vertex_attr(ig , name =  'orf_name', value  = (df$orf_name))
+    ig = igraph::set_vertex_attr(ig , name =  'name', value  = (df$orf_name))
+    #igraph::set_vertex_attr(ig, "pos", nx_object$nodes('pos'))
+    ig
+}
+```
+
+
+```{r deletion}
+pcc_deletion = read_csv('data/interim/deletion_analysis_0911/pcc_deletion_100.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='pcc')
+yuri_deletion = read_csv('data/interim/deletion_analysis_0911/yuri_deletion_100.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='yuri')
+huri_deletion = read_csv('data/interim/deletion_analysis_0911/huri_deletion_100.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='huri')
+
+deletion_df  <- bind_rows(pcc_deletion, yuri_deletion, huri_deletion)%>%mutate(group = fct_relevel(group,c('pcc','yuri','huri')))
+
+
+library(MESS)
+auc_data <- deletion_df%>%
+    group_by(group, variable_0)%>%
+    summarise(auc=MESS::auc(gc_size,range), r = range[min(which(gc_size < 0.05))])%>%
+    ungroup()%>%
+    mutate(variable_0=fct_reorder(variable_0, auc, min))%>%pivot_wider(-r, names_from=group, values_from=auc)
+
+auc_plot_pcc <- auc_data%>%
+    ggplot(aes(x=variable_0,y=pcc))+
+    geom_bar(aes(fill=variable_0,alpha = (variable_0 == "eff_sorted_deletion" )),stat='identity')+
+    theme_bw()+
+    ylab("Robustness")+
+    xlab("Deletion parameter")+
+    scale_alpha_manual(name = '', values = c(0.3, 1), guide = FALSE)+
+    labs(fill = "Deletion\nparameter")+
+    scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R",
+                                "DR",
+                                "S"))+
+    scale_fill_brewer(name = 'Deletion\nparameter', palette = "Set1", guide='legend', labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Degree Reversed",
+                                "Sensitivity"
+                                ))+
+   theme(legend.position='bottom', legend.title=element_text(size=18), legend.text=element_text(size=14),legend.spacing.x = unit(1.0, 'cm'),legend.spacing.y = unit(1.0, 'cm'))
+auc_plot_yuri <- auc_data%>%
+    ggplot(aes(x=variable_0,y=yuri))+
+    geom_bar(aes(fill=variable_0,alpha = (variable_0 == "eff_sorted_deletion" | variable_0 == 'sens_sorted_deletion') ),stat='identity')+
+    theme_bw()+
+    ylab("Robustness")+
+    xlab("Deletion parameter")+
+    labs(fill = "Deletion\nparameter")+
+    scale_alpha_manual(name = '', values = c(0.3, 1), guide = FALSE)+
+    scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R", "DR",
+                                "S"))+
+    scale_fill_brewer(name='', palette = "Set1", labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Sensitivity","Degree Reversed"))+
+   theme(legend.position='right')
+auc_plot_huri<- auc_data%>%
+    ggplot(aes(x=variable_0,y=huri, alpha = (variable_0 == "eff_sorted_deletion" ) ))+
+    geom_bar(aes(fill=variable_0),stat='identity')+
+    theme_bw()+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    ylab("Robustness")+
+    xlab("Deletion parameter")+
+    labs(fill = "Deletion\nparameter")+
+    scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R",
+                                "DR","S"))+
+    scale_fill_brewer(palette = "Set1", labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Sensitivity","Degree Reversed"))+
+   theme(legend.position='right')
+#combined_df %>% group_by(data)%>%summarise(deg_btw = cor(deg, btw),
+#                                           deg_eff = cor(deg,eff),
+#                                           deg_sens = cor(deg,sens),
+#                                           deg_eigen = cor(deg, eigenvec_centr),
+#                                           deg_closeness = cor(deg, closeness_centr))
+deletion_plot_pcc <-  pcc_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+    ggplot(aes(x=range, y= gc_size, color = variable_0 , alpha = (variable_0 == "eff_sorted_deletion" ) ))+
+#    geom_point(size=1)+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('% Deleted Nodes')+
+    ylab('% Giant Component Size')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    theme_bw()+
+    ggtitle('Costanzo 2016')+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme(legend.position='bottom',panel.border = element_blank(), axis.line = element_line())
+deletion_plot_yuri <-  yuri_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+ggplot(aes(x=range, y= gc_size, color = variable_0 ,alpha = (variable_0 == "eff_sorted_deletion" )  ))+
+#    geom_point(size=1)+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('% Deleted Nodes')+
+    ggtitle('Yeast PPI')+
+    ylab('% Giant Component Size')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme_bw()+
+    theme(legend.position='right',panel.border = element_blank(), axis.line = element_line())
+deletion_plot_huri <-  huri_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+ggplot(aes(x=range, y= gc_size, color = variable_0 , alpha = (variable_0 == "eff_sorted_deletion"  ) ))+
+#    geom_point(size=1)+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('% Deleted Nodes')+
+    ylab('% Giant Component Size')+
+    ggtitle('HuRI')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme_bw()+
+    theme(legend.position='right',panel.border = element_blank(), axis.line = element_line())
+deletion_lgn <- cowplot::get_legend(auc_plot_pcc)
+pcc_with_inset = ggdraw(deletion_plot_pcc+    theme(legend.position=''))+
+  draw_plot(auc_plot_pcc+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("A", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+yuri_with_inset = ggdraw(deletion_plot_yuri+    theme(legend.position=''))+
+  draw_plot(auc_plot_yuri+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("B", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+huri_with_inset = ggdraw(deletion_plot_huri+    theme(legend.position=''))+
+  draw_plot(auc_plot_huri+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("C", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+plot_grid(pcc_with_inset, yuri_with_inset, huri_with_inset, ncol=3)%>%plot_grid(deletion_lgn,nrow=2, rel_heights=c(0.9,.1))
+ggsave('reports/figures/paper_figures_0916/fig4.png',width=12)
+
+
+plot_grid(deletion_plot_pcc+    theme(legend.position='')
+, auc_plot_pcc+    theme(legend.position='')
+,deletion_lgn, nrow=1, rel_widths =c(0.4, 0.5,.1), labels=c('A','B'))
+
+```
