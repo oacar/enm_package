@@ -12,6 +12,7 @@ library(reticulate)
 #use_python("/home/oma21/miniconda3/envs/enm/bin/python")
 use_condaenv('enm')
 setwd('../')
+source('src/R/plot_density_prs.R')
 ```
 
 ```{python}
@@ -73,202 +74,34 @@ combined_df%>%filter(group=='real')%>%
 
 
 pcc_degree_dens <- 
-    ggplot()+
-    #facet_grid(rows=vars(data))+
-    #geom_density()+
-    geom_line(data=     pcc_df%>%filter(group=='real'),aes(x=deg,y=..scaled..,color=group),stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data=     pcc_df%>%filter(group=='random'),aes(x=deg,y=..scaled.., color=group, fill=random_id),stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
-    theme_bw()+
-    xlab('Degree')+
-    ylab('Density')+
-    coord_trans(x = "log10")+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- ) +
-theme(panel.grid.minor = element_blank())#+theme_fontsize
+    plot_density_prs(pcc_df, deg, xlab='Degree')
 pcc_eff_dens <- 
-    ggplot()+
-    #facet_grid(rows=vars(data))+
-#    geom_density()+
-    geom_line(data= pcc_df%>%filter(group=='real'),
-               aes(x=eff_norm ,y=..scaled.., color=group),
-               stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data= pcc_df%>%filter(group=='random'),
-               aes(x=eff_norm ,y=..scaled..,fill=random_id, color=group),
-               stat = 'density',linetype = "dashed" )+#, binwidth = 0.1) + 
-    #geom_histogram(binwidth=0.0001)+
-    theme_bw()+
-    ylab('Density')+
-    xlab('Effectiveness')+
-    coord_trans(x = "log10")+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- ) +
-theme(panel.grid.minor = element_blank())#+theme_fontsize+
+    plot_density_prs(pcc_df, eff_norm, xlab='Effectiveness')
 #annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
 pcc_sensitivity_dens <- 
-    ggplot()+
-    #facet_grid(rows=vars(data), scales='free_y')+
-#    geom_density()+
-    geom_line(data= pcc_df%>%filter(group=='real'),
-               aes(x=sens_norm,y=..scaled.. , color=group),
-               stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data= pcc_df%>%filter(group=='random'),
-               aes(x=sens_norm,y=..scaled..,fill=random_id,color=group),
-               stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
-    #geom_histogram(binwidth=0.0001)+
-    theme_bw()+
-    xlab('Sensitivity')+
-    ylab('Density')+
-    coord_trans(x = "log10")+
-    scale_color_discrete(labels=c('Rewired networks','Real network'))+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- )+ 
-# scale_y_continuous(
-#   breaks = scales::trans_breaks("log1p", function(x) 10^(1+x)),
-#   labels = scales::trans_format("log10", scales::math_format(10^.x))
-# ) +
-theme(panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())
-#theme_fontsize+
-#annotate("text", x = 0.001, y = 0.9, label=sprintf("p = %#.2f", sens_p), fontface='italic', size=6)
+    plot_density_prs(pcc_df, sens_norm, xlab='Sensitivity')
 title <- cowplot::ggdraw() + cowplot::draw_label("Costanzo 2016 network", fontface='bold')
 pcc_dens_comb = cowplot::plot_grid(pcc_degree_dens+theme(legend.position='none'), 
                                 pcc_eff_dens+theme(legend.position='none'), 
                                 pcc_sensitivity_dens+theme(legend.position='none'), labels=c('A','B','C'),ncol=3)
 pcc_dens_comb_title = cowplot::plot_grid(title, pcc_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
-
 yuri_degree_dens <- 
-    ggplot()+
-    #facet_grid(rows=vars(data))+
-    #geom_density()+
-    geom_line(data=     yuri_df%>%filter(group=='real'),aes(x=deg,y=..scaled..,color=group),stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data=     yuri_df%>%filter(group=='random'),aes(x=deg,y=..scaled.., color=group, fill=random_id),stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
-    theme_bw()+
-    xlab('Degree')+
-    ylab('Density')+
-    coord_trans(x = "log10")+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- ) +
-theme(panel.grid.minor = element_blank())#+theme_fontsize
+    plot_density_prs(yuri_df, deg, xlab='Degree')
 yuri_eff_dens <- 
-    ggplot()+
-    #facet_grid(rows=vars(data))+
-#    geom_density()+
-    geom_line(data= yuri_df%>%filter(group=='real'),
-               aes(x=eff_norm ,y=..scaled.., color=group),
-               stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data= yuri_df%>%filter(group=='random'),
-               aes(x=eff_norm ,y=..scaled..,fill=random_id, color=group),
-               stat = 'density',linetype = "dashed" )+#, binwidth = 0.1) + 
-    #geom_histogram(binwidth=0.0001)+
-    theme_bw()+
-    ylab('Density')+
-    xlab('Effectiveness')+
-    coord_trans(x = "log10")+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- ) +
-theme(panel.grid.minor = element_blank())#+theme_fontsize+
-#annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+    plot_density_prs(yuri_df, eff_norm, xlab='Effectiveness')
 yuri_sensitivity_dens <- 
-    ggplot()+
-    #facet_grid(rows=vars(data), scales='free_y')+
-#    geom_density()+
-    geom_line(data= yuri_df%>%filter(group=='real'),
-               aes(x=sens_norm,y=..scaled.. , color=group),
-               stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data= yuri_df%>%filter(group=='random'),
-               aes(x=sens_norm,y=..scaled..,fill=random_id,color=group),
-               stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
-    #geom_histogram(binwidth=0.0001)+
-    theme_bw()+
-    xlab('Sensitivity')+
-    ylab('Density')+
-    coord_trans(x = "log10")+
-    scale_color_discrete(labels=c('Rewired networks','Real network'))+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- )+ 
-# scale_y_continuous(
-#   breaks = scales::trans_breaks("log1p", function(x) 10^(1+x)),
-#   labels = scales::trans_format("log10", scales::math_format(10^.x))
-# ) +
-theme(panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())
+    plot_density_prs(yuri_df, sens_norm, xlab='Sensitivity')
 title <- cowplot::ggdraw() + cowplot::draw_label("Yeast PPI network", fontface='bold')
 yuri_dens_comb = cowplot::plot_grid(yuri_degree_dens+theme(legend.position='none'), 
                                 yuri_eff_dens+theme(legend.position='none'), 
                                 yuri_sensitivity_dens+theme(legend.position='none'), labels=c('D','E','F'),ncol=3)
 yuri_dens_comb_title = cowplot::plot_grid(title, yuri_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
-
 huri_degree_dens <- 
-    ggplot()+
-    #facet_grid(rows=vars(data))+
-    #geom_density()+
-    geom_line(data=     huri_df%>%filter(group=='real'),aes(x=deg,y=..scaled..,color=group),stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data=     huri_df%>%filter(group=='random'),aes(x=deg,y=..scaled.., color=group, fill=random_id),stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
-    theme_bw()+
-    xlab('Degree')+
-    ylab('Density')+
-    coord_trans(x = "log10")+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- ) +
-theme(panel.grid.minor = element_blank())#+theme_fontsize
+    plot_density_prs(huri_df, deg, xlab='Degree')
 huri_eff_dens <- 
-    ggplot()+
-    #facet_grid(rows=vars(data))+
-#    geom_density()+
-    geom_line(data= huri_df%>%filter(group=='real'),
-               aes(x=eff_norm ,y=..scaled.., color=group),
-               stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data= huri_df%>%filter(group=='random'),
-               aes(x=eff_norm ,y=..scaled..,fill=random_id, color=group),
-               stat = 'density',linetype = "dashed" )+#, binwidth = 0.1) + 
-    #geom_histogram(binwidth=0.0001)+
-    theme_bw()+
-    ylab('Density')+
-    xlab('Effectiveness')+
-    coord_trans(x = "log10")+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- ) +
-theme(panel.grid.minor = element_blank())#+theme_fontsize+
-#annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+    plot_density_prs(huri_df, eff_norm, xlab='Effectiveness')
 huri_sensitivity_dens <- 
-    ggplot()+
-#$    facet_grid(rows=vars(data), scales='free_y')+
-#    geom_density()+
-    geom_line(data= huri_df%>%filter(group=='real'),
-               aes(x=sens_norm,y=..scaled.. , color=group),
-               stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data= huri_df%>%filter(group=='random'),
-               aes(x=sens_norm,y=..scaled..,fill=random_id,color=group),
-               stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
-    #geom_histogram(binwidth=0.0001)+
-    theme_bw()+
-    xlab('Sensitivity')+
-    ylab('Density')+
-    coord_trans(x = "log10")+
-    scale_color_discrete(labels=c('Rewired networks','Real network'))+
-scale_x_continuous(
-   breaks = scales::trans_breaks("log10", function(x) 10^x),
-   labels = scales::trans_format("log10", scales::math_format(10^.x))
- )+ 
-# scale_y_continuous(
-#   breaks = scales::trans_breaks("log1p", function(x) 10^(1+x)),
-#   labels = scales::trans_format("log10", scales::math_format(10^.x))
-# ) +
-theme(panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())
+    plot_density_prs(huri_df, sens_norm, xlab='Sensitivity')
 title <- cowplot::ggdraw() + cowplot::draw_label("HuRI network", fontface='bold')
 huri_dens_comb = cowplot::plot_grid(huri_degree_dens+theme(legend.position='none'), 
                                 huri_eff_dens+theme(legend.position='none'), 
@@ -765,5 +598,181 @@ convert_networkx_to_igraph <- 			#
     ig
 }
 ```
+```{r}
+library(RColorBrewer)
+col = brewer.pal(n=9, name='Set1')
+sensor_colors =col[1:6] #brewer.pal(n = 6, name = "Set1")
+effector_colors = col[7:9]#brewer.pal(n=3, name= "Set1_r")
+```
 
+
+```{python}
+sensor_colors = r.sensor_colors
+effector_colors = r.effector_colors
+sensors_pcc = e_pcc.df.loc[e_pcc.df.sens>np.quantile(e_pcc.df.sens,0.99)]
+#sensor_sub_pcc = get_subnetwork(e_pcc.graph_gc, sensors_pcc.orf_name.values)
+#is_sensor = dict(zip(sensor_sub_pcc.nodes, [True if i in sensors_pcc.orf_name.values else False  for i in sensor_sub_pcc.nodes]))
+#nx.set_node_attributes(sensor_sub_pcc, is_sensor, 'is_sensor')
+sensor_go_terms_separate = [
+    'iron ion\ntransport',
+    'phenylalanine\ntransport',
+    None, 
+    None,
+    None,
+    None,
+    'tricarboxylic\nacid cycle', 
+    'hexose metabolic\nprocess',
+    'protein folding',
+    'mitochondria-nucleus\nsignaling pathway/TCA',
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+]
+sensor_connected_components = sorted([sorted(list(i)) for i in nx.connected_components(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name))], key=lambda x: x[0])
+sensor_go_terms= {}
+for i in range(len(sensor_go_terms_separate)):
+    for j in sensor_connected_components[i]:
+        sensor_go_terms[j] = sensor_go_terms_separate[i]
+sensors_pcc = sensors_pcc.merge(pd.DataFrame.from_dict(sensor_go_terms,orient='index',columns=['go_group']),right_index=True,left_on='orf_name')
+
+effector_pcc = e_pcc.df.loc[e_pcc.df.eff>np.quantile(e_pcc.df.eff,0.99)]
+#effector_sub_pcc = get_subnetwork(e_pcc.graph_gc, effector_pcc.orf_name.values)
+#is_effector = dict(zip(effector_sub_pcc.nodes, [True if i in effector_pcc.orf_name.values else False  for i in effector_sub_pcc.nodes]))
+#nx.set_node_attributes(effector_sub_pcc, is_effector, 'is_effector')
+effectors_connected_comp = sorted([sorted(list(i)) for i in nx.connected_components(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()))], key=lambda x:x[0])
+effector_pcc.loc[:, 'go_group'] = ['mito' if i in effectors_connected_comp[0] else 'golgi' if i in effectors_connected_comp[1] else 'chromatin' for i in effector_pcc.orf_name]
+effector_order = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
+sensor_order = sensors_pcc.groupby('go_group').sens.median().sort_values().index.tolist()
+```
+
+```{python}
+from matplotlib.lines import Line2D
+pos = e_pcc.graph_gc.nodes('pos')
+fig, ax = plt.subplots(figsize=(12,12))
+legend_elements = [    ]
+e_pcc.plot_network_spring(ax=ax,
+                          node_size=1,
+                          node_color='black',
+ #                        node_size = [100 if i in sensors_pcc.orf_name.values or i in effector_pcc.orf_name.values else 1 for i in e_pcc.nodes],
+                         #node_color = ['red' if i in sensors_pcc.orf_name.values else 'blue' if i in effector_pcc.orf_name.values else 'black' for i in e_pcc.nodes],
+                         edge_color='black')
+#                         node_shape=['^' if i in sensors_pcc.orf_name.values else 'v' if i in effector_pcc.orf_name.values else 'o' for i in e_pcc.nodes])
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=sensors_pcc.orf_name.values, node_size=200, pos=pos,
+                          node_color='black',
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+for itr, i in enumerate(sensor_order):
+    #print(i, effector_colors[itr])
+
+    orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=sensor_colors[itr],
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+    legend_elements.append(
+        Line2D([0], [0], marker='^', color='black', label=f'Sensors ({i})',
+                              markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
+    )
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=effector_pcc.orf_name.values, node_size=100, pos=pos,
+                      node_color='black',
+                      node_shape='o')
+for itr, i in enumerate(effector_order):
+    orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=effector_colors[itr],
+                          node_shape='o',edgecolors='black',
+                          linewidths=1)
+    if i == 'mito':
+        lbl = 'Respiratory complex assembly'
+    elif i == 'golgi':
+        lbl = "Golgi vesicle transport"
+    else:
+        lbl = 'Chromosome segragation'
+    legend_elements.append(
+            Line2D([0], [0], marker='o', color='black', label=f'Effectors ({lbl})',
+                                  markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")
+        )
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='red', alpha=0.5)
+ax.set_facecolor('white')
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=4, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
+                              markerfacecolor='black', markersize=0, linestyle="-"),
+                   Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor edges',
+                              markerfacecolor='#018571', markersize=0, linestyle="-"),
+                   Line2D([0], [0], marker='o', color='blue', label= 'Effector-Effector edges',
+                              markerfacecolor='#a6611a', markersize=0, linestyle="-")]
+)
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
+plt.savefig('tmp_nw.png',bbox_inches='tight')
+```
+
+```{r}
+effector_pcc = py$effector_pcc
+sensors_pcc = py$sensors_pcc%>%mutate(go_group = (as.character(go_group)), go_group=ifelse(go_group=='NULL', NA, go_group))
+#library(tidyverse)
+eff_deg_comp<-ggplot(effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff)), aes(x= go_group, y=deg,fill=go_group))+
+    geom_boxplot()+
+    scale_fill_manual(values=effector_colors,
+                      labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+    xlab('')+
+    ylab('Degree')+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),legend.title=element_blank(),legend.text = element_text(margin=margin(t=10,b=10)))#, legend.spacing.y = unit(2,'in'))
+eff_eff_comp<-ggplot(effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff))%>%
+                      mutate(eff_norm =eff / 5183), aes(x= go_group, y=eff_norm,fill=go_group))+
+    geom_boxplot()+
+    #scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+    xlab('')+
+    scale_fill_manual(values=effector_colors)+
+    ylab('Effectiveness')+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),legend.title=element_blank())
+
+sens_deg_comp<-ggplot(sensors_pcc%>%drop_na()%>%mutate(go_group=fct_reorder(go_group, sens)), aes(x= go_group, y=deg,fill=go_group))+
+    geom_boxplot()+
+#    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+    xlab('')+
+    ylab('Degree')+
+    scale_fill_manual(values=sensor_colors)+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),legend.title=element_blank(),
+          legend.text = element_text(margin=margin(t=10,b=10)))#, legend.spacing.y = unit(2,'cm'))
+sens_sens_comp<-ggplot(sensors_pcc%>%drop_na()%>%mutate(go_group=fct_reorder(go_group, sens))%>%
+                      mutate(sens_norm = sens / 5183), aes(x= go_group, y=sens_norm,fill=go_group))+
+    geom_boxplot()+
+#    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+    xlab('')+
+    ylab('Sensitivity')+
+    scale_fill_manual(values=sensor_colors)+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),legend.title=element_blank())
+
+img <- 'tmp_nw.png' %>%
+  magick::image_read() #%>%
+  #magick::image_resize("570x380") 
+
+nw_img = cowplot::ggdraw()+
+    cowplot::draw_image(img, width=1)
+go_plots = cowplot::plot_grid(eff_deg_comp+theme(legend.position='none'),
+                   eff_eff_comp+theme(legend.position='none'),
+                   cowplot::get_legend(eff_deg_comp),
+                   sens_deg_comp+theme(legend.position='none'),
+                   sens_sens_comp+theme(legend.position='none'),
+                   cowplot::get_legend(sens_deg_comp),ncol=3, labels=c('B','C','','D','E',''))
+
+combined = cowplot::plot_grid(nw_img, go_plots,nrow=2,rel_heights=c(0.4,0.6), labels=c('A',''))
+ggsave('reports/figures/paper_figures_0916/fig6.png',plot=combined,width=7,height=12)
+```
 
