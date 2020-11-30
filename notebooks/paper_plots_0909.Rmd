@@ -46,6 +46,7 @@ huri_df = e_huri.df
 library(tidyverse)
 library(cowplot)
 library(ggpubr)
+library(ggsignif)
 
 pcc_df_random  = data.table::rbindlist(lapply(py$e_pcc$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
 yuri_df_random  = data.table::rbindlist(lapply(py$e_yuri$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
@@ -722,23 +723,37 @@ plt.savefig('tmp_nw.png',bbox_inches='tight')
 effector_pcc = py$effector_pcc
 sensors_pcc = py$sensors_pcc%>%mutate(go_group = (as.character(go_group)), go_group=ifelse(go_group=='NULL', NA, go_group))
 #library(tidyverse)
+effector_pcc$go_group = as.factor(effector_pcc$go_group)
+
+#res.aov <- kruskal.test(eff~go_group, data= effector_pcc)
+#res.aov
+effector_eff_pval = FSA::dunnTest(eff~go_group, effector_pcc)
+effector_eff_pval$res[effector_eff_pval$res$P.adj<0.1,]
+effector_deg_pval = FSA::dunnTest(deg~go_group, effector_pcc)
+effector_deg_pval$res[effector_deg_pval$res$P.adj<0.1,]
+
 eff_deg_comp<-ggplot(effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff)), aes(x= go_group, y=deg,fill=go_group))+
-    geom_boxplot()+
+    geom_boxplot(outlier.shape=NA)+
     scale_fill_manual(values=effector_colors,
                       labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
     xlab('')+
     ylab('Degree')+
     theme_bw()+
-    theme(axis.text.x=element_blank(),legend.title=element_blank(),legend.text = element_text(margin=margin(t=10,b=10)))#, legend.spacing.y = unit(2,'in'))
+    geom_signif(comparisons=list(c('golgi','chromatin'), c('golgi','mito'),c('mito','chromatin')),
+                annotation=c('**','***','ns'),
+                y_position=c(110,115,120))+
+    theme(axis.text.x=element_blank(),legend.title=element_blank(),legend.text = element_text(margin=margin(t=10,b=10)))#, legend.spacing.y = unit(2,'in'))+
 eff_eff_comp<-ggplot(effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff))%>%
                       mutate(eff_norm =eff / 5183), aes(x= go_group, y=eff_norm,fill=go_group))+
     geom_boxplot()+
     #scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
     xlab('')+
+    ggpubr::stat_compare_means(method='kruskal.test')+
     scale_fill_manual(values=effector_colors)+
     ylab('Effectiveness')+
     theme_bw()+
     theme(axis.text.x=element_blank(),legend.title=element_blank())
+ggsave('tmp.png', plot=eff_deg_comp)
 
 sens_deg_comp<-ggplot(sensors_pcc%>%drop_na()%>%mutate(go_group=fct_reorder(go_group, sens)), aes(x= go_group, y=deg,fill=go_group))+
     geom_boxplot()+
@@ -746,12 +761,22 @@ sens_deg_comp<-ggplot(sensors_pcc%>%drop_na()%>%mutate(go_group=fct_reorder(go_g
     xlab('')+
     ylab('Degree')+
     scale_fill_manual(values=sensor_colors)+
+    ggpubr::stat_compare_means(method='kruskal.test',label.x.npc=.3)+
     theme_bw()+
     theme(axis.text.x=element_blank(),legend.title=element_blank(),
           legend.text = element_text(margin=margin(t=10,b=10)))#, legend.spacing.y = unit(2,'cm'))
+sensors_pcc$go_group = as.factor(sensors_pcc$go_group)
+sensors_sens_pval = FSA::dunnTest(sens~go_group, sensors_pcc)
+sensors_sens_pval$res[sensors_sens_pval$res$P.adj<0.1,]
+
 sens_sens_comp<-ggplot(sensors_pcc%>%drop_na()%>%mutate(go_group=fct_reorder(go_group, sens))%>%
                       mutate(sens_norm = sens / 5183), aes(x= go_group, y=sens_norm,fill=go_group))+
     geom_boxplot()+
+    geom_signif(
+        comparisons = list(c("hexose metabolic\nprocess", 'phenylalanine\ntransport'),c("tricarboxylic\nacid cycle", 'phenylalanine\ntransport'),
+                            c('phenylalanine\ntransport', 'protein folding')),
+        annotation = c('**','**', '*'),y_position=c(0.007,0.0075, 0.008)
+                )+
 #    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
     xlab('')+
     ylab('Sensitivity')+
@@ -765,14 +790,13 @@ img <- 'tmp_nw.png' %>%
 
 nw_img = cowplot::ggdraw()+
     cowplot::draw_image(img, width=1)
-go_plots = cowplot::plot_grid(eff_deg_comp+theme(legend.position='none'),
-                   eff_eff_comp+theme(legend.position='none'),
-                   cowplot::get_legend(eff_deg_comp),
+go_plots = cowplot::plot_grid(
                    sens_deg_comp+theme(legend.position='none'),
                    sens_sens_comp+theme(legend.position='none'),
-                   cowplot::get_legend(sens_deg_comp),ncol=3, labels=c('B','C','','D','E',''))
-
+                   cowplot::get_legend(sens_deg_comp),eff_deg_comp+theme(legend.position='none'),
+                   eff_eff_comp+theme(legend.position='none'),
+                   cowplot::get_legend(eff_deg_comp),ncol=3, labels=c('B','C','','D','E',''))
 combined = cowplot::plot_grid(nw_img, go_plots,nrow=2,rel_heights=c(0.4,0.6), labels=c('A',''))
-ggsave('reports/figures/paper_figures_0916/fig6.png',plot=combined,width=7,height=12)
+ggsave('reports/figures/paper_figures_0916/fig6.png',plot=combined,width=9,height=12)
 ```
 
