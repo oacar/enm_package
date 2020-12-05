@@ -34,8 +34,11 @@ with open(f'data/interim/yuri_0916/yuri.pickle','rb') as f:
     e_yuri = pickle.load(f)
 with open(f'data/interim/huri_0916/huri.pickle','rb') as f:
     e_huri = pickle.load(f)
+with open(f'data/interim/gi_1201/gi_100.pickle','rb') as f:
+    e_gi = pickle.load(f)
 
 pcc_df = e_pcc.df
+gi_df = e_gi.df
 pcc_gc = e_pcc.graph_gc
 pcc_gc_pos = (dict(pcc_gc.nodes(data='pos')))
 yuri_df = e_yuri.df
@@ -51,6 +54,7 @@ library(ggsignif)
 pcc_df_random  = data.table::rbindlist(lapply(py$e_pcc$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
 yuri_df_random  = data.table::rbindlist(lapply(py$e_yuri$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
 huri_df_random  = data.table::rbindlist(lapply(py$e_huri$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
+gi_df_random  = data.table::rbindlist(lapply(py$e_gi$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
 pcc_df = py$pcc_df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
     pcc_df_random%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(py$pcc_df),eff_norm = eff/nrow(py$pcc_df), group = 'random')
 )%>%mutate(group=fct_relevel(group, c('real','random')))
@@ -60,18 +64,21 @@ yuri_df = py$yuri_df%>%mutate(data='yuri')%>%mutate(sens_norm = sens/nrow(.),eff
 huri_df = py$huri_df%>%mutate(data='huri')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
     huri_df_random%>%mutate(data='huri')%>%mutate(sens_norm = sens/nrow(py$huri_df),eff_norm = eff/nrow(py$huri_df), group = 'random')
 )%>%mutate(group=fct_relevel(group, c('real','random')))
-combined_df = bind_rows(pcc_df, yuri_df,huri_df)%>%
-    mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
+gi_df = py$gi_df%>%mutate(data='gi')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
+    gi_df_random%>%mutate(data='gi')%>%mutate(sens_norm = sens/nrow(py$gi_df),eff_norm = eff/nrow(py$gi_df), group = 'random')
+)%>%mutate(group=fct_relevel(group, c('real','random')))
+combined_df = bind_rows(pcc_df, yuri_df,huri_df,gi_df)%>%
+    mutate(data= fct_relevel(data, c('pcc','gi','yuri','huri')))
 ```
 
 Degree - Eff - Sens distributions
 ```{r}
-combined_df%>%filter(group=='real')%>%
-    ggplot(aes(x=deg, y = ..count../sum(..count..)))+
-    facet_grid(rows=vars(data))+
-    geom_histogram(binwidth=1)+
-#    xlim(1,NA)+
-    ylim(NA, 0.1)
+#combined_df%>%filter(group=='real')%>%
+#    ggplot(aes(x=deg, y = ..count../sum(..count..)))+
+#    facet_grid(rows=vars(data))+
+#    geom_histogram(binwidth=1)+
+##    xlim(1,NA)+
+#    ylim(NA, 0.1)
 
 
 pcc_degree_dens <- 
@@ -86,6 +93,18 @@ pcc_dens_comb = cowplot::plot_grid(pcc_degree_dens+theme(legend.position='none')
                                 pcc_eff_dens+theme(legend.position='none'), 
                                 pcc_sensitivity_dens+theme(legend.position='none'), labels=c('A','B','C'),ncol=3)
 pcc_dens_comb_title = cowplot::plot_grid(title, pcc_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
+gi_degree_dens <- 
+    plot_density_prs(gi_df, deg, xlab='Degree')
+gi_eff_dens <- 
+    plot_density_prs(gi_df, eff_norm, xlab='Effectiveness')
+#annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+gi_sensitivity_dens <- 
+    plot_density_prs(gi_df, sens_norm, xlab='Sensitivity')
+title <- cowplot::ggdraw() + cowplot::draw_label("Costanzo 2016 network GI", fontface='bold')
+gi_dens_comb = cowplot::plot_grid(gi_degree_dens+theme(legend.position='none'), 
+                                gi_eff_dens+theme(legend.position='none'), 
+                                gi_sensitivity_dens+theme(legend.position='none'), labels=c('A','B','C'),ncol=3)
+gi_dens_comb_title = cowplot::plot_grid(title, gi_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
 yuri_degree_dens <- 
     plot_density_prs(yuri_df, deg, xlab='Degree')
 yuri_eff_dens <- 
@@ -110,10 +129,11 @@ huri_dens_comb = cowplot::plot_grid(huri_degree_dens+theme(legend.position='none
 huri_dens_comb_title = cowplot::plot_grid(title, huri_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
 dens_lgn = cowplot::get_legend(pcc_sensitivity_dens)
 dens_plots = cowplot::plot_grid(pcc_dens_comb_title,
+                                gi_dens_comb_title,
                                 yuri_dens_comb_title,
-                                huri_dens_comb_title,nrow=3)
+                                huri_dens_comb_title,nrow=4)
 cowplot::plot_grid(dens_plots, dens_lgn,nrow=2,rel_heights=c(.9,.1))
-ggsave('reports/figures/paper_figures_0916/fig1.png')
+ggsave('reports/figures/paper_figures_1204_withgi/fig1.png')
 
 #degree_dens <- 
 #    ggplot(combined_df%>%filter(group=='real'), aes(x=deg))+
@@ -207,6 +227,26 @@ pcc_deg_sens = pcc_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:e
     stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1) +
     theme(strip.text.y = element_text(angle = 0))+
     scale_y_continuous(labels = scales::label_scientific(digits=1))
+gi_deg_eff = gi_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=eff_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Effectiveness")+
+    xlab("Degree")+
+    stat_cor(method='pearson', cor.coef.name='R', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+gi_deg_sens = gi_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=sens_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Sensitivity")+
+    xlab("Degree")+
+    stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
 yuri_deg_eff = yuri_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
     ggplot(aes(x=deg, y=eff_norm))+
     geom_point()+
@@ -248,10 +288,11 @@ huri_deg_sens = huri_df %>%filter(group=='real')%>% #pivot_longer(cols=sens_norm
     theme(strip.text.y = element_text(angle = 0))+
     scale_y_continuous(labels = scales::label_scientific(digits=1))
 deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
+                                        gi_deg_eff, gi_deg_sens,
                    yuri_deg_eff, yuri_deg_sens,
                    huri_deg_eff, huri_deg_sens, labels = c('A','','B','','C',''),
                    ncol=2)
-ggsave('tmp.png',plot=deg_scatter_plots, width=10,height=10)
+ggsave('reports/figures/paper_figures_1204_withgi/fig2.png',plot=deg_scatter_plots, width=10,height=10)
 
 #p1 = ggplot(pcc_df, aes(x=deg,y=eff_norm))+
 #    geom_point(aes(color=cat_))+
@@ -276,16 +317,17 @@ ggsave('tmp.png',plot=deg_scatter_plots, width=10,height=10)
 
 ```{r}
 pcc_rewire_df = read_csv('data/interim/pcc_0909/rewire_data.csv')
+gi_rewire_df = read_csv('data/interim/gi_1201/rewire_data.csv')
 yuri_rewire_df = read_csv('data/interim/yuri/rewire_data.csv')
 huri_rewire_df = read_csv('data/interim/huri/rewire_data.csv')
 
 rewire_df = pcc_rewire_df%>%mutate(data='pcc')%>%bind_rows(
                                                            yuri_rewire_df%>%mutate(data='yuri'))%>%
-        bind_rows(huri_rewire_df%>%mutate(data='huri'))
+        bind_rows(huri_rewire_df%>%mutate(data='huri'))%>%bind_rows(gi_rewire_df%>%mutate(data='gi'))
 ```
 
 ```{r}
-network_labels  <- c('Costanzo 2016','Yeast PPI','HuRI')
+network_labels  <- c('Costanzo 2016','Costanzo GI','Yeast PPI','HuRI')
 #p3 = ggplot(rewire_df, aes(x=eff_deg_pearson))+
 #    stat_density(geom = "line", trim=TRUE)+
 ##    geom_histogram(binwidth = 0.001)+
@@ -293,12 +335,13 @@ network_labels  <- c('Costanzo 2016','Yeast PPI','HuRI')
 #    theme_bw()
 
 facet_labels  <- network_labels
-names(facet_labels) <- c("pcc",'yuri','huri')
+names(facet_labels) <- c("pcc",'gi','yuri','huri')
 
 combined_rewire_df <- rewire_df%>%select(data, eff_deg_pearson,sens_deg_spearman)%>%mutate(type = 'random')%>% 
     bind_rows(
-    data.frame(sens_deg_spearman= c(cor(pcc_df[pcc_df$group=='real',]$deg, pcc_df[pcc_df$group=='real',]$sens,method='spearman'),cor(yuri_df[yuri_df$group=='real',]$deg,yuri_df[yuri_df$group=='real',]$sens,method='spearman'),cor(huri_df[huri_df$group=='real',]$deg,huri_df[huri_df$group=='real',]$sens,method='spearman')), eff_deg_pearson= c(cor(pcc_df[pcc_df$group=='real',]$deg, pcc_df[pcc_df$group=='real',]$eff,method='pearson'),cor(yuri_df[yuri_df$group=='real',]$deg,yuri_df[yuri_df$group=='real',]$eff,method='pearson'),cor(huri_df[huri_df$group=='real',]$deg,huri_df[huri_df$group=='real',]$eff,method='pearson')), type='real',data=c('pcc','yuri','huri')))%>%
-    mutate(data= fct_relevel(data, c('pcc','yuri','huri')))
+    data.frame(sens_deg_spearman= c(cor(pcc_df[pcc_df$group=='real',]$deg, pcc_df[pcc_df$group=='real',]$sens,method='spearman'),cor(gi_df[gi_df$group=='real',]$deg, gi_df[gi_df$group=='real',]$sens,method='spearman'),cor(yuri_df[yuri_df$group=='real',]$deg,yuri_df[yuri_df$group=='real',]$sens,method='spearman'),cor(huri_df[huri_df$group=='real',]$deg,huri_df[huri_df$group=='real',]$sens,method='spearman')), 
+               eff_deg_pearson= c(cor(pcc_df[pcc_df$group=='real',]$deg, pcc_df[pcc_df$group=='real',]$eff,method='pearson'),cor(gi_df[gi_df$group=='real',]$deg, gi_df[gi_df$group=='real',]$eff,method='pearson'),cor(yuri_df[yuri_df$group=='real',]$deg,yuri_df[yuri_df$group=='real',]$eff,method='pearson'),cor(huri_df[huri_df$group=='real',]$deg,huri_df[huri_df$group=='real',]$eff,method='pearson')), type='real',data=c('pcc','gi','yuri','huri')))%>%
+    mutate(data= fct_relevel(data, c('pcc','gi','yuri','huri')))
 
 p3 = 
     ggplot()+
@@ -334,7 +377,7 @@ distr_plots <- plot_grid(
 
 
 plot_grid(deg_scatter_plots, distr_plots, nrow=2,rel_heights = c(0.6,0.4))
-ggsave('reports/figures/paper_figures_0916/fig2.png',width=8,height=9)
+ggsave('reports/figures/paper_figures_1204_withgi/fig3.png',width=8,height=9)
 ```
 
 
