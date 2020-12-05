@@ -11,22 +11,32 @@ from Bio import SeqIO
 figure_path = 'reports/figures/huri_0722'
 huri = Enm('huri')
 huri.read_network('data/interim/huri/huri_cleared.csv')
-huri.gnm_analysis()
+huri.gnm_analysis(normalized=False)
 
 huri.figure_path=figure_path
-huri.output_path = 'data/interim/huri/'
+huri.output_path = 'data/interim/huri_0916/'
 #huri.plot_collectivity()
-
-huri.plot_network_spring()
+huri.spring_pos()
+#huri.plot_network_spring()
 #huri.plot_vector(sorted=True)
 #huri.plot_scatter(x='deg',y='eff',figure_name='deg_eff',figure_extension='pdf')
 #huri.plot_scatter(x='deg',y='sens',figure_name='deg_sens',figure_extension='pdf')
 
-huri.simulate_rewire(output_name='rewire_data',save=True)
-huri.rewire_df
-huri.plot_correlation_density(x='eff',y='deg',figure_extension='pdf')
-huri.plot_correlation_density(x='sens',y='deg',correlation='spearman',figure_extension='pdf')
+huri.simulate_rewire(output_name='rewire_data',save=True,normalized=False)
+#huri.rewire_df
+#huri.plot_correlation_density(x='eff',y='deg',figure_extension='pdf')
+#huri.plot_correlation_density(x='sens',y='deg',correlation='spearman',figure_extension='pdf')
 nx.set_node_attributes(huri.graph_gc,dict(zip(list(huri.graph_gc.nodes),list(huri.graph_gc.nodes))),'orf_name')
+
+neigbor_btw = []
+neighbor_degree = []
+for i in huri.graph_gc.nodes:
+    neigbor_btw.append(np.average([huri.df.loc[huri.df.orf_name==a,'btw'].values for a in nx.neighbors(huri.graph_gc,i)]))
+    neighbor_degree.append(np.average([huri.df.loc[huri.df.orf_name==a,'deg'].values for a in nx.neighbors(huri.graph_gc,i)]))
+
+huri.df['neighbor_btw'] = neigbor_btw
+huri.df['neighbor_degree'] = neighbor_degree
+
 
 with open(f"{huri.output_path}/huri.pickle",'wb') as f:
     pickle.dump(huri,f, protocol=4)

@@ -16,12 +16,13 @@ enm.read_network('data/interim/costanzo_pcc_ALL',sep=',')
 enm.gnm_analysis(normalized=False)
 
 #enm.figure_path=figure_path
-enm.output_path = 'data/interim/pcc_0909/'
+enm.output_path = 'data/interim/pcc_1020/'
 enm.get_category('data/interim/strain_ids_with_experiment_count_all.csv')
 enm.spring_pos()
 
 enm.simulate_rewire(output_name='rewire_data',save=True, normalized=False,sim_num=100)
-enm.simulate_rewire(output_name='rewire_data_nodegseq', save=True, nodegseq=True, normalized=False, sim_num=100)
+random_dfs = [enm.e_list[i].df.to_csv(f'data/interim/pcc_1020/random_dfs/rand_{i}.csv') for i in range(100)]
+#enm.simulate_rewire(output_name='rewire_data_nodegseq', save=True, nodegseq=True, normalized=False, sim_num=10)
 #enm.simulate_rewire(output_name='rewire_data_er', save=True, nodegseq=True,random_network_type='er', normalized=False)
 
 neigbor_btw = []
