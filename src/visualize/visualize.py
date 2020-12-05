@@ -61,7 +61,7 @@ def plot_vector(data, figure_path, sorted=False, x_label='Nodes', y_label='Eigen
     return ax
 
 
-def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_list=[0.1],ax=None,**kwargs):
+def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_list=[0.1],ax=None, savefig=False,**kwargs):
     """Plots networkx object using spring_layout and a legend for nodes and edges
 
     :param Gc:  The network to plot
@@ -120,20 +120,21 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
                     )
     # plot_go_contours(Gc,ax,go_df_list[i],1,clabels=True,level=0.01)
     plot_legend = kwargs.pop('plot_legend', False)
-    if plot_legend:
-        lgd = ax.legend(handles=legend_elements, fontsize=14,loc='center left', bbox_to_anchor=(1.0, 0.5))
-    
- #       frame = lgd.get_frame()
-#        frame.set_color('black')
-  #      for text in lgd.get_texts():
-   #         text.set_color("white") 
-        #plt.title(f'Costanzo 2016 profile similarity network',fontsize=20)
-    # plt.legend()
-        plt.savefig(
-            f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_extra_artists=(lgd,),bbox_inches='tight')
-    else:
-        plt.savefig(
-            f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_inches='tight')
+    if savefig:
+        if plot_legend:
+            lgd = ax.legend(handles=legend_elements, fontsize=14,loc='center left', bbox_to_anchor=(1.0, 0.5))
+        
+     #       frame = lgd.get_frame()
+    #        frame.set_color('black')
+      #      for text in lgd.get_texts():
+       #         text.set_color("white") 
+            #plt.title(f'Costanzo 2016 profile similarity network',fontsize=20)
+        # plt.legend()
+            plt.savefig(
+                f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_extra_artists=(lgd,),bbox_inches='tight',**kwargs)
+        else:
+            plt.savefig(
+                f"{figure_path}/{kwargs.pop('figure_name','network_plot')}.{kwargs.pop('figure_extension','png')}",bbox_inches='tight',**kwargs)
 
     return ax
     # plt.close()
@@ -267,7 +268,7 @@ def plot_correlation_density(df, rewire_df, x, y, figure_path, **kwargs):
     return ax
 
 
-def heatmap_annotated(prs_mat, figure_path, **kwargs):
+def heatmap_annotated(prs_mat, figure_path,show_normalized = True, cluster_normalized = True, row_colors = None, col_colors=None, **kwargs):
 
     # sch.set_link_color_palette(['b'])
     
@@ -280,22 +281,34 @@ def heatmap_annotated(prs_mat, figure_path, **kwargs):
     prs_mat_cl = copy.deepcopy(prs_mat)
     prs_mat_cl[prs_mat_cl > q99] = q99
     # , optimal_ordering=True)
-    row_linkage = sch.linkage(distance.pdist(prs_mat_cl), method=method)
+    if cluster_normalized:
+        row_linkage = sch.linkage(distance.pdist(prs_mat_cl), method=method)
+        col_linkage = sch.linkage(distance.pdist(prs_mat_cl.T), method=method)
+    else:
+        row_linkage = sch.linkage(distance.pdist(prs_mat), method=method)
+        col_linkage = sch.linkage(distance.pdist(prs_mat.T), method=method)
     # ,optimal_ordering=True)
-    col_linkage = sch.linkage(distance.pdist(prs_mat_cl.T), method=method)
+    ncol = 4 if row_colors is not None else 3
+    width_ratios = [1,.2,4,.5] if row_colors is not None else [1,4,.5]
+    nrow = 4 if col_colors is not None else 3
+    height_ratios = [1,.2,4,.5] if col_colors is not None else [1,4,.5]
+    from matplotlib import gridspec
+    gs = gridspec.GridSpec(nrow, ncol, width_ratios = width_ratios, height_ratios = height_ratios)
     ax1 = fig.add_axes([0.09, 0.1, 0.2, 0.6])
    # Y = sch.linkage(D, method='centroid')
     # orientation='left' is reponsible for making the
     # dendrogram appear to the left
-    Z1 = sch.dendrogram(row_linkage, orientation='left')#                        link_color_func=lambda k: 'black')
+    Z1 = sch.dendrogram(row_linkage, orientation='left',
+            link_color_func=lambda k: 'black')
+
     ax1.set_xticks([])
     ax1.set_yticks([])
     plt.axis('off')
     # top side dendogram
     ax2 = fig.add_axes([0.3, 0.71, 0.6, 0.2])
     #Y = sch.linkage(D, method='single')
-    Z2 = sch.dendrogram(col_linkage, color_threshold=0)#,
-#                        link_color_func=lambda k: 'black')
+    Z2 = sch.dendrogram(col_linkage, color_threshold=0, 
+                        link_color_func=lambda k: 'black')
     ax2.set_xticks([])
     ax2.set_yticks([])
     plt.axis('off')
@@ -362,6 +375,7 @@ def heatmap_annotated(prs_mat, figure_path, **kwargs):
     else:
         plt.show()
 
+    return row_data, col_data
     # return ax
 
 def plot_go_contours(Gc, ax,go_df, k =1,clabels=False,level=1e-6,pos=None,**kwargs):
@@ -380,15 +394,7 @@ def plot_go_contours(Gc, ax,go_df, k =1,clabels=False,level=1e-6,pos=None,**kwar
             nodes = go_df.iloc[i+1,:].study_items.split(', ')
            
         nodes_indices = [labels_dict[node] for node in nodes if node in labels_dict.keys()]
-        pos3 = {idx: pos[node_index] for idx, node_index in enumerate(nodes_indices)}
-#        print(pos3)
-        pos3 = np.vstack(list(pos3.values()))
-        pos3 = remove_outliers(pos3,k)
-        kernel = gaussian_kde(pos3.T)
-        [X, Y] = np.mgrid[min_pos[0]:max_pos[0]:100j,min_pos[1]:max_pos[1]:100j]
-        positions = np.vstack([X.ravel(), Y.ravel()])
-        Z = np.reshape(kernel(positions).T, X.shape)
-
+        X,Y,Z = create_contour(pos, nodes_indices, k, max_pos, min_pos)
         C = ax.contour(X, Y, Z, [level],colors=color_)#, colors=[tuple(process_colors[n_process, :])], alpha=1)
         if clabels:
             fmt = {}
@@ -398,6 +404,17 @@ def plot_go_contours(Gc, ax,go_df, k =1,clabels=False,level=1e-6,pos=None,**kwar
     #        print(i)
             plt.clabel(C, C.levels, inline=False, fmt=fmt, fontsize=18,use_clabeltext=True)
 
+def create_contour(pos, nodes_indices, k, max_pos, min_pos):
+    pos3 = {idx: pos[node_index] for idx, node_index in enumerate(nodes_indices)}
+#        print(pos3)
+    pos3 = np.vstack(list(pos3.values()))
+    #pos3 = remove_outliers(pos3,k)
+    kernel = gaussian_kde(pos3.T)
+    [X, Y] = np.mgrid[min_pos[0]:max_pos[0]:100j,min_pos[1]:max_pos[1]:100j]
+    positions = np.vstack([X.ravel(), Y.ravel()])
+    Z = np.reshape(kernel(positions).T, X.shape)
+    
+    return X,Y,Z
 def remove_outliers(arr, k):
     mu, sigma = np.mean(arr, axis=0), np.std(arr, axis=0, ddof=1)
     return arr[np.all(np.abs((arr - mu) / sigma) < k, axis=1)]
