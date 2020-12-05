@@ -39,6 +39,37 @@ def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/o
 
     return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl
 
+def create_goea_human(gene2go = '../data/raw/ontology/gene2go', obo_fname = '../data/raw/ontology/go-basic.obo', background='../data/interim/huri_gc_bg.tsv',**kwargs):
+    
+    #background='../data/raw/ontology/sgd_costanzogenes'
+    obodag = GODag(obo_fname)
+    from goatools.anno.genetogo_reader import Gene2GoReader
+
+# Read NCBI's gene2go. Store annotations in a list of namedtuples
+    objanno = Gene2GoReader(gene2go, taxids=[9606])
+#    ns2assoc = objanno.get_ns2assc()
+
+    ns2assoc_excl = objanno.get_ns2assc( ev_exclude = {'HGI' , 'IGI'})
+
+    bg = pd.read_csv(background, header=None)
+    bg_list = list(bg.iloc[:, 0])  # .to_list()
+    
+    import mygene
+    mg = mygene.MyGeneInfo()
+    out = mg.querymany(bg_list,scopes='ensemblgene', fields = 'unigene,entrezgene,uniprot', species=9606, as_dataframe=True)
+
+    geneids = [int(i) for i in out.loc[bg_list,'entrezgene'].dropna().values.tolist()]
+    geneid2name = pd.Series(out['entrezgene'].dropna().index.tolist(),index=[int(i) for i in out.loc[:,'entrezgene'].dropna().values]).to_dict()
+    goeaobj = GOEnrichmentStudyNS(
+        geneids,  # List of mouse protein-coding genes
+        ns2assoc_excl,  # geneid/GO associations
+        obodag,  # Ontologies
+        propagate_counts=False,
+        alpha=0.05,  # default significance cut-off
+        methods=['fdr_bh'], prt=None)
+
+    return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl
+
 def go_findenrichment( query, outname=None, species='yeast',**kwargs):
     goeaobj, geneid2name = create_goea(**kwargs)
     query_gene_ids = [key for key,value in geneid2name.items() if value in query]#sgd_info[sgd_info.iloc[:,3].isin(query)].iloc[:,0].values.tolist()
@@ -81,6 +112,7 @@ def network_chance_deletion(list_of_nodes,Gc,out_dict):
 
 def sequential_deletion(Gc,df_,step=10):
     deg_sorted_deletion = {'num_of_comp':[], 'gc_size':[]}
+    deg_sorted_deletion_rev= {'num_of_comp':[], 'gc_size':[]}
     hinge_sorted_deletion= {'num_of_comp':[], 'gc_size':[]}
     rand_deletion =  {'num_of_comp':[], 'gc_size':[]}
     btw_sorted_deletion =  {'num_of_comp':[], 'gc_size':[]}
@@ -100,6 +132,9 @@ def sequential_deletion(Gc,df_,step=10):
 #        print(i)
         network_chance_deletion(df_.sort_values('deg',ascending=False).iloc[0:i,0].tolist(), Gc, deg_sorted_deletion)
 #        print('Degree deletion successfull')
+
+        #degree rev
+        network_chance_deletion(df_.sort_values('deg',ascending=True).iloc[0:i,0].tolist(), Gc, deg_sorted_deletion_rev)
 
         #eigenvec_hinge
 #        network_chance_deletion(df_.reindex(df_[0].abs().sort_values().index).iloc[0:i,0].tolist(), Gc, hinge_sorted_deletion)
@@ -138,6 +173,7 @@ def sequential_deletion(Gc,df_,step=10):
           'closeness_centr_sorted_deletion':closeness_centr_sorted_deletion,
 #          'sens_sorted_deletion_rev':sens_sorted_deletion_rev,
           'eigenvec_centr_sorted_deletion':eigenvec_centr_sorted_deletion,
+        'deg_sorted_deletion_rec' : deg_sorted_deletion_rev,
         'range':range_}
     dd_df  = pd.DataFrame.from_dict({(outerKey, innerKey): values for outerKey, innerDict in dd.items() if outerKey!='range' for innerKey, values in innerDict.items()})
     dd_df['range'] = range_
@@ -174,3 +210,22 @@ def get_random_in_to_out_ratio(gnm_df, df , G):
         random_ratio_list.append(get_in_to_out_edge_ratio(G, rand_nodes))
     return random_ratio_list
 
+def get_subnetwork(gc, subset):
+    neighbors =[[n for n in nx.neighbors(gc, i)] for i in subset]
+    flat_list = [item for sublist in neighbors for item in sublist]
+    flat_list.extend(subset)
+    sub_gc = nx.induced_subgraph(gc, flat_list).copy()
+    for (n,d) in sub_gc.nodes(data=True):
+        del d["pos"]
+    return sub_gc
+
+
+def get_maximal_subsets(sets):
+    sets = sorted(map(set, sets), key=len,reverse=True)
+    maximal_subsets = []
+    for s in sets:
+        if not any(maximal_subset.issuperset(s) for maximal_subset in maximal_subsets):
+            maximal_subsets.append(s)
+
+    return maximal_subsets
+ 

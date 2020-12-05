@@ -36,6 +36,7 @@ class Enm():
         self.coll=None
         self.coll_index_sorted = None
         self.prs_mat = None
+        self.prs_mat_df  = None
         self.L = None
 
     def print_name(self):
@@ -132,6 +133,7 @@ class Enm():
         except Exception as e:
             raise AttributeError('GNM is not calculated yet. Call get_gnm() first')
         self.prs_mat = prs_mat
+        self.prs_mat_df = pd.DataFrame(prs_mat,columns=self.nodes, index=self.nodes)
 
     def create_df(self):
         """Create an overall dataframe to store network related and GNM related values
@@ -218,6 +220,29 @@ class Enm():
         #db_connection = sql.create_engine(db_connection_str)
         #db_df = pd.read_sql('SELECT * FROM SUMMARY_2012', con=db_connection)
         #combined_df = pd.merge(combined_df, db_df, left_on='Systematic gene name', right_on='orf_name')
+    def set_perturb_profile(self,source, get_col=True):
+        if get_col:
+            gene_perturb_profile = self.prs_mat_df.loc[source,:]
+        else:
+            gene_perturb_profile = self.prs_mat_df.loc[:,source] 
+        nx.set_node_attributes(self.graph_gc, gene_perturb_profile.to_dict(), name='perturb_profile')
+
+    def get_prs_weighted_path(self, source, target=None, weight='weight', node_weight=None):
+        """
+            calculate shortest path using the PRS matrix values caused by perturbations on source node
+            This uses an adjusted version of networkx dijkstra functions to incorporate node_weight parameter
+            networkx source code should be under /home/oma21/networkx
+        """
+        if nx.get_edge_attributes(self.graph_gc,'weight') == {}:
+            nx.set_edge_attributes(self.graph_gc,0,'weight')
+        if node_weight is None:
+            node_weight = (1/self.prs_mat_df.loc[source,:]).to_dict()
+        if target is not None:
+            distances = nx.single_source_dijkstra(self.graph_gc, source=source,target=target, weight=weight, node_weight=node_weight)
+        else:
+            distances = nx.single_source_dijkstra(self.graph_gc, source=source, weight=weight, node_weight=node_weight)
+        return distances
+
     def get_node_distances(self):
         dist_to_center = {}
         if len(nx.get_node_attributes(self.graph_gc, 'pos')) == 0:
@@ -227,6 +252,22 @@ class Enm():
         for i,val_i in enumerate(self.nodes):
             dist_to_center[val_i]=np.linalg.norm(pos[val_i])
         self.dist_to_center = dist_to_center
+
+    def get_rwr_mat(self, c=0.15):
+        from pyrwr.rwr import RWR
+        rwr = RWR()
+        rwr.A = nx.adj_matrix(self.graph_gc, weight=None)
+        rwr.m , rwr.n = rwr.A.shape
+        rwr_mat = np.zeros(rwr.A.shape)
+        rwr.base = 0
+        for i in range(rwr_mat.shape[0]):
+            seed = i
+            r = rwr.compute(seed, c=c)
+            rwr_mat[i,:] = r
+        self.rwr_mat = rwr_mat
+        self.rwr_mat_df = pd.DataFrame(rwr_mat,columns=self.nodes, index=self.nodes)
+        self.pagerank = np.mean(rwr_mat, axis=0)
+
     def plot_network_spring(self, **kwargs):
         """Plot network with spring layout
         """
@@ -338,7 +379,7 @@ def rewire_network(Gc, **kwargs):
     else:
         Gc_rewired = Gc.copy()
         swp_count = nx.connected_double_edge_swap(
-            Gc_rewired, 2 * len(Gc_rewired.nodes))
+            Gc_rewired, 10*len(Gc_rewired.edges))
     return Gc_rewired
 
 
