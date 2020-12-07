@@ -197,9 +197,11 @@ def sample_nodes_with_degree(gnm_df , nodes_df ):
     return gnm_df.loc[gnm_df.orf_name.isin(sampled_nodes)]
 
 def get_in_to_out_edge_ratio(G, nodes_df):
+    btw_edges = len(nx.induced_subgraph(G,nodes_df.orf_name).edges)
     flat_list_ego = np.unique([item for sublist in [list(nx.ego_graph(G,i,radius=1).nodes) for i in nodes_df.orf_name.values] for item in sublist])
+    total_edges = len(nx.induced_subgraph(G,flat_list_ego).edges)
     #rat = len([i for i in flat_list_ego if i in sensors['orf_name'].values ])/len([i for i in flat_list_ego if i not in sensors['orf_name'].values ])
-    rat = len([i for i in flat_list_ego if i in nodes_df['orf_name'].values ])/len(flat_list_ego)
+    rat = btw_edges/total_edges #len([i for i in flat_list_ego if i in nodes_df['orf_name'].values ])/len(flat_list_ego)
     return rat
 
 def get_random_in_to_out_ratio(gnm_df, df , G):
