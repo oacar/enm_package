@@ -199,7 +199,7 @@ def sample_nodes_with_degree(gnm_df , nodes_df ):
 def get_in_to_out_edge_ratio(G, nodes_df):
     btw_edges = len(nx.induced_subgraph(G,nodes_df.orf_name).edges)
     flat_list_ego = np.unique([item for sublist in [list(nx.ego_graph(G,i,radius=1).nodes) for i in nodes_df.orf_name.values] for item in sublist])
-    total_edges = len(nx.induced_subgraph(G,flat_list_ego).edges)
+    total_edges = len(nx.induced_subgraph(G,flat_list_ego).edges)- len(nx.induced_subgraph(G,np.setdiff1d(flat_list_ego,nodes_df.orf_name)).edges)
     #rat = len([i for i in flat_list_ego if i in sensors['orf_name'].values ])/len([i for i in flat_list_ego if i not in sensors['orf_name'].values ])
     rat = btw_edges/total_edges #len([i for i in flat_list_ego if i in nodes_df['orf_name'].values ])/len(flat_list_ego)
     return rat
@@ -230,4 +230,11 @@ def get_maximal_subsets(sets):
             maximal_subsets.append(s)
 
     return maximal_subsets
- 
+
+def jaccard_index(G, a,b):
+    a_neigh = [i for i in nx.neighbors(G, a)]
+    b_neigh = [i for i in nx.neighbors(G, b)]
+    union = np.union1d(a_neigh,b_neigh)
+    intersect = np.intersect1d(a_neigh,b_neigh)
+    jaccard = len(intersect)/len(union)
+    return jaccard

@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from .visualize.visualize import plot_collectivity,plot_correlation_density,plot_network_spring,plot_scatter,plot_vector,heatmap_annotated, plot_fiedler_data
 #from .utilities import *
+from .utils import jaccard_index
 
 
 class Enm():
@@ -158,6 +159,14 @@ class Enm():
         df_['closeness_centr'] = [closeness_centr[i] for i in closeness_centr]
         df_['smallest_eigenvec'] = self.gnm.getEigvecs()[:, 0]
         self.df = df_
+
+    def get_jaccard_mat(self):
+        jaccard_mat = np.zeros((len(self.nodes),len(self.nodes)))
+        for i, a in tqdm(enumerate(self.nodes)):
+            for j,b in enumerate(self.nodes):
+                jc = jaccard_index(self.graph_gc,a,b)
+                jaccard_mat[i,j] = jc
+        self.jaccard_mat = jaccard_mat
 
     def fiedler_evaluation(self, figure_name = "lost_edges_node_counts", figure_extension = 'png', plot=False, **kwargs):
         """This function evaluates fiedler vector cut. Using eigenvectors of Laplacian, calculates 2 subnetworks and return
@@ -378,8 +387,13 @@ def rewire_network(Gc, **kwargs):
             Gc_rewired = nx.erdos_renyi_graph(len(Gc.nodes), 0.004)
     else:
         Gc_rewired = Gc.copy()
-        swp_count = nx.connected_double_edge_swap(
-            Gc_rewired, 10*len(Gc_rewired.edges))
+        minimum_swaps = 10*len(Gc_rewired.edges)
+        current_swaps = 0
+        while current_swaps < minimum_swaps:
+            remaining_swaps = max(minimum_swaps-current_swaps,100)
+            swp_count = nx.connected_double_edge_swap(Gc_rewired, remaining_swaps)
+            current_swaps+=swp_count
+
     return Gc_rewired
 
 
