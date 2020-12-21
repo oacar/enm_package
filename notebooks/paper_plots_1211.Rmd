@@ -1,0 +1,720 @@
+---
+title: "Paper figures"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reticulate)
+#use_python("/home/oma21/miniconda3/envs/enm/bin/python")
+use_condaenv('enm')
+setwd('../')
+source('src/R/plot_density_prs.R')
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import networkx as nx
+import numpy as np
+import pandas as pd
+import pickle 
+import os
+import re
+import itertools as itr
+from src.enm import Enm
+
+with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
+    e_pcc = pickle.load(f)
+with open(f'data/interim/psn_1201/psn.pickle','rb') as f:
+    e_psn = pickle.load(f)
+with open(f'data/interim/npdp_1211/npdp.pickle','rb') as f:
+    e_nsdp = pickle.load(f)
+#with open(f'data/interim/nsdp_1205/nsdp.pickle','rb') as f:
+#    e_nsdp = pickle.load(f)
+#with open(f'data/interim/psn_1205/psn.pickle','rb') as f:
+#    e_psn = pickle.load(f)
+#with open(f'data/interim/gi_1205_0.2/gi_100.pickle','rb') as f:
+#    e_gi = pickle.load(f)
+
+pcc_df = e_pcc.df
+psn_df = e_psn.df
+pcc_gc = e_pcc.graph_gc
+pcc_gc_pos = (dict(pcc_gc.nodes(data='pos')))
+nsdp_df = e_nsdp.df
+#psn_df = e_psn.df
+```
+
+```{r}
+library(tidyverse)
+library(cowplot)
+library(ggpubr)
+library(ggsignif)
+
+pcc_df_random  = data.table::rbindlist(lapply(py$e_pcc$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
+nsdp_df_random  = data.table::rbindlist(lapply(py$e_nsdp$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
+psn_df_random  = data.table::rbindlist(lapply(py$e_psn$e_list, function(x) x$df),fill=T,idcol='random_id')%>%mutate(random_id = as.factor(random_id))
+pcc_df = py$pcc_df%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
+    pcc_df_random%>%mutate(data='pcc')%>%mutate(sens_norm = sens/nrow(py$pcc_df),eff_norm = eff/nrow(py$pcc_df), group = 'random')
+)%>%mutate(group=fct_relevel(group, c('real','random')))
+nsdp_df = py$nsdp_df%>%mutate(data='nsdp')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
+    nsdp_df_random%>%mutate(data='nsdp')%>%mutate(sens_norm = sens/nrow(py$nsdp_df),eff_norm = eff/nrow(py$nsdp_df), group = 'random')
+)%>%mutate(group=fct_relevel(group, c('real','random')))
+psn_df = py$psn_df%>%mutate(data='psn')%>%mutate(sens_norm = sens/nrow(.),eff_norm = eff/nrow(.), group = 'real')%>%bind_rows(
+    psn_df_random%>%mutate(data='psn')%>%mutate(sens_norm = sens/nrow(py$psn_df),eff_norm = eff/nrow(py$psn_df), group = 'random')
+)%>%mutate(group=fct_relevel(group, c('real','random')))
+combined_df = bind_rows(pcc_df, nsdp_df,psn_df)%>%
+    mutate(data= fct_relevel(data, c('pcc','nsdp','psn')))
+```
+
+Degree - Eff - Sens distributions
+```{r}
+#combined_df%>%filter(group=='real')%>%
+#    ggplot(aes(x=deg, y = ..count../sum(..count..)))+
+#    facet_grid(rows=vars(data))+
+#    geom_histogram(binwidth=1)+
+##    xlim(1,NA)+
+#    ylim(NA, 0.1)
+
+
+pcc_degree_dens <- 
+    plot_density_prs(pcc_df, deg, xlab='Degree')
+pcc_eff_dens <- 
+    plot_density_prs(pcc_df, eff_norm, xlab='Effectiveness')
+#annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+pcc_sensitivity_dens <- 
+    plot_density_prs(pcc_df, sens_norm, xlab='Sensitivity')
+title <- cowplot::ggdraw() + cowplot::draw_label("Yeast GI Profile Similarity", fontface='bold')
+pcc_dens_comb = cowplot::plot_grid(pcc_degree_dens+theme(legend.position='none'), 
+                                pcc_eff_dens+theme(legend.position='none'), 
+                                pcc_sensitivity_dens+theme(legend.position='none'), labels=c('A','B','C'),ncol=3)
+pcc_dens_comb_title = cowplot::plot_grid(title, pcc_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
+#annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+nsdp_degree_dens <- 
+    plot_density_prs(nsdp_df, deg, xlab='Degree')
+nsdp_eff_dens <- 
+    plot_density_prs(nsdp_df, eff_norm, xlab='Effectiveness')
+nsdp_sensitivity_dens <- 
+    plot_density_prs(nsdp_df, sens_norm, xlab='Sensitivity')
+title <- cowplot::ggdraw() + cowplot::draw_label("Yeast coexpression network", fontface='bold')
+nsdp_dens_comb = cowplot::plot_grid(nsdp_degree_dens+theme(legend.position='none'), 
+                                nsdp_eff_dens+theme(legend.position='none'), 
+                                nsdp_sensitivity_dens+theme(legend.position='none'), labels=c('G','H','I'),ncol=3)
+nsdp_dens_comb_title = cowplot::plot_grid(title, nsdp_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
+psn_degree_dens <- 
+    plot_density_prs(psn_df, deg, xlab='Degree')
+psn_eff_dens <- 
+    plot_density_prs(psn_df, eff_norm, xlab='Effectiveness')
+psn_sensitivity_dens <- 
+    plot_density_prs(psn_df, sens_norm, xlab='Sensitivity')
+title <- cowplot::ggdraw() + cowplot::draw_label("HuRI Profile similarity", fontface='bold')
+psn_dens_comb = cowplot::plot_grid(psn_degree_dens+theme(legend.position='none'), 
+                                psn_eff_dens+theme(legend.position='none'), 
+                                psn_sensitivity_dens+theme(legend.position='none'), labels=c('J','K','L'),ncol=3)
+psn_dens_comb_title = cowplot::plot_grid(title, psn_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
+dens_lgn = cowplot::get_legend(pcc_sensitivity_dens)
+dens_plots = cowplot::plot_grid(pcc_dens_comb_title,
+                                nsdp_dens_comb_title,
+                                psn_dens_comb_title,nrow=3)
+cowplot::plot_grid(dens_plots, dens_lgn,nrow=2,rel_heights=c(.9,.1))
+ggsave('reports/figures/paper_figures_1211_withcoex/fig1.png', width=8,height=12)
+    
+```
+
+```{r}
+real_random_labels = c('Real\nnetwork','Rewired\nnetwork')
+names(real_random_labels)  = c('real','random')
+pcc_deg_eff = pcc_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=eff_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Effectiveness")+
+    xlab("Degree")+
+    stat_cor(method='pearson', cor.coef.name='R', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+pcc_deg_sens = pcc_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=sens_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Sensitivity")+
+    xlab("Degree")+
+    stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+nsdp_deg_eff = nsdp_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=eff_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Effectiveness")+
+    xlab("Degree")+
+    stat_cor(method='pearson', cor.coef.name='R', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+nsdp_deg_sens = nsdp_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=sens_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Sensitivity")+
+    xlab("Degree")+
+    stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+psn_deg_eff = psn_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=eff_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+    theme_bw()+
+    ylab("Effectiveness")+
+    xlab("Degree")+
+    stat_cor(method='pearson', cor.coef.name='R', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+psn_deg_sens = psn_df %>%filter(group=='real')%>% #pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+    ggplot(aes(x=deg, y=sens_norm))+
+    geom_point()+
+#    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) )+
+    theme_bw()+
+    ylab("Sensitivity")+
+    xlab("Degree")+
+    stat_cor(method='spearman', cor.coef.name='rho', label.x.npc=0.1) +
+    theme(strip.text.y = element_text(angle = 0))+
+    scale_y_continuous(labels = scales::label_scientific(digits=1))
+deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
+                   nsdp_deg_eff, nsdp_deg_sens,
+                   psn_deg_eff, psn_deg_sens, labels = c('A','','B','','C','','D',''),
+                   ncol=2)
+ggsave('reports/figures/paper_figures_1211_withcoex/fig2.png',plot=deg_scatter_plots, width=10,height=10)
+
+```
+
+```{r}
+pcc_rewire_df = read_csv('data/interim/pcc_0909/rewire_data.csv')
+nsdp_rewire_df = read_csv('data/interim/npdp_1211/rewire_data.csv')
+psn_rewire_df = read_csv('data/interim/psn_1201/rewire_data.csv')
+
+rewire_df = pcc_rewire_df%>%mutate(data='pcc')%>%bind_rows(
+                                                           nsdp_rewire_df%>%mutate(data='nsdp'))%>%
+        bind_rows(psn_rewire_df%>%mutate(data='psn'))
+```
+
+```{r}
+network_labels  <- c('Yeast GI Profile Similarity','Yeast Coex','HuRI')
+#p3 = ggplot(rewire_df, aes(x=eff_deg_pearson))+
+#    stat_density(geom = "line", trim=TRUE)+
+##    geom_histogram(binwidth = 0.001)+
+#    geom_vline(xintercept=0.9,color='red')+
+#    theme_bw()
+
+facet_labels  <- network_labels
+names(facet_labels) <- c("pcc",'nsdp','psn')
+
+combined_rewire_df <- rewire_df%>%select(data, eff_deg_pearson,sens_deg_spearman)%>%mutate(type = 'random')%>% 
+    bind_rows(
+    data.frame(sens_deg_spearman= c(cor(pcc_df[pcc_df$group=='real',]$deg, pcc_df[pcc_df$group=='real',]$sens,method='spearman'),cor(nsdp_df[nsdp_df$group=='real',]$deg,nsdp_df[nsdp_df$group=='real',]$sens,method='spearman'),cor(psn_df[psn_df$group=='real',]$deg,psn_df[psn_df$group=='real',]$sens,method='spearman')), 
+               eff_deg_pearson= c(cor(pcc_df[pcc_df$group=='real',]$deg, pcc_df[pcc_df$group=='real',]$eff,method='pearson'),cor(nsdp_df[nsdp_df$group=='real',]$deg,nsdp_df[nsdp_df$group=='real',]$eff,method='pearson'),cor(psn_df[psn_df$group=='real',]$deg,psn_df[psn_df$group=='real',]$eff,method='pearson')), type='real',data=c('pcc','nsdp','psn')))%>%
+    mutate(data= fct_relevel(data, c('pcc','nsdp','psn')))
+
+p3 = 
+    ggplot()+
+    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+#    geom_boxplot()+
+#    geom_jitter()+
+    geom_density(data =combined_rewire_df%>%filter(type!='real'),aes(x=eff_deg_pearson,color=type, y=..scaled..),linetype = "dashed")+
+    geom_vline(data =combined_rewire_df%>%filter(type=='real'),aes(xintercept=eff_deg_pearson,color=type))+
+    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    ylab('Density')+xlab('Effectiveness degree correlation')+
+    theme_bw()+
+    theme(panel.spacing = unit(2, "lines"))+
+    scale_y_continuous(expand = c(0, 0)) 
+p4 = 
+    ggplot()+
+    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+#    geom_boxplot()+
+#    geom_jitter()+
+    geom_density(data =combined_rewire_df%>%filter(type!='real'),aes(x=sens_deg_spearman,y=..scaled..,color=type),linetype = "dashed")+
+    geom_vline(data =combined_rewire_df%>%filter(type=='real'),aes(xintercept=sens_deg_spearman,color=type))+
+    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    ylab('Density')+xlab('Sensitivity degree correlation')+
+    theme_bw()+
+    theme(panel.spacing = unit(2, "lines"),legend.position='bottom')+
+    scale_color_discrete(labels=c('Rewired networks', 'Real network'))+
+    scale_y_continuous(expand = c(0, 0)) 
+lgn34  <- cowplot::get_legend(p4)
+distr_plots <- plot_grid(
+          p3+theme(legend.position=''),
+ p4+theme(legend.position=''), lgn34,
+ nrow=3, labels=c('E','F',''), rel_heights = c(0.45,0.45,0.1))
+#ggsave('reports/figures/paper_figures_0916/fig2.png',plot=distr_plots , width=7)
+plot_grid(deg_scatter_plots, distr_plots, nrow=2,rel_heights = c(0.6,0.4))
+ggsave('reports/figures/paper_figures_1211_withcoex/fig3.png',width=10,height=12)
+```
+
+
+```{r deletion}
+pcc_deletion = read_csv('data/interim/deletion_analysis_0911/pcc_deletion_100.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='pcc')
+nsdp_deletion = read_csv('data/interim/deletion_analysis_0911/nsdp_deletion_100.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='nsdp')
+psn_deletion = read_csv('data/interim/deletion_analysis_0911/psn_deletion_100.csv')%>%
+    pivot_wider(id_cols=c('range','variable_0'),names_from='variable_1',values_from='value')%>%
+    mutate(range = range/max(range), gc_size = gc_size/max(gc_size), group='psn')
+
+deletion_df  <- bind_rows(pcc_deletion, nsdp_deletion, psn_deletion)%>%mutate(group = fct_relevel(group,c('pcc','nsdp','psn')))
+
+
+library(MESS)
+auc_data <- deletion_df%>%
+    group_by(group, variable_0)%>%
+    summarise(auc=MESS::auc(gc_size,range), r = range[min(which(gc_size < 0.05))])%>%
+    ungroup()%>%
+    mutate(variable_0=fct_reorder(variable_0, auc, min))%>%pivot_wider(-r, names_from=group, values_from=auc)
+
+auc_plot_pcc <- auc_data%>%
+    ggplot(aes(x=variable_0,y=pcc))+
+    geom_bar(aes(fill=variable_0,alpha = (variable_0 == "eff_sorted_deletion" )),stat='identity')+
+    theme_bw()+
+    ylab("Robustness")+
+    xlab("Deletion parameter")+
+    scale_alpha_manual(name = '', values = c(0.3, 1), guide = FALSE)+
+    labs(fill = "Deletion\nparameter")+
+    scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R",
+                                "DR",
+                                "S"))+
+    scale_fill_brewer(name = 'Deletion\nparameter', palette = "Set1", guide='legend', labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Degree Reversed",
+                                "Sensitivity"
+                                ))+
+   theme(legend.position='bottom', legend.title=element_text(size=18), legend.text=element_text(size=14),legend.spacing.x = unit(1.0, 'cm'),legend.spacing.y = unit(1.0, 'cm'))
+auc_plot_nsdp <- auc_data%>%
+    ggplot(aes(x=variable_0,y=nsdp))+
+    geom_bar(aes(fill=variable_0,alpha = (variable_0 == "eff_sorted_deletion" | variable_0 == 'sens_sorted_deletion') ),stat='identity')+
+    theme_bw()+
+    ylab("Robustness")+
+    xlab("Deletion parameter")+
+    labs(fill = "Deletion\nparameter")+
+    scale_alpha_manual(name = '', values = c(0.3, 1), guide = FALSE)+
+    scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R", "DR",
+                                "S"))+
+    scale_fill_brewer(name='', palette = "Set1", labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Sensitivity","Degree Reversed"))+
+   theme(legend.position='right')
+auc_plot_psn<- auc_data%>%
+    ggplot(aes(x=variable_0,y=psn, alpha = (variable_0 == "eff_sorted_deletion" ) ))+
+    geom_bar(aes(fill=variable_0),stat='identity')+
+    theme_bw()+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    ylab("Robustness")+
+    xlab("Deletion parameter")+
+    labs(fill = "Deletion\nparameter")+
+    scale_x_discrete(labels = c(
+                                "D",
+                                "B",
+                                "Eff",
+                                "C",
+                                "E",
+                                "R",
+                                "DR","S"))+
+    scale_fill_brewer(palette = "Set1", labels= c(
+                                "Degree",
+                                "Betweenness",
+                                "Effectiveness",
+                                "Closeness",
+                                "Eigencentrality",
+                                "Random",
+                                "Sensitivity","Degree Reversed"))+
+   theme(legend.position='right')
+#combined_df %>% group_by(data)%>%summarise(deg_btw = cor(deg, btw),
+#                                           deg_eff = cor(deg,eff),
+#                                           deg_sens = cor(deg,sens),
+#                                           deg_eigen = cor(deg, eigenvec_centr),
+#                                           deg_closeness = cor(deg, closeness_centr))
+deletion_plot_pcc <-  pcc_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+    ggplot(aes(x=range, y= gc_size, color = variable_0 , alpha = (variable_0 == "eff_sorted_deletion" ) ))+
+#    geom_point(size=1)+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('% Deleted Nodes')+
+    ylab('% Giant Component Size')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    theme_bw()+
+    ggtitle('Costanzo 2016')+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme(legend.position='bottom',panel.border = element_blank(), axis.line = element_line())
+deletion_plot_nsdp <-  nsdp_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+ggplot(aes(x=range, y= gc_size, color = variable_0 ,alpha = (variable_0 == "eff_sorted_deletion" )  ))+
+#    geom_point(size=1)+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('% Deleted Nodes')+
+    ggtitle('Yeast PPI')+
+    ylab('% Giant Component Size')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme_bw()+
+    theme(legend.position='right',panel.border = element_blank(), axis.line = element_line())
+deletion_plot_psn <-  psn_deletion%>%   mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0)))%>%
+ggplot(aes(x=range, y= gc_size, color = variable_0 , alpha = (variable_0 == "eff_sorted_deletion"  ) ))+
+#    geom_point(size=1)+
+        geom_line(size=2)+
+#    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
+    scale_colour_brewer(palette = "Set1")+ 
+    xlab('% Deleted Nodes')+
+    ylab('% Giant Component Size')+
+    ggtitle('HuRI')+
+    scale_y_continuous(labels = scales::percent)+
+    scale_x_continuous(labels = scales::percent)+
+    scale_alpha_manual(values = c(0.3, 1), guide = FALSE)+
+    theme_bw()+
+    theme(legend.position='right',panel.border = element_blank(), axis.line = element_line())
+deletion_lgn <- cowplot::get_legend(auc_plot_pcc)
+pcc_with_inset = ggdraw(deletion_plot_pcc+    theme(legend.position=''))+
+  draw_plot(auc_plot_pcc+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("A", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+nsdp_with_inset = ggdraw(deletion_plot_nsdp+    theme(legend.position=''))+
+  draw_plot(auc_plot_nsdp+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("B", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+psn_with_inset = ggdraw(deletion_plot_psn+    theme(legend.position=''))+
+  draw_plot(auc_plot_psn+theme(legend.position=''), .50, .62, .45, .35) +
+  draw_plot_label(
+    c("C", ""),
+    c(0, 0.45),
+    c(1, 0.95),
+    size = 12
+  )
+plot_grid(pcc_with_inset, nsdp_with_inset, psn_with_inset, ncol=3)%>%plot_grid(deletion_lgn,nrow=2, rel_heights=c(0.9,.1))
+ggsave('reports/figures/paper_figures_0916/fig4.png',width=12)
+
+
+plot_grid(deletion_plot_pcc+    theme(legend.position='')
+, auc_plot_pcc+    theme(legend.position='')
+,deletion_lgn, nrow=1, rel_widths =c(0.4, 0.5,.1), labels=c('A','B'))
+
+```
+
+# Sensor connectivity and neighbor degree
+
+```{r}
+
+#library(ggridges)
+
+#sensor_connectivity_df %>%
+#    filter(type=='random')%>%
+#    ggplot(aes(x=ratio,y=data))+
+##    facet_grid(rows=vars(data))+
+##    geom_histogram(bins=50)
+#    geom_density_ridges()
+#ggsave('tmp.png',width=12)
+
+sensor_connectivity_df <- read_csv('data/interim/sensor_connectivity_1205/sensor_connectivity_df.csv')%>%
+    mutate(data= fct_relevel(data, c('pcc','gi','nsdp','psn')))
+#p3 = 
+sensor_connectivity_plot <- 
+    ggplot()+
+    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+#    geom_boxplot()+
+#    geom_jitter()+
+    geom_density(data =sensor_connectivity_df%>%filter(type!='real'),aes(x=ratio,color=type, y=..scaled..),linetype = "dashed")+
+    geom_vline(data =sensor_connectivity_df%>%filter(type=='real'),aes(xintercept=ratio,color=type))+
+    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+    ylab('Density')+xlab('Ratio of between group edges to outgroup edges')+
+    theme_bw()+
+    scale_color_discrete(labels=c('Random sampled set', 'Sensors'))+
+    theme(legend.position='bottom')+
+    scale_y_continuous(expand = c(0, 0)) 
+##p3 = 
+#    ggplot()+
+#    geom_boxplot(data=sensor_connectivity_df%>%filter(type=='random'),
+#                 aes(x=data,y=ratio,color=type))+
+##    geom_jitter()+
+#    geom_vline(data=sensor_connectivity_df%>%filter(type=='real'),
+#            aes(x=data,y=ratio,color=type, group=data))+
+#               #position=position_jitter(), aes(shape=data))+
+#    scale_color_discrete(labels=c('Random sampled set', 'Sensors'))+
+#    scale_x_discrete(labels=network_labels)+
+#  guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+#    xlab('Network type')+ylab('Ratio of between group edges\nto outgroup edges')+
+#    theme_bw()
+neighbor_degree_plot <- combined_df%>%filter(group=='real')%>%group_by(data)%>%
+    mutate(is_sensor = factor(ifelse(sens_norm>quantile(sens_norm,0.99),TRUE,FALSE), levels=c(TRUE,FALSE)))%>%
+#    mutate(is_sensor = fct_relevel(is_sensor,c(TRUE,FALSE)))%>%
+    ggplot(aes(x=is_sensor,y=log(neighbor_degree)))+
+    facet_grid(cols=vars(data),labeller = labeller(data=facet_labels))+
+#    geom_point()+
+    geom_boxplot()+
+    theme_bw()+
+    ylab('Log(Average neighbor degree)')+
+    xlab('')+ stat_compare_means()+
+    scale_x_discrete(labels=c('aensor', 'Not Sensor'))
+plot_grid(neighbor_degree_plot, sensor_connectivity_plot, nrow=2 , labels=c('A','B'))
+ggsave('reports/figures/paper_figures_1204_withgi/fig5.png')
+
+#combined_df%>%filter(group=='real'&data=='psn')%>%mutate(is_sensor = ifelse(sens_norm>quantile(sens_norm,0.99),TRUE,FALSE))%>%
+#    coin::independence_test(neighbor_degree~is_sensor, data=.)
+
+```
+
+```{r}
+convert_networkx_to_igraph <- 			# 
+    function
+(
+ 	nx_object,
+    df
+)
+{
+    nx =  reticulate::import("networkx")
+    ig = igraph::graph.adjacency(nx$adjacency_matrix(nx_object), mode = 'undirected')
+    #ig = igraph::set_vertex_attr(ig , name =  'orf_name', value  = (df$orf_name))
+    ig = igraph::set_vertex_attr(ig , name =  'name', value  = (df$orf_name))
+    #igraph::set_vertex_attr(ig, "pos", nx_object$nodes('pos'))
+    ig
+}
+```
+```{r}
+library(RColorBrewer)
+col = brewer.pal(n=9, name='Set1')
+sensor_colors =col[1:6] #brewer.pal(n = 6, name = "Set1")
+effector_colors = col[7:9]#brewer.pal(n=3, name= "Set1_r")
+```
+
+
+```{python}
+sensor_colors = r.sensor_colors
+effector_colors = r.effector_colors
+sensors_pcc = e_pcc.df.loc[e_pcc.df.sens>np.quantile(e_pcc.df.sens,0.99)]
+#sensor_sub_pcc = get_subnetwork(e_pcc.graph_gc, sensors_pcc.orf_name.values)
+#is_sensor = dict(zip(sensor_sub_pcc.nodes, [True if i in sensors_pcc.orf_name.values else False  for i in sensor_sub_pcc.nodes]))
+#nx.set_node_attributes(sensor_sub_pcc, is_sensor, 'is_sensor')
+sensor_go_terms_separate = [
+    'iron ion\ntransport',
+    'phenylalanine\ntransport',
+    None, 
+    None,
+    None,
+    None,
+    'tricarboxylic\nacid cycle', 
+    'hexose metabolic\nprocess',
+    'protein folding',
+    'mitochondria-nucleus\nsignaling pathway/TCA',
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+]
+sensor_connected_components = sorted([sorted(list(i)) for i in nx.connected_components(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name))], key=lambda x: x[0])
+sensor_go_terms= {}
+for i in range(len(sensor_go_terms_separate)):
+    for j in sensor_connected_components[i]:
+        sensor_go_terms[j] = sensor_go_terms_separate[i]
+sensors_pcc = sensors_pcc.merge(pd.DataFrame.from_dict(sensor_go_terms,orient='index',columns=['go_group']),right_index=True,left_on='orf_name')
+
+effector_pcc = e_pcc.df.loc[e_pcc.df.eff>np.quantile(e_pcc.df.eff,0.99)]
+#effector_sub_pcc = get_subnetwork(e_pcc.graph_gc, effector_pcc.orf_name.values)
+#is_effector = dict(zip(effector_sub_pcc.nodes, [True if i in effector_pcc.orf_name.values else False  for i in effector_sub_pcc.nodes]))
+#nx.set_node_attributes(effector_sub_pcc, is_effector, 'is_effector')
+effectors_connected_comp = sorted([sorted(list(i)) for i in nx.connected_components(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()))], key=lambda x:x[0])
+effector_pcc.loc[:, 'go_group'] = ['mito' if i in effectors_connected_comp[0] else 'golgi' if i in effectors_connected_comp[1] else 'chromatin' for i in effector_pcc.orf_name]
+effector_order = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
+sensor_order = sensors_pcc.groupby('go_group').sens.median().sort_values().index.tolist()
+```
+
+```{python}
+from matplotlib.lines import Line2D
+pos = e_pcc.graph_gc.nodes('pos')
+fig, ax = plt.subplots(figsize=(12,12))
+legend_elements = [    ]
+e_pcc.plot_network_spring(ax=ax,
+                          node_size=1,
+                          node_color='black',
+ #                        node_size = [100 if i in sensors_pcc.orf_name.values or i in effector_pcc.orf_name.values else 1 for i in e_pcc.nodes],
+                         #node_color = ['red' if i in sensors_pcc.orf_name.values else 'blue' if i in effector_pcc.orf_name.values else 'black' for i in e_pcc.nodes],
+                         edge_color='black')
+#                         node_shape=['^' if i in sensors_pcc.orf_name.values else 'v' if i in effector_pcc.orf_name.values else 'o' for i in e_pcc.nodes])
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=sensors_pcc.orf_name.values, node_size=200, pos=pos,
+                          node_color='black',
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+for itr, i in enumerate(sensor_order):
+    #print(i, effector_colors[itr])
+
+    orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=sensor_colors[itr],
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+    legend_elements.append(
+        Line2D([0], [0], marker='^', color='black', label=f'Sensors ({i})',
+                              markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
+    )
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=effector_pcc.orf_name.values, node_size=100, pos=pos,
+                      node_color='black',
+                      node_shape='o')
+for itr, i in enumerate(effector_order):
+    orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=effector_colors[itr],
+                          node_shape='o',edgecolors='black',
+                          linewidths=1)
+    if i == 'mito':
+        lbl = 'Respiratory complex assembly'
+    elif i == 'golgi':
+        lbl = "Golgi vesicle transport"
+    else:
+        lbl = 'Chromosome segragation'
+    legend_elements.append(
+            Line2D([0], [0], marker='o', color='black', label=f'Effectors ({lbl})',
+                                  markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")
+        )
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='red', alpha=0.5)
+ax.set_facecolor('white')
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=4, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
+                              markerfacecolor='black', markersize=0, linestyle="-"),
+                   Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor edges',
+                              markerfacecolor='#018571', markersize=0, linestyle="-"),
+                   Line2D([0], [0], marker='o', color='blue', label= 'Effector-Effector edges',
+                              markerfacecolor='#a6611a', markersize=0, linestyle="-")]
+)
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
+plt.savefig('tmp_nw.png',bbox_inches='tight')
+```
+
+```{r}
+effector_pcc = py$effector_pcc
+sensors_pcc = py$sensors_pcc%>%mutate(go_group = (as.character(go_group)), go_group=ifelse(go_group=='NULL', NA, go_group))
+#library(tidyverse)
+effector_pcc$go_group = as.factor(effector_pcc$go_group)
+
+#res.aov <- kruskal.test(eff~go_group, data= effector_pcc)
+#res.aov
+effector_eff_pval = FSA::dunnTest(eff~go_group, effector_pcc)
+effector_eff_pval$res[effector_eff_pval$res$P.adj<0.1,]
+effector_deg_pval = FSA::dunnTest(deg~go_group, effector_pcc)
+effector_deg_pval$res[effector_deg_pval$res$P.adj<0.1,]
+
+eff_deg_comp<-ggplot(effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff)), aes(x= go_group, y=deg,fill=go_group))+
+    geom_boxplot(outlier.shape=NA)+
+    scale_fill_manual(values=effector_colors,
+                      labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+    xlab('')+
+    ylab('Degree')+
+    theme_bw()+
+    geom_signif(comparisons=list(c('golgi','chromatin'), c('golgi','mito'),c('mito','chromatin')),
+                annotation=c('**','***','ns'),
+                y_position=c(110,115,120))+
+    theme(axis.text.x=element_blank(),legend.title=element_blank(),legend.text = element_text(margin=margin(t=10,b=10)))#, legend.spacing.y = unit(2,'in'))+
+eff_eff_comp<-ggplot(effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff))%>%
+                      mutate(eff_norm =eff / 5183), aes(x= go_group, y=eff_norm,fill=go_group))+
+    geom_boxplot()+
+    #scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+    xlab('')+
+    ggpubr::stat_compare_means(method='kruskal.test')+
+    scale_fill_manual(values=effector_colors)+
+    ylab('Effectiveness')+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),legend.title=element_blank())
+ggsave('tmp.png', plot=eff_deg_comp)
+
+sens_deg_comp<-ggplot(sensors_pcc%>%drop_na()%>%mutate(go_group=fct_reorder(go_group, sens)), aes(x= go_group, y=deg,fill=go_group))+
+    geom_boxplot()+
+#    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+    xlab('')+
+    ylab('Degree')+
+    scale_fill_manual(values=sensor_colors)+
+    ggpubr::stat_compare_means(method='kruskal.test',label.x.npc=.3)+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),legend.title=element_blank(),
+          legend.text = element_text(margin=margin(t=10,b=10)))#, legend.spacing.y = unit(2,'cm'))
+sensors_pcc$go_group = as.factor(sensors_pcc$go_group)
+sensors_sens_pval = FSA::dunnTest(sens~go_group, sensors_pcc)
+sensors_sens_pval$res[sensors_sens_pval$res$P.adj<0.1,]
+
+sens_sens_comp<-ggplot(sensors_pcc%>%drop_na()%>%mutate(go_group=fct_reorder(go_group, sens))%>%
+                      mutate(sens_norm = sens / 5183), aes(x= go_group, y=sens_norm,fill=go_group))+
+    geom_boxplot()+
+    geom_signif(
+        comparisons = list(c("hexose metabolic\nprocess", 'phenylalanine\ntransport'),c("tricarboxylic\nacid cycle", 'phenylalanine\ntransport'),
+                            c('phenylalanine\ntransport', 'protein folding')),
+        annotation = c('**','**', '*'),y_position=c(0.007,0.0075, 0.008)
+                )+
+#    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+    xlab('')+
+    ylab('Sensitivity')+
+    scale_fill_manual(values=sensor_colors)+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),legend.title=element_blank())
+
+img <- 'tmp_nw.png' %>%
+  magick::image_read() #%>%
+  #magick::image_resize("570x380") 
+
+nw_img = cowplot::ggdraw()+
+    cowplot::draw_image(img, width=1)
+go_plots = cowplot::plot_grid(
+                   sens_deg_comp+theme(legend.position='none'),
+                   sens_sens_comp+theme(legend.position='none'),
+                   cowplot::get_legend(sens_deg_comp),eff_deg_comp+theme(legend.position='none'),
+                   eff_eff_comp+theme(legend.position='none'),
+                   cowplot::get_legend(eff_deg_comp),ncol=3, labels=c('B','C','','D','E',''))
+combined = cowplot::plot_grid(nw_img, go_plots,nrow=2,rel_heights=c(0.4,0.6), labels=c('A',''))
+ggsave('reports/figures/paper_figures_0916/fig6.png',plot=combined,width=9,height=12)
+```
+

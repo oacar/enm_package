@@ -1,0 +1,130 @@
+---
+jupyter:
+  jupytext:
+    formats: ipynb,Rmd
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.5.2
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+---
+
+<!-- #region toc=true -->
+<h1>Table of Contents<span class="tocSkip"></span></h1>
+<div class="toc"><ul class="toc-item"></ul></div>
+<!-- #endregion -->
+
+```{r}
+library(tidyverse)
+library(edgeR)
+library(tximport)
+library(GenomicFeatures)
+```
+
+```{r}
+ann  <-  '~/data/genome/gtf/Saccharomyces_cerevisiae.R64-1-1.46.gtf'
+table_  <- data.table::fread('~/data/PRJNA475469/SraRunTable_PRJNA475469.txt')
+samples <- table_ %>%
+                dplyr::select(`Run`,`kinase_inhibitor`,
+                       `media`, stress, Genotype)%>%
+                #unite('condition', `Factor Value[genotype]`,`Factor Value[environmental stress]`)%>%
+                distinct()#
+```
+
+```{r}
+files <- file.path('~/data/rnaseq/PRJNA475469/quants',(samples$Run),'quant.sf')
+names(files) <- samples$Run
+```
+
+```{r jupyter={'outputs_hidden': True}}
+txdb <- makeTxDbFromEnsembl("Saccharomyces cerevisiae",
+                                    server="useastdb.ensembl.org")
+k <- keys(txdb, keytype = "TXNAME")
+tx2gene <- AnnotationDbi::select(txdb, k, "GENEID", "TXNAME")
+txi.salmon <- tximport(files,type='salmon',tx2gene=tx2gene)
+
+ypd_wt <-  samples%>%filter(Genotype=='WT')%>%mutate(stress=ifelse(media=='SDC','SD',ifelse(stress=='None','YPD',stress)))
+ypd_wt_runids <-ypd_wt%>%dplyr::select(Run)%>%pull()
+```
+
+```{r}
+counts_mat<- txi.salmon$counts[,ypd_wt_runids]
+y <- DGEList(counts=counts_mat)
+y <- calcNormFactors(y,method='TMM')
+tmm <- cpm(y)
+```
+
+```{r}
+samples
+```
+
+```{r}
+
+```
+
+```{r}
+ypd_sdc_runids <- samples%>%filter(kinase_inhibitor=='None'&(stress=='None'|stress=='Glucose_Dropout')&media=='YPD'&Genotype=='WT')%>%dplyr::select(Run)%>%pull()
+ypd_sdc_runids
+```
+
+```{r}
+
+counts_mat<- txi.salmon$counts[,ypd_sdc_runids]
+y <- DGEList(counts=counts_mat)
+y <- calcNormFactors(y,method='TMM')
+tmm <- cpm(y)
+
+
+condition <- factor(samples%>%dplyr::filter(Run%in%ypd_sdc_runids)%>%dplyr::select(stress)%>%pull())
+condition<-relevel(condition,ref='None')
+design <- model.matrix(~condition)
+rownames(design) <- colnames(y)
+y <- estimateDisp(y,design,robust=T)
+y$common.dispersion
+
+
+
+```
+
+```{r}
+fit <- glmFit(y,design)
+lrt_ds <- glmLRT(fit,coef=2)
+FDR <- p.adjust(lrt_ds$table$PValue, method="BH")
+tb <- lrt_ds$table
+tb['FDR']  <- FDR
+
+#tb[lst_of_genes,]
+```
+
+```{r}
+enm_df <- data.table::fread('../data/interim/0824_df_withlinkcom.csv')
+```
+
+```{r jupyter={'outputs_hidden': True}}
+enm_df
+```
+
+```{r}
+strain_ids <- data.table::fread('../data/interim/strain_ids_with_experiment_count_all.csv')
+```
+
+```{r}
+enm_rnaseq = enm_df %>% 
+inner_join(strain_ids,c('orf_name'='Allele Gene name'))%>%
+inner_join(tb%>%rownames_to_column('orf_name'),c('Systematic gene name.y'='orf_name'))
+```
+
+```{r}
+enm_rnaseq %>%ggplot(aes(x=eff,y=(logFC),col=FDR < 0.01))+
+    geom_point()+
+    geom_hline(yintercept=1)+
+    geom_hline(yintercept=-1)
+```
+
+```{r}
+
+```

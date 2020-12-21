@@ -49,6 +49,7 @@ random_dfs_list = lapply(list.files('data/interim/pcc_1020/random_dfs', full.nam
 random_dfs_list = mapply(c, random_dfs_list, list.files('data/interim/pcc_1020/random_dfs'), SIMPLIFY=F)
 random_dfs_100 = data.table::rbindlist(random_dfs_list,fill=T)
 colnames(random_dfs_100)[length(colnames(random_dfs_100))] <- 'filename'
+random_dfs_100<- random_dfs_100%>%mutate(eff_norm = eff/nrow(pcc_df), sens_norm=sens/nrow(pcc_df))
 ```
 ```{r}
 theme_fontsize = theme(axis.text = element_text(size = 14), axis.title = element_text(size = 20), legend.text = element_text(size=16))
@@ -83,7 +84,7 @@ degree_dens <-
 #    facet_grid(rows=vars(data))+
     #geom_density()+
     geom_line(data=     combined_df%>%filter(group=='real'),aes(x=deg,y=..scaled..,color=group),stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data=     combined_df%>%filter(group=='random'),aes(x=deg,y=..scaled..,color=group),stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
+    geom_line(data=     random_dfs_100%>%dplyr::mutate(group='random'),aes(x=deg,y=..scaled..,fill=filename),stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
     theme_bw()+
     xlab('Degree')+
     ylab('Density')+
@@ -100,8 +101,8 @@ eff_dens <-
     geom_line(data= combined_df%>%filter(group=='real'),
                aes(x=eff_norm ,y=..scaled.., color=group),
                stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data= combined_df%>%filter(group=='random'),
-               aes(x=eff_norm ,y=..scaled..,color=group),
+    geom_line(data= random_dfs_100%>%mutate(group='random'),
+               aes(x=eff_norm ,y=..scaled..,fill=filename),
                stat = 'density',linetype = "dashed" )+#, binwidth = 0.1) + 
     #geom_histogram(binwidth=0.0001)+
     theme_bw()+
@@ -121,8 +122,8 @@ sensitivity_dens <-
     geom_line(data= combined_df%>%filter(group=='real'),
                aes(x=sens_norm,y=..scaled.. , color=group),
                stat = 'density')+#, binwidth = 0.1) + 
-    geom_line(data= combined_df%>%filter(group=='random'),
-               aes(x=sens_norm ,y=..scaled..,color=group),
+    geom_line(data= random_dfs_100%>%dplyr::mutate(group='random'),
+               aes(x=sens_norm,y=..scaled..,fill=filename),
                stat = 'density',linetype = "dashed")+#, binwidth = 0.1) + 
     #geom_histogram(binwidth=0.0001)+
     theme_bw()+
@@ -144,7 +145,7 @@ annotate("text", x = 0.001, y = 0.9, label=sprintf("p = %#.2f", sens_p), fontfac
 dens_lgn = cowplot::get_legend(sensitivity_dens)
 dens_plots = cowplot::plot_grid(degree_dens+theme(legend.position='none'), eff_dens+theme(legend.position='none'), sensitivity_dens+theme(legend.position='none'), ncol=3,labels=c('A','B','C'))
 cowplot::plot_grid(dens_plots, dens_lgn,nrow=2,rel_heights=c(.9,.1))
-#ggsave('tmp.png')
+ggsave('tmp.png')
 #ggsave('reports/figures/poster_figures_1023/fig3.png')
 #    coord_trans(x = "log10", y = "log1p")
 #    scale_x_continuous(trans = "log10")
