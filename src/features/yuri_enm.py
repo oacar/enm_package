@@ -14,7 +14,9 @@ yuri.read_network('data/interim/yuri/yuri_combined.csv')
 yuri.gnm_analysis(normalized=False)
 
 yuri.figure_path=figure_path
-yuri.output_path = 'data/interim/yuri_0916/'
+yuri.output_path = 'data/interim/yuri_1205/'
+if os.path.exists(yuri.output_path)==False:
+    os.mkdir(yuri.output_path)
 #yuri.plot_collectivity()
 yuri.spring_pos()
 #yuri.plot_network_spring()
@@ -22,7 +24,7 @@ yuri.spring_pos()
 #yuri.plot_scatter(x='deg',y='eff',figure_name='deg_eff',figure_extension='pdf')
 #yuri.plot_scatter(x='deg',y='sens',figure_name='deg_sens',figure_extension='pdf')
 #
-yuri.simulate_rewire(output_name='rewire_data',save=True,normalized=False)
+yuri.simulate_rewire(output_name='rewire_data',save=True,normalized=False,simnum=10)
 ##yuri.rewire_df
 #yuri.plot_correlation_density(x='eff',y='deg',figure_extension='pdf')
 #yuri.plot_correlation_density(x='sens',y='deg',correlation='spearman',figure_extension='pdf')

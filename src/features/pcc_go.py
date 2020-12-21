@@ -20,13 +20,26 @@ goea, geneid2name = create_goea(gaf = 'data/raw/ontology/sgd.gaf', obo_fname='da
 sensors_pcc = e_pcc.df.loc[e_pcc.df.sens> np.quantile(e_pcc.df.sens,0.99)]
 effectors_pcc = e_pcc.df.loc[e_pcc.df.eff> np.quantile(e_pcc.df.eff,0.99)]
 degs_pcc = e_pcc.df.loc[e_pcc.df.deg> np.quantile(e_pcc.df.deg,0.99)]
+query = e_pcc.df.loc[e_pcc.df.orf_name.isin(sensors_pcc.orf_name),'Systematic gene name'].unique()
+query_gene_ids = [key for key,value in geneid2name.items() if value in query]
+goea_res_all = goea.run_study(query_gene_ids)
+goea_res_sig = [r for r in goea_res_all if r.p_fdr_bh <0.1]
+go_df_sensor = goea_to_pandas(goea_res_sig, geneid2name)
+goea.wr_tsv('data/interim/pcc_0909/pcc_sensor_go.tsv', goea_res_sig)
+
+query = e_pcc.df.loc[e_pcc.df.orf_name.isin(effectors_pcc.orf_name),'Systematic gene name'].unique()
+query_gene_ids = [key for key,value in geneid2name.items() if value in query]
+goea_res_all = goea.run_study(query_gene_ids)
+goea_res_sig = [r for r in goea_res_all if r.p_fdr_bh <0.1]
+go_df_sensor = goea_to_pandas(goea_res_sig, geneid2name)
+goea.wr_tsv('data/interim/pcc_0909/pcc_effector_go.tsv', goea_res_sig)
+
 query = e_pcc.df.loc[e_pcc.df.orf_name.isin(degs_pcc.orf_name),'Systematic gene name'].unique()
 query_gene_ids = [key for key,value in geneid2name.items() if value in query]
 goea_res_all = goea.run_study(query_gene_ids)
-goea_res_sig = [r for r in goea_res_all if r.p_fdr_bh <0.05]
+goea_res_sig = [r for r in goea_res_all if r.p_fdr_bh <0.1]
 go_df_sensor = goea_to_pandas(goea_res_sig, geneid2name)
-
-goea.wr_tsv('data/interim/pcc_0909/pcc_sensor_go.tsv', goea_res_sig)
+goea.wr_tsv('data/interim/pcc_0909/pcc_deg_go.tsv', goea_res_sig)
 
 from goatools.godag_plot import GODagPltVars
 

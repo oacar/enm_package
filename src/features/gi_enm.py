@@ -48,11 +48,11 @@ enm_02.gnm_analysis(normalized=False)
 
 #enm.figure_path=figure_path
 enm_02.output_path = 'data/interim/gi_1205_0.2/'
-os.mkdir(enm_02.output_path)
+#os.mkdir(enm_02.output_path)
 enm_02.get_category('data/interim/strain_ids_with_experiment_count_all.csv')
 enm_02.spring_pos()
 
-os.mkdir(f"{enm_02.output_path}/random_dfs")
+#os.mkdir(f"{enm_02.output_path}/random_dfs")
 enm_02.simulate_rewire(output_name='rewire_data',save=True, normalized=False,sim_num=10)
 random_dfs = [enm_02.e_list[i].df.to_csv(f'{enm_02.output_path}/random_dfs/rand_{i}.csv') for i in range(10)]
 #enm.simulate_rewire(output_name='rewire_data_nodegseq', save=True, nodegseq=True, normalized=False, sim_num=10)

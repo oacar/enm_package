@@ -14,7 +14,9 @@ huri.read_network('data/interim/huri/huri_cleared.csv')
 huri.gnm_analysis(normalized=False)
 
 huri.figure_path=figure_path
-huri.output_path = 'data/interim/huri_0916/'
+huri.output_path = 'data/interim/huri_1205/'
+if os.path.exists(huri.output_path)==False:
+    os.mkdir(huri.output_path)
 #huri.plot_collectivity()
 huri.spring_pos()
 #huri.plot_network_spring()
@@ -22,7 +24,10 @@ huri.spring_pos()
 #huri.plot_scatter(x='deg',y='eff',figure_name='deg_eff',figure_extension='pdf')
 #huri.plot_scatter(x='deg',y='sens',figure_name='deg_sens',figure_extension='pdf')
 
-huri.simulate_rewire(output_name='rewire_data',save=True,normalized=False)
+huri.simulate_rewire(output_name='rewire_data',save=True,normalized=False, simnum=10)
+if os.path.exists(f"{huri.output_path}/random_dfs")==False:
+    os.mkdir(f"{huri.output_path}/random_dfs")
+random_dfs = [huri.e_list[i].df.to_csv(f'{huri.output_path}/random_dfs/rand_{i}.csv') for i in range(10)]
 #huri.rewire_df
 #huri.plot_correlation_density(x='eff',y='deg',figure_extension='pdf')
 #huri.plot_correlation_density(x='sens',y='deg',correlation='spearman',figure_extension='pdf')
