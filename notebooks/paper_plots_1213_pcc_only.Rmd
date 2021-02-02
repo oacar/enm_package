@@ -51,22 +51,33 @@ combined_df =pcc_df
 Degree - Eff - Sens distributions
 ```{r}
 
-pcc_degree_dens <- 
-    plot_density_prs(pcc_df, deg, xlab='Degree')
 pcc_eff_dens <- 
     plot_density_prs(pcc_df, eff_norm, xlab='Effectiveness')
+dens_lgn = cowplot::get_legend(pcc_eff_dens+theme(legend.position='right'))
+pcc_degree_dens <- cowplot::ggdraw(plot_density_prs(pcc_df, deg, xlab='Degree')+theme(legend.position='none'))+
+        cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+pcc_eff_dens <- 
+    cowplot::ggdraw(plot_density_prs(pcc_df, eff_norm, xlab='Effectiveness')+theme(legend.position='none')+
+    coord_trans(x = "log10", xlim=c(NA,10e-2))+
+scale_x_continuous(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10", scales::math_format(10^.x))
+ ) )+
+        cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
 #annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
 pcc_sensitivity_dens <- 
-    plot_density_prs(pcc_df, sens_norm, xlab='Sensitivity')
+    cowplot::ggdraw(plot_density_prs(pcc_df, sens_norm, xlab='Sensitivity')+theme(legend.position='none'))+
+        cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
 title <- cowplot::ggdraw() + cowplot::draw_label("Yeast GI Profile Similarity", fontface='bold')
-pcc_dens_comb = cowplot::plot_grid(pcc_degree_dens+theme(legend.position='none'), 
-                                pcc_eff_dens+theme(legend.position='none'), 
-                                pcc_sensitivity_dens+theme(legend.position='none'), labels=c('A','B','C'),ncol=3)
+pcc_dens_comb = cowplot::plot_grid(pcc_degree_dens,#+theme(legend.position='none'), 
+                                pcc_eff_dens,#+theme(legend.position='none'), 
+                                pcc_sensitivity_dens,#+theme(legend.position='none'),
+                                labels=c('A','B','C'),ncol=3)
 pcc_dens_comb_title = cowplot::plot_grid(title, pcc_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
-dens_lgn = cowplot::get_legend(pcc_sensitivity_dens)
+#dens_lgn = cowplot::get_legend(pcc_sensitivity_dens)
 dens_plots = cowplot::plot_grid(pcc_dens_comb_title,nrow=1)
-cowplot::plot_grid(dens_plots, dens_lgn,nrow=2,rel_heights=c(.9,.1))
-ggsave('reports/figures/paper_figures_1213_pcc_only/fig1.png', width=4,height=4)
+#cowplot::plot_grid(dens_plots, dens_lgn,nrow=2,rel_heights=c(.9,.1))
+ggsave('reports/figures/paper_figures_0202_pcc_only/fig1.png', plot=dens_plots,width=4,height=4)
     
 ```
 
@@ -96,7 +107,7 @@ pcc_deg_sens = pcc_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:e
 deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
                     labels = c('D','E'),
                    ncol=2)
-ggsave('reports/figures/paper_figures_1213_pcc_only/fig2.png',plot=deg_scatter_plots, width=10,height=10)
+ggsave('reports/figures/paper_figures_0202_pcc_only/fig2.png',plot=deg_scatter_plots, width=10,height=10)
 ```
 
 ```{r}
@@ -138,13 +149,15 @@ p4 =
     scale_y_continuous(expand = c(0, 0)) 
 lgn34  <- cowplot::get_legend(p4)
 distr_plots <- plot_grid(
-          p3+theme(legend.position=''),
- p4+theme(legend.position=''),labels=c('F','G'),nrow=1 )
-distr_plots_withlgn <- plot_grid(distr_plots, lgn34,
- nrow=2,rel_heights = c(0.9,0.1))
+          ggdraw(p3+theme(legend.position=''))+
+        cowplot::draw_plot(dens_lgn, .45,.45,.5,.5),
+ggdraw( p4+theme(legend.position=''))+
+        cowplot::draw_plot(dens_lgn, .45,.45,.5,.5),labels=c('F','G'),nrow=1 )
+#distr_plots_withlgn <- plot_grid(distr_plots, lgn34,
+# nrow=2,rel_heights = c(0.9,0.1))
 #ggsave('reports/figures/paper_figures_0916/fig2.png',plot=distr_plots , width=7)
-plot_grid(dens_plots, deg_scatter_plots, distr_plots_withlgn, nrow=3,rel_heights = c(0.4,0.3,.3))
-ggsave('reports/figures/paper_figures_1213_pcc_only/fig3.png',width=10,height=12)
+plot_grid(dens_plots, deg_scatter_plots, distr_plots, nrow=3,rel_heights = c(0.4,0.3,.3))
+ggsave('reports/figures/paper_figures_0202_pcc_only/fig3.png',width=10,height=12)
 ```
 
 
@@ -391,7 +404,7 @@ plot_grid(neighbor_degree_plot,
           nrow=2 , 
           labels=c('A','B','C',''))#%>%
 #    plot_grid(, labels=c('','C'),nrow=2, rel_widths=c(2,1))
-ggsave('reports/figures/paper_figures_1213_pcc_only/fig5.pdf',width=6,height=6)
+ggsave('reports/figures/paper_figures_0202_pcc_only/fig5.pdf',width=6,height=6)
 
 #combined_df%>%filter(group=='real'&data=='huri')%>%mutate(is_sensor = ifelse(sens_norm>quantile(sens_norm,0.99),TRUE,FALSE))%>%
 #    coin::independence_test(neighbor_degree~is_sensor, data=.)
@@ -507,7 +520,7 @@ for itr, i in enumerate(effector_order):
     elif i == 'golgi':
         lbl = "Golgi vesicle transport"
     else:
-        lbl = 'Chromosome segragation'
+        lbl = 'Chromosome segregation'
     legend_elements.append(
             Line2D([0], [0], marker='o', color='black', label=f'Effectors ({lbl})',
                                   markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")

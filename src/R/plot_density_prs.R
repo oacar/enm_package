@@ -28,7 +28,7 @@ scale_x_continuous(
    breaks = scales::trans_breaks("log10", function(x) 10^x),
    labels = scales::trans_format("log10", scales::math_format(10^.x))
  ) +
-    scale_color_discrete(labels=c('Rewired networks','Real network'))+
+    scale_color_discrete(labels=c('Rewired\nnetworks','Real\nnetwork'))+
 theme(panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())#+theme_fontsize+
 dens_plot
 }

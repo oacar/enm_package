@@ -731,7 +731,7 @@ for itr, i in enumerate(effector_order):
     elif i == 'golgi':
         lbl = "Golgi vesicle transport"
     else:
-        lbl = 'Chromosome segragation'
+        lbl = 'Chromosome segregation'
     legend_elements.append(
             Line2D([0], [0], marker='o', color='black', label=f'Effectors ({lbl})',
                                   markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")
