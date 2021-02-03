@@ -82,7 +82,7 @@ ggsave('reports/figures/paper_figures_0202_pcc_only/fig1.png', plot=dens_plots,w
 ```
 
 ```{r}
-real_random_labels = c('Real\nnetwork','Rewired\nnetwork')
+real_random_labels = c('Genetic\nnetwork','Random\nnetwork')
 names(real_random_labels)  = c('real','random')
 pcc_deg_eff = pcc_df %>% filter(group=='real')%>%#pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
     ggplot(aes(x=deg, y=eff_norm))+
@@ -145,7 +145,7 @@ p4 =
     ylab('Density')+xlab('Sensitivity degree correlation')+
     theme_bw()+
     theme(panel.spacing = unit(2, "lines"),legend.position='bottom')+
-    scale_color_discrete(labels=c('Rewired networks', 'Real network'))+
+    scale_color_discrete(labels=c('Random networks', 'Genetic network'))+
     scale_y_continuous(expand = c(0, 0)) 
 lgn34  <- cowplot::get_legend(p4)
 distr_plots <- plot_grid(
