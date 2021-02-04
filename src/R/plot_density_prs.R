@@ -5,6 +5,7 @@ plot_density_prs <- 			#
  	df , x , xlab= 'Effectiveness', ylab='Density', coord_trans='log10', linesize = 1
 )
 {
+    color_pal <- c('#00BFC4','#F8766D')
 dens_plot <- 
     ggplot()+
     #facet_grid(rows=vars(data))+
@@ -14,12 +15,15 @@ dens_plot <-
                stat = 'density')+#, binwidth = 0.1) + 
     geom_line(data= df%>%filter(group=='random'),
                aes(x={{x}} ,y=..scaled..,fill=random_id, color=group),
-               stat = 'density',linetype = "dashed" )+#, binwidth = 0.1) + 
+               stat = 'density' ,show.legend=F)+#, binwidth = 0.1) + 
 #    geom_errorbar(data= df%>%filter(group=='real'), stat = "vline", xintercept = "mean",
 #  width=0.8,aes(x = eff_norm , xmax=..x..,xmin=..x..))+
-    geom_vline(data= df%>%filter(group=='real'),aes(xintercept = mean({{x}}), color=group),size=linesize, linetype='dotted')+
-    geom_vline(data= df%>%filter(group=='random'),aes(xintercept = mean({{x}}), color=group, group=random_id), size=linesize, linetype='dotted')+
+    geom_vline(data= df%>%filter(group=='real')%>%mutate(g = T),aes(xintercept = mean({{x}}), linetype='Real'),color=color_pal[1],size=linesize, show.legend=NA)+
+    geom_vline(data= df%>%filter(group=='random')%>%mutate(g = F),aes(xintercept = mean({{x}}),linetype='Random', group=random_id),color=color_pal[2], size=linesize,show.legend=NA)+
     #geom_histogram(binwidth=0.0001)+
+    scale_linetype_manual(name = "Limits", labels = c("real", "random"), values = c("Real" = 3, "Random" = 3)) +
+    guides(colour=guide_legend(override.aes = list(linetype=1)),
+           linetype=guide_legend(override.aes=list(colour=color_pal)))+
     theme_bw()+
     ylab(ylab)+
     xlab(xlab)+
