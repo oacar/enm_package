@@ -71,6 +71,16 @@ def create_goea_human(gene2go = '../data/raw/ontology/gene2go', obo_fname = '../
     return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl
 
 def go_findenrichment( query, outname=None, species='yeast',**kwargs):
+    """Get a query dataframe with set of orfs and return significant go results by first creating goa analysis object and running enrichment analysis
+    use this function instead of `query_goatools` to create goatools object and write results to file directly
+
+    :param query: dataframe for query genes
+    :type query: pandas dataframe
+    :param outname: tsv filename to write results, if None the results will be written to stdio, defaults to None
+    :type outname: str, optional
+    :param species: which species is under question. depreceated, defaults to 'yeast'
+    :type species: str, optional
+    """
     goeaobj, geneid2name = create_goea(**kwargs)
     query_gene_ids = [key for key,value in geneid2name.items() if value in query]#sgd_info[sgd_info.iloc[:,3].isin(query)].iloc[:,0].values.tolist()
 
@@ -97,6 +107,25 @@ def goea_to_pandas(goea_results_sig, geneid2name):
         orf_names.append([geneid2name[_id] for _id in i])
     go_df_n.study_items = orf_names
     return go_df_n 
+
+
+def query_goatools(query, goea,geneid2name):
+    """get query dataframe and goa files and return enrichments
+
+    :param query: query gene dataframe
+    :type query: pandas dataframe
+    :param goea: goa object that will be used to run gene ontology analysis using GOAtools
+    :type goea: goatools.goea.go_enrichment_ns.GOEnrichmentStudyNS
+    :param geneid2name: dictionary to map geneids to gene names. needed to convert systematic names to intended names
+    :type geneid2name: dict
+    :return: enrichment dataframe 
+    :rtype: pandas dataframe
+    """
+    query_gene_ids = [key for key,value in geneid2name.items() if value in query.loc[:,'Systematic gene name'].unique()]
+    goea_res_all = goea.run_study(query_gene_ids)
+    goea_res_sig = [r for r in goea_res_all if r.p_fdr_bh <0.1]
+    go_df_sensor = goea_to_pandas(goea_res_sig, geneid2name)
+    return go_df_sensor
 
 def network_chance_deletion(list_of_nodes,Gc,out_dict):
     random_hinges = list_of_nodes#df_.sort_values('deg',ascending=False).iloc[0:i,0].tolist()

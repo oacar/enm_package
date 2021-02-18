@@ -5,11 +5,13 @@ import pandas as pd
 import prody
 import numpy as np
 import igraph
+import scipy.cluster.hierarchy as sch
+import copy
 from tqdm import tqdm
 
 from .visualize.visualize import plot_collectivity,plot_correlation_density,plot_network_spring,plot_scatter,plot_vector,heatmap_annotated, plot_fiedler_data
 #from .utilities import *
-from .utils import jaccard_index
+from .utils import jaccard_index, query_goatools
 
 
 class Enm():
@@ -38,7 +40,9 @@ class Enm():
         self.coll_index_sorted = None
         self.prs_mat = None
         self.prs_mat_df  = None
+        self.prs_mat_cl = None
         self.L = None
+        self.go_groups = {}
 
     def print_name(self):
         """This prints name variable
@@ -141,7 +145,7 @@ class Enm():
         """
         df = pd.DataFrame()
         df['orf_name'] = self.nodes
-        df['deg'] = self.degree
+        df['deg'] = np.diag(self.L)
         eff_orig = np.sum(self.prs_mat, axis=1)
         sens_orig = np.sum(self.prs_mat, axis=0)
         eigvecs_df = pd.DataFrame(self.gnm.getEigvecs(
@@ -229,6 +233,88 @@ class Enm():
         #db_connection = sql.create_engine(db_connection_str)
         #db_df = pd.read_sql('SELECT * FROM SUMMARY_2012', con=db_connection)
         #combined_df = pd.merge(combined_df, db_df, left_on='Systematic gene name', right_on='orf_name')
+
+    def get_sensor_effector(self, use_threshold=True, quantile_threshold=0.99):
+        """create sensor and effector sub dataframes using PRS matrix clusters or effectiveness sensitivity thresholds
+
+        :param use_threshold: if true, the nodes with effectiveness/sensitivity above quantile threshold will be taken as effectors and sensors, defaults to True
+        :type use_threshold: bool, optional
+        :param quantile_threshold: any effectiveness/sensitivity value above this quantile will be important, defaults to 0.99
+        :type quantile_threshold: float, optional
+        """
+        if self.df is None:
+            self.gnm_analysis()
+        if use_threshold:
+            sensors_df = self.df.loc[self.df.sens>np.quantile(self.df.sens,quantile_threshold)]
+            effectors_df = self.df.loc[self.df.eff>np.quantile(self.df.eff,quantile_threshold)]
+        else:
+            if self.prs_mat_cl is None:
+                self.cluster_matrix(self.prs_mat)
+            sensors_df = self.df.iloc[self.get_clustered_nodes('column'),:]
+            effectors_df = self.df.iloc[self.get_clustered_nodes('row'),:]
+        self.sensors_df = sensors_df
+        self.effectors_df = effectors_df
+
+    def analyze_components_biology(self, goea, geneid2name, sensors=True):
+        """Use sets of sensors or effectors to find connected components among them and calculate GO term enrichments 
+
+        :param goea: GOAtools object for GO enrichment analysis
+        :type goea: 
+        :param geneid2name: dictionary for name convention
+        :type geneid2name: dict
+        :param sensors: if true uses self.sensors_df, else uses self.effectors_df for analysis, defaults to True
+        :type sensors: bool, optional
+        """
+        try:
+            if sensors:
+                col_name = 'sensor_cluster'
+                df = self.sensors_df
+            else:
+                col_name = 'effector_cluster'
+                df = self.effectors_df
+        
+        except AttributeError :
+                print(
+                    'Sensors or effectors dataframe might be missing. Make sure to call get_sensor_effector() first')
+        components = [i for i in nx.connected_components(nx.induced_subgraph(self.graph_gc, df.orf_name))]
+        dd = {}
+        for i,j in dict(zip(range(len(components)),components)).items():
+            id_ = i if len(j)>3 else None
+            for item in j:
+                dd[item]=id_
+        df.loc[:,col_name] = df['orf_name'].map(dd)
+        go_terms = {}
+        for i in df.loc[pd.isna(df[col_name])==False,col_name].unique():
+            go_terms[i] = query_goatools(df.loc[df[col_name]==i,:], goea, geneid2name)
+        df['go_group'] = None
+        if sensors:
+            self.go_groups['sensors_go_groups'] = go_terms
+        else:
+            self.go_groups['effectors_go_groups'] = go_terms
+        for i,j in go_terms.items():
+            if j is not None:
+                df.loc[df[col_name]==i,'go_group']=j.iloc[0,3]
+
+    def get_clustered_nodes(self, dimension='row'):
+        """Uses the prs matrix clustering for row or columns separately and takes the smaller cluster of 2nd level as the effector or sensor nodes cluster
+
+        :param dimension: which linkage should be used, defaults to 'row'
+        :type dimension: str, optional
+        :return: node ids
+        :rtype: list
+        """
+        if dimension == 'row':
+            root = self.root_row
+        else:
+            root = self.root_col
+        right = root.right
+        left = root.left
+        if right.get_count() < left.get_count():
+            nds = right.pre_order()
+        else:
+            nds = left.pre_order()
+        return nds
+
     def set_perturb_profile(self,source, get_col=True):
         if get_col:
             gene_perturb_profile = self.prs_mat_df.loc[source,:]
@@ -261,6 +347,41 @@ class Enm():
         for i,val_i in enumerate(self.nodes):
             dist_to_center[val_i]=np.linalg.norm(pos[val_i])
         self.dist_to_center = dist_to_center
+
+    def cluster_matrix(self, mat, method='ward', distance_metric='seuclidean', quantile_threshold = 0.95, cluster_normalized=True, show_normalized=True, optimal_ordering=True):
+        """create row and column linkage for given matrix `max`
+
+        :param mat: the input matrix to be clustered
+        :type mat: numpy matrix, 2 dimensional
+        :param method: clustering method. see `scipy.cluster.hierarchy.linkage` for details, defaults to 'ward'
+        :type method: str, optional
+        :param quantile_threshold: any values above this quantile will be equal to quantile value , defaults to 0.95
+        :type quantile_threshold: float, optional
+        :param cluster_normalized: whether to cluster the matrix after using quantile threshold or not, defaults to True
+        :type cluster_normalized: bool, optional
+        :param optimal_ordering: use optimal leaf ordering for linkage calculation. see, `scipy.cluster.hierarchy.linkage`.  defaults to True
+        :type optimal_ordering: bool, optional
+        """
+        q99 = np.quantile(mat, quantile_threshold)
+        mat_cl = copy.deepcopy(mat)
+        mat_cl[mat_cl > q99] = q99
+        if cluster_normalized:
+            row_linkage = sch.linkage(sch.distance.pdist(mat_cl, metric=distance_metric), method=method,optimal_ordering=optimal_ordering)
+            col_linkage = sch.linkage(sch.distance.pdist(mat_cl.T, metric=distance_metric), method=method,optimal_ordering=optimal_ordering)
+        else:
+            row_linkage = sch.linkage(sch.distance.pdist(mat, metric=distance_metric), method=method,optimal_ordering=optimal_ordering)
+            col_linkage = sch.linkage(sch.distance.pdist(mat.T, metric=distance_metric), method=method,optimal_ordering=optimal_ordering)
+
+        root_row, tree_list_row = sch.to_tree(row_linkage, True)
+        root_col, tree_list_col = sch.to_tree(col_linkage, True)
+
+        # ,optimal_ordering=True)
+        self.row_linkage = row_linkage
+        self.col_linkage = col_linkage
+        self.mat_cl = mat_cl
+        self.root_row = root_row
+        self.root_col = root_col
+        self.q99 = q99
 
     def get_rwr_mat(self, c=0.15):
         from pyrwr.rwr import RWR
@@ -336,6 +457,8 @@ class Enm():
     def heatmap_annotated(self, **kwargs):
         """Plot PRS heatmap with clustering dendrograms
         """
+        if self.prs_mat_cl is None:
+            self.cluster_matrix(self.prs_mat, **kwargs)
         return heatmap_annotated(self.prs_mat, self.figure_path, **kwargs)
 
     def plot_vector(self, eigen_id='eig_0', color_id=0, sorted=False, **kwargs):

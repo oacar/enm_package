@@ -1,11 +1,9 @@
-import copy
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import seaborn as sns
 import scipy.cluster.hierarchy as sch
-from scipy.spatial import distance
 from scipy.stats import pearsonr, spearmanr, gaussian_kde
 figsize = (5, 5)
 #matplotlib.rcParams['pdf.fonttype'] = 42
@@ -267,99 +265,106 @@ def plot_correlation_density(df, rewire_df, x, y, figure_path, **kwargs):
     fig.savefig(f"{figure_path}/{figure_name}.{kwargs.pop('figure_extension','png')}", transparent=False,bbox_extra_artists=(lgd,),bbox_inches='tight')
     return ax
 
-
-def heatmap_annotated(prs_mat, figure_path,show_normalized = True, cluster_normalized = True, row_colors = None, col_colors=None, **kwargs):
-
-    # sch.set_link_color_palette(['b'])
-    
-    # Dendrogram that comes to the left
+def heatmap_annotated(prs_mat, prs_mat_cl_orig, figure_path, row_linkage, col_linkage, row_colors = None, col_colors=None, save_figure=False, **kwargs):
+    from seaborn.matrix import ClusterGrid
+    from seaborn import heatmap
     fig = plt.figure(figsize=kwargs.pop('figsize', (8, 8)))
     # Add an axes at position rect [left, bottom, width, height]
-    quantile_threshold = kwargs.pop('quantile_threshold', 0.95)
-    method = kwargs.pop('method', 'ward')
-    q99 = np.quantile(prs_mat, quantile_threshold)
-    prs_mat_cl = copy.deepcopy(prs_mat)
-    prs_mat_cl[prs_mat_cl > q99] = q99
-    # , optimal_ordering=True)
-    if cluster_normalized:
-        row_linkage = sch.linkage(distance.pdist(prs_mat_cl), method=method)
-        col_linkage = sch.linkage(distance.pdist(prs_mat_cl.T), method=method)
-    else:
-        row_linkage = sch.linkage(distance.pdist(prs_mat), method=method)
-        col_linkage = sch.linkage(distance.pdist(prs_mat.T), method=method)
-    # ,optimal_ordering=True)
     ncol = 4 if row_colors is not None else 3
     width_ratios = [1,.2,4,.5] if row_colors is not None else [1,4,.5]
     nrow = 4 if col_colors is not None else 3
     height_ratios = [1,.2,4,.5] if col_colors is not None else [1,4,.5]
     from matplotlib import gridspec
     gs = gridspec.GridSpec(nrow, ncol, width_ratios = width_ratios, height_ratios = height_ratios)
-    ax1 = fig.add_axes([0.09, 0.1, 0.2, 0.6])
-   # Y = sch.linkage(D, method='centroid')
+    if row_colors is not None and col_colors is not None:
+        ax_row_colors = fig.add_subplot(gs[2,1])
+        ax_col_colors = fig.add_subplot(gs[1,2])
+
+        ax_row_dend = fig.add_subplot(gs[2,0])
+        ax_col_dend = fig.add_subplot(gs[0,2])
+
+        ax_heatmap = fig.add_subplot(gs[2,2])
+        ax_row_data = fig.add_subplot(gs[2,3])
+        ax_col_data = fig.add_subplot(gs[3,2])
+    else:
+        ax_row_dend = fig.add_subplot(gs[1,0])
+        ax_col_dend = fig.add_subplot(gs[0,1])
+
+        ax_heatmap = fig.add_subplot(gs[1,1])
+        ax_row_data = fig.add_subplot(gs[1,2])
+        ax_col_data = fig.add_subplot(gs[2,1])
+
+
+    ax_row_data.set_axis_off()
+    ax_col_data.set_axis_off()
+    ax_row_dend.set_axis_off()
+    ax_col_dend.set_axis_off()
     # orientation='left' is reponsible for making the
     # dendrogram appear to the left
-    Z1 = sch.dendrogram(row_linkage, orientation='left',
-            link_color_func=lambda k: 'black')
-
-    ax1.set_xticks([])
-    ax1.set_yticks([])
-    plt.axis('off')
+    Z1_cl = sch.dendrogram(row_linkage, orientation='left',
+            link_color_func=lambda k: 'black', ax = ax_row_dend)
     # top side dendogram
-    ax2 = fig.add_axes([0.3, 0.71, 0.6, 0.2])
     #Y = sch.linkage(D, method='single')
-    Z2 = sch.dendrogram(col_linkage, color_threshold=0, 
-                        link_color_func=lambda k: 'black')
-    ax2.set_xticks([])
-    ax2.set_yticks([])
-    plt.axis('off')
-    # main heat-map
-    axmatrix = fig.add_axes([0.3, 0.1, 0.6, 0.6])
-    idx1 = Z1['leaves']
-    idx2 = Z2['leaves']
-    prs_mat = prs_mat[idx1, :]
-    prs_mat = prs_mat[:, idx2]
-    prs_mat_cl = prs_mat_cl[idx1, :]
-    prs_mat_cl = prs_mat_cl[:, idx2]
+    Z2_cl = sch.dendrogram(col_linkage, color_threshold=0, 
+                        link_color_func=lambda k: 'black',
+                    ax = ax_col_dend)
+
+
+    #axmatrix = fig.add_axes([0.3, 0.1, 0.6, 0.6])
+    idx1_cl = Z1_cl['leaves']
+    idx2_cl = Z2_cl['leaves']
+    if row_colors is not None and col_colors is not None:
+        matrix, cmap = ClusterGrid.color_list_to_matrix_and_cmap(row_colors, idx1_cl,axis=0)
+        heatmap(np.flip(matrix), cmap=cmap, cbar=False, ax = ax_row_colors, xticklabels=False, yticklabels=False)
+
+        matrix, cmap = ClusterGrid.color_list_to_matrix_and_cmap(col_colors, idx2_cl,axis=1)
+        heatmap(matrix, cmap=cmap, cbar=False, ax = ax_col_colors, xticklabels=False, yticklabels=False)
+    #prs_mat = e_pcc.prs_mat
+    #prs_mat = prs_mat[idx1, :]
+    #prs_mat = prs_mat[:, idx2]
+    prs_mat_cl = prs_mat_cl_orig[idx1_cl, :]
+    prs_mat_cl = prs_mat_cl[:, idx2_cl]
     # the actual heat-map
-    im = axmatrix.matshow(prs_mat_cl, aspect='auto',
-                          origin='lower', cmap="YlGnBu")
-    axmatrix.set_xticks([])
-    axmatrix.set_yticks([])
+    im = ax_heatmap.matshow(prs_mat_cl, aspect='auto', #norm=mpl.colors.PowerNorm(gamma=2), 
+                        origin='lower', cmap="YlGnBu")
+
 
     # xticks to the right (x-axis)
-    axmatrix.set_xticks(range(40))
-    axmatrix.set_xticklabels(idx1, minor=False)
-    axmatrix.xaxis.set_label_position('bottom')
-    axmatrix.xaxis.tick_bottom()
+    #ax_heatmap.set_xticks(range(40))
+    ax_heatmap.set_xticklabels(idx1_cl, minor=False)
+    ax_heatmap.xaxis.set_label_position('bottom')
+    ax_heatmap.xaxis.tick_bottom()
 
     plt.xticks(rotation=-90, fontsize=8)  # ,colors='black')
 
     # xticks to the right (y-axis)
-    axmatrix.set_yticks(range(40))
-    axmatrix.set_yticklabels(idx2, minor=False)
-    axmatrix.yaxis.set_label_position('right')
-    axmatrix.yaxis.tick_right()
-
+    #ax_heatmap.set_yticks(range(40))
+    ax_heatmap.set_yticklabels(idx2_cl, minor=False)
+    ax_heatmap.yaxis.set_label_position('right')
+    ax_heatmap.yaxis.tick_right()
+    #ax_heatmap.set_axis_off()
     # to add the color bar
     # axcolor = fig.add_axes([0.94, 0.1, 0.02, 0.6])
-    plt.axis('off')
-    ax_rowdata = fig.add_axes([0.9, 0.09, 0.1, 0.63])
-    row_data = np.mean(prs_mat, axis=1)
-    # ,orientation=u'vertical')
-    ax_rowdata.plot((row_data), range(len(row_data)), '-')
-    plt.axis('off')
+    ax_colorbar = fig.add_subplot(gs[0, 0])
+    ax_colorbar.set_axis_off()
+    row_data = np.mean(prs_mat[idx1_cl,:], axis=1)#np.mean(prs_mat_cl, axis=1)
+        # ,orientation=u'vertical')
+    ax_row_data.plot((row_data), range(len(row_data)), '-')
+    ax_row_data.set_ylim(0,len(row_data))
 
-    ax_coldata = fig.add_axes([0.28, -0.0, 0.64, 0.1])
-    col_data = np.mean(prs_mat, axis=0)
-    # ,orientation=u'vertical')
-    ax_coldata.plot(range(len(col_data)), col_data, '-')
-    plt.axis('off')
-    ax_colorbar = fig.add_axes([0.0, 0.71, 0.1, .2])
+    col_data = np.mean(prs_mat[:,idx2_cl], axis=0)#np.mean(prs_mat_cl, axis=0)
+        # ,orientation=u'vertical')
+    ax_col_data.plot(range(len(col_data)), col_data, '-')
+    ax_col_data.set_xlim(0,len(col_data))
+    #plt.axis('off')
+    #plt.axis('off')
+    ax_heatmap.set_xticks([])
+    ax_heatmap.set_yticks([])
     plt.colorbar(im, ax=ax_colorbar)
-    plt.axis('off')
+    
     # plt.show()
     outname = f"{figure_path}/{kwargs.pop('figure_name','prs_heatmap')}.{kwargs.pop('figure_extension','png')}"
-    if outname is not None:
+    if save_figure:
         plt.savefig(outname)
 
         # plt.figure()
