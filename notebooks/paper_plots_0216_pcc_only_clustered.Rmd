@@ -29,6 +29,8 @@ import itertools as itr
 from src.enm import Enm
 
 with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
+    e_pcc_old = pickle.load(f)
+with open(f'data/interim/pcc_021521_withclustering/pcc_10_r.pickle','rb') as f:
     e_pcc = pickle.load(f)
 pcc_df = e_pcc.df
 pcc_gc = e_pcc.graph_gc
@@ -40,7 +42,8 @@ library(tidyverse)
 library(cowplot)
 library(ggpubr)
 library(ggsignif)
-
+library(glue)
+figure_folder = 'reports/figures/paper_figures_0216_pcc_only/'
 pcc_df_random <- data.table::rbindlist(lapply(py$e_pcc$e_list, function(x) x$df), fill = T, idcol = "random_id") %>% mutate(random_id = as.factor(random_id))
 pcc_df <- py$pcc_df %>%
   mutate(data = "pcc") %>%
@@ -112,11 +115,11 @@ deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
   labels = c("A", "B"),
   ncol = 2
 )
-ggsave("reports/figures/paper_figures_0202_pcc_only/fig2.png", plot = deg_scatter_plots, width = 10, height = 10)
+ggsave(glue("{figure_folder}/fig2.png"), plot = deg_scatter_plots, width = 10, height = 10)
 ```
 
 ```{r}
-pcc_rewire_df <- read_csv("data/interim/pcc_0909/rewire_data.csv")
+pcc_rewire_df <- read_csv("data/interim/pcc_021521_withclustering//rewire_data.csv")
 rewire_df <- pcc_rewire_df %>% mutate(data = "pcc")
 network_labels <- c("Yeast GI Profile Similarity")
 facet_labels <- network_labels
@@ -169,200 +172,9 @@ distr_plots <- plot_grid(pcc_degree_dens + theme(legend.position = ""),
 # nrow=2,rel_heights = c(0.9,0.1))
 # ggsave('reports/figures/paper_figures_0916/fig2.png',plot=distr_plots , width=7)
 plot_grid(deg_scatter_plots, distr_plots, dens_plots, nrow = 3, rel_heights = c(0.3, 0.4, .3))
-ggsave("reports/figures/paper_figures_0202_pcc_only/fig3.pdf", width = 10, height = 12)
+ggsave(glue("{figure_folder}fig3.pdf"), width = 10, height = 12)
 ```
 
-
-```{r deletion}
-pcc_deletion <- read_csv("data/interim/deletion_analysis_0911/pcc_deletion_100.csv") %>%
-  pivot_wider(id_cols = c("range", "variable_0"), names_from = "variable_1", values_from = "value") %>%
-  mutate(range = range / max(range), gc_size = gc_size / max(gc_size), group = "pcc")
-yuri_deletion <- read_csv("data/interim/deletion_analysis_0911/yuri_deletion_100.csv") %>%
-  pivot_wider(id_cols = c("range", "variable_0"), names_from = "variable_1", values_from = "value") %>%
-  mutate(range = range / max(range), gc_size = gc_size / max(gc_size), group = "yuri")
-huri_deletion <- read_csv("data/interim/deletion_analysis_0911/huri_deletion_100.csv") %>%
-  pivot_wider(id_cols = c("range", "variable_0"), names_from = "variable_1", values_from = "value") %>%
-  mutate(range = range / max(range), gc_size = gc_size / max(gc_size), group = "huri")
-
-deletion_df <- bind_rows(pcc_deletion, yuri_deletion, huri_deletion) %>% mutate(group = fct_relevel(group, c("pcc", "yuri", "huri")))
-
-
-library(MESS)
-auc_data <- deletion_df %>%
-  group_by(group, variable_0) %>%
-  summarise(auc = MESS::auc(gc_size, range), r = range[min(which(gc_size < 0.05))]) %>%
-  ungroup() %>%
-  mutate(variable_0 = fct_reorder(variable_0, auc, min)) %>%
-  pivot_wider(-r, names_from = group, values_from = auc)
-
-auc_plot_pcc <- auc_data %>%
-  ggplot(aes(x = variable_0, y = pcc)) +
-  geom_bar(aes(fill = variable_0, alpha = (variable_0 == "eff_sorted_deletion")), stat = "identity") +
-  theme_bw() +
-  ylab("Robustness") +
-  xlab("Deletion parameter") +
-  scale_alpha_manual(name = "", values = c(0.3, 1), guide = FALSE) +
-  labs(fill = "Deletion\nparameter") +
-  scale_x_discrete(labels = c(
-    "D",
-    "B",
-    "Eff",
-    "C",
-    "E",
-    "R",
-    "DR",
-    "S"
-  )) +
-  scale_fill_brewer(name = "Deletion\nparameter", palette = "Set1", guide = "legend", labels = c(
-    "Degree",
-    "Betweenness",
-    "Effectiveness",
-    "Closeness",
-    "Eigencentrality",
-    "Random",
-    "Degree Reversed",
-    "Sensitivity"
-  )) +
-  theme(legend.position = "bottom", legend.title = element_text(size = 18), legend.text = element_text(size = 14), legend.spacing.x = unit(1.0, "cm"), legend.spacing.y = unit(1.0, "cm"))
-auc_plot_yuri <- auc_data %>%
-  ggplot(aes(x = variable_0, y = yuri)) +
-  geom_bar(aes(fill = variable_0, alpha = (variable_0 == "eff_sorted_deletion" | variable_0 == "sens_sorted_deletion")), stat = "identity") +
-  theme_bw() +
-  ylab("Robustness") +
-  xlab("Deletion parameter") +
-  labs(fill = "Deletion\nparameter") +
-  scale_alpha_manual(name = "", values = c(0.3, 1), guide = FALSE) +
-  scale_x_discrete(labels = c(
-    "D",
-    "B",
-    "Eff",
-    "C",
-    "E",
-    "R", "DR",
-    "S"
-  )) +
-  scale_fill_brewer(name = "", palette = "Set1", labels = c(
-    "Degree",
-    "Betweenness",
-    "Effectiveness",
-    "Closeness",
-    "Eigencentrality",
-    "Random",
-    "Sensitivity", "Degree Reversed"
-  )) +
-  theme(legend.position = "right")
-auc_plot_huri <- auc_data %>%
-  ggplot(aes(x = variable_0, y = huri, alpha = (variable_0 == "eff_sorted_deletion"))) +
-  geom_bar(aes(fill = variable_0), stat = "identity") +
-  theme_bw() +
-  scale_alpha_manual(values = c(0.3, 1), guide = FALSE) +
-  ylab("Robustness") +
-  xlab("Deletion parameter") +
-  labs(fill = "Deletion\nparameter") +
-  scale_x_discrete(labels = c(
-    "D",
-    "B",
-    "Eff",
-    "C",
-    "E",
-    "R",
-    "DR", "S"
-  )) +
-  scale_fill_brewer(palette = "Set1", labels = c(
-    "Degree",
-    "Betweenness",
-    "Effectiveness",
-    "Closeness",
-    "Eigencentrality",
-    "Random",
-    "Sensitivity", "Degree Reversed"
-  )) +
-  theme(legend.position = "right")
-# combined_df %>% group_by(data)%>%summarise(deg_btw = cor(deg, btw),
-#                                           deg_eff = cor(deg,eff),
-#                                           deg_sens = cor(deg,sens),
-#                                           deg_eigen = cor(deg, eigenvec_centr),
-#                                           deg_closeness = cor(deg, closeness_centr))
-deletion_plot_pcc <- pcc_deletion %>%
-  mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0))) %>%
-  ggplot(aes(x = range, y = gc_size, color = variable_0, alpha = (variable_0 == "eff_sorted_deletion"))) +
-  #    geom_point(size=1)+
-  geom_line(size = 2) +
-  #    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
-  scale_colour_brewer(palette = "Set1") +
-  xlab("% Deleted Nodes") +
-  ylab("% Giant Component Size") +
-  scale_y_continuous(labels = scales::percent) +
-  scale_x_continuous(labels = scales::percent) +
-  theme_bw() +
-  ggtitle("Costanzo 2016") +
-  scale_alpha_manual(values = c(0.3, 1), guide = FALSE) +
-  theme(legend.position = "bottom", panel.border = element_blank(), axis.line = element_line())
-deletion_plot_yuri <- yuri_deletion %>%
-  mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0))) %>%
-  ggplot(aes(x = range, y = gc_size, color = variable_0, alpha = (variable_0 == "eff_sorted_deletion"))) +
-  #    geom_point(size=1)+
-  geom_line(size = 2) +
-  #    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
-  scale_colour_brewer(palette = "Set1") +
-  xlab("% Deleted Nodes") +
-  ggtitle("Yeast PPI") +
-  ylab("% Giant Component Size") +
-  scale_y_continuous(labels = scales::percent) +
-  scale_x_continuous(labels = scales::percent) +
-  scale_alpha_manual(values = c(0.3, 1), guide = FALSE) +
-  theme_bw() +
-  theme(legend.position = "right", panel.border = element_blank(), axis.line = element_line())
-deletion_plot_huri <- huri_deletion %>%
-  mutate(variable_0 = fct_relevel(variable_0, levels(auc_data$variable_0))) %>%
-  ggplot(aes(x = range, y = gc_size, color = variable_0, alpha = (variable_0 == "eff_sorted_deletion"))) +
-  #    geom_point(size=1)+
-  geom_line(size = 2) +
-  #    facet_grid(rows = vars(group), labeller = labeller(group=facet_labels))+
-  scale_colour_brewer(palette = "Set1") +
-  xlab("% Deleted Nodes") +
-  ylab("% Giant Component Size") +
-  ggtitle("HuRI") +
-  scale_y_continuous(labels = scales::percent) +
-  scale_x_continuous(labels = scales::percent) +
-  scale_alpha_manual(values = c(0.3, 1), guide = FALSE) +
-  theme_bw() +
-  theme(legend.position = "right", panel.border = element_blank(), axis.line = element_line())
-deletion_lgn <- cowplot::get_legend(auc_plot_pcc)
-pcc_with_inset <- ggdraw(deletion_plot_pcc + theme(legend.position = "")) +
-  draw_plot(auc_plot_pcc + theme(legend.position = ""), .50, .62, .45, .35) +
-  draw_plot_label(
-    c("A", ""),
-    c(0, 0.45),
-    c(1, 0.95),
-    size = 12
-  )
-yuri_with_inset <- ggdraw(deletion_plot_yuri + theme(legend.position = "")) +
-  draw_plot(auc_plot_yuri + theme(legend.position = ""), .50, .62, .45, .35) +
-  draw_plot_label(
-    c("B", ""),
-    c(0, 0.45),
-    c(1, 0.95),
-    size = 12
-  )
-huri_with_inset <- ggdraw(deletion_plot_huri + theme(legend.position = "")) +
-  draw_plot(auc_plot_huri + theme(legend.position = ""), .50, .62, .45, .35) +
-  draw_plot_label(
-    c("C", ""),
-    c(0, 0.45),
-    c(1, 0.95),
-    size = 12
-  )
-plot_grid(pcc_with_inset, yuri_with_inset, huri_with_inset, ncol = 3) %>% plot_grid(deletion_lgn, nrow = 2, rel_heights = c(0.9, .1))
-ggsave("reports/figures/paper_figures_0916/fig4.png", width = 12)
-
-
-plot_grid(deletion_plot_pcc + theme(legend.position = ""),
-  auc_plot_pcc + theme(legend.position = ""),
-  deletion_lgn,
-  nrow = 1, rel_widths = c(0.4, 0.5, .1), labels = c("A", "B")
-)
-```
 
 # Sensor connectivity and neighbor degree
 
@@ -435,80 +247,34 @@ plot_grid(neighbor_degree_plot,
   labels = c("A", "B", "C", "")
 ) # %>%
 #    plot_grid(, labels=c('','C'),nrow=2, rel_widths=c(2,1))
-ggsave("reports/figures/paper_figures_0202_pcc_only/fig5.pdf", width = 6, height = 6)
+ggsave(glue("{figure_folder}fig5.pdf"), width = 6, height = 6)
 
 # combined_df%>%filter(group=='real'&data=='huri')%>%mutate(is_sensor = ifelse(sens_norm>quantile(sens_norm,0.99),TRUE,FALSE))%>%
 #    coin::independence_test(neighbor_degree~is_sensor, data=.)
 ```
 
 ```{r}
-convert_networkx_to_igraph <- #
-  function
-  (
-   nx_object,
-   df) {
-    nx <- reticulate::import("networkx")
-    ig <- igraph::graph.adjacency(nx$adjacency_matrix(nx_object), mode = "undirected")
-    # ig = igraph::set_vertex_attr(ig , name =  'orf_name', value  = (df$orf_name))
-    ig <- igraph::set_vertex_attr(ig, name = "name", value = (df$orf_name))
-    # igraph::set_vertex_attr(ig, "pos", nx_object$nodes('pos'))
-    ig
-  }
-```
-```{r}
 library(RColorBrewer)
-col <- brewer.pal(n = 9, name = "Set1")
-sensor_colors <- col[1:6] # brewer.pal(n = 6, name = "Set1")
-effector_colors <- col[7:9] # brewer.pal(n=3, name= "Set1_r")
+col <- colorRampPalette(brewer.pal(n = 9, name = "Set1"))(12)
+sensor_colors <- col[1:8] # brewer.pal(n = 6, name = "Set1")
+effector_colors <- col[9:12] # brewer.pal(n=3, name= "Set1_r")
 ```
 
 
 ```{python}
 sensor_colors = r.sensor_colors
 effector_colors = r.effector_colors
-sensors_pcc = e_pcc.df.loc[e_pcc.df.sens>np.quantile(e_pcc.df.sens,0.99)]
-#sensor_sub_pcc = get_subnetwork(e_pcc.graph_gc, sensors_pcc.orf_name.values)
-#is_sensor = dict(zip(sensor_sub_pcc.nodes, [True if i in sensors_pcc.orf_name.values else False  for i in sensor_sub_pcc.nodes]))
-#nx.set_node_attributes(sensor_sub_pcc, is_sensor, 'is_sensor')
-sensor_go_terms_separate = [
-    'iron ion\ntransport',
-    'phenylalanine\ntransport',
-    None, 
-    None,
-    None,
-    None,
-    'tricarboxylic\nacid cycle', 
-    'hexose metabolic\nprocess',
-    'protein folding',
-    'mitochondria-nucleus\nsignaling pathway/TCA',
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-]
-sensor_connected_components = sorted([sorted(list(i)) for i in nx.connected_components(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name))], key=lambda x: x[0])
-sensor_go_terms= {}
-for i in range(len(sensor_go_terms_separate)):
-    for j in sensor_connected_components[i]:
-        sensor_go_terms[j] = sensor_go_terms_separate[i]
-sensors_pcc = sensors_pcc.merge(pd.DataFrame.from_dict(sensor_go_terms,orient='index',columns=['go_group']),right_index=True,left_on='orf_name')
-
-effector_pcc = e_pcc.df.loc[e_pcc.df.eff>np.quantile(e_pcc.df.eff,0.99)]
-#effector_sub_pcc = get_subnetwork(e_pcc.graph_gc, effector_pcc.orf_name.values)
-#is_effector = dict(zip(effector_sub_pcc.nodes, [True if i in effector_pcc.orf_name.values else False  for i in effector_sub_pcc.nodes]))
-#nx.set_node_attributes(effector_sub_pcc, is_effector, 'is_effector')
-effectors_connected_comp = sorted([sorted(list(i)) for i in nx.connected_components(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()))], key=lambda x:x[0])
-effector_pcc.loc[:, 'go_group'] = ['mito' if i in effectors_connected_comp[0] else 'golgi' if i in effectors_connected_comp[1] else 'chromatin' for i in effector_pcc.orf_name]
+sensors_pcc = e_pcc.sensors_df
+sensors_pcc['go_group'] = sensors_pcc['cluster_go_term']
+effector_pcc = e_pcc.effectors_df
+effector_pcc['go_group'] = effector_pcc['cluster_go_term']
 effector_order = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
 sensor_order = sensors_pcc.groupby('go_group').sens.median().sort_values().index.tolist()
 ```
 
 ```{python}
 from matplotlib.lines import Line2D
-pos = e_pcc.graph_gc.nodes('pos')
+pos = e_pcc_old.graph_gc.nodes('pos')
 fig, ax = plt.subplots(figsize=(12,12))
 legend_elements = [    ]
 e_pcc.plot_network_spring(ax=ax,
@@ -526,6 +292,7 @@ for itr, i in enumerate(sensor_order):
     #print(i, effector_colors[itr])
 
     orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+#    print(orf_names_to_plot)
     nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
                           node_color=sensor_colors[itr],
                           node_shape='^',edgecolors='black',
@@ -550,7 +317,7 @@ for itr, i in enumerate(effector_order):
     else:
         lbl = 'Chromosome segregation'
     legend_elements.append(
-            Line2D([0], [0], marker='o', color='black', label=f'Effectors ({lbl})',
+            Line2D([0], [0], marker='o', color='black', label=f'Effectors ({i})',
                                   markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")
         )
 nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='red', alpha=0.5)
@@ -573,11 +340,12 @@ lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_
 
 nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
 plt.savefig('tmp_nw.png',bbox_inches='tight')
+
 ```
 
 ```{r}
 effector_pcc <- py$effector_pcc
-sensors_pcc <- py$sensors_pcc %>% mutate(go_group = (as.character(go_group)), go_group = ifelse(go_group == "NULL", NA, go_group))
+sensors_pcc <- py$sensors_pcc %>% mutate(go_group = (as.character(go_group)), go_group = ifelse(go_group == "NaN", NA, go_group))%>%drop_na()
 # library(tidyverse)
 effector_pcc$go_group <- as.factor(effector_pcc$go_group)
 
@@ -592,7 +360,7 @@ eff_deg_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, 
   geom_boxplot(outlier.shape = NA) +
   scale_fill_manual(
     values = effector_colors,
-    labels = c("Chromosome\nSegragetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")
+#    labels = c("Chromosome\nSegragetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")
   ) +
   xlab("") +
   ylab("Degree") +
@@ -613,7 +381,7 @@ eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, 
   ylab("Effectiveness") +
   theme_bw() +
   theme(axis.text.x = element_blank(), legend.title = element_blank())
-ggsave("tmp.png", plot = eff_deg_comp)
+ggsave("tmp.png", plot = eff_eff_comp)
 
 sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reorder(go_group, sens)), aes(x = go_group, y = deg, fill = go_group)) +
   geom_boxplot() +
@@ -634,13 +402,14 @@ sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]
 sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reorder(go_group, sens)) %>%
   mutate(sens_norm = sens / 5183), aes(x = go_group, y = sens_norm, fill = go_group)) +
   geom_boxplot() +
-  geom_signif(
-    comparisons = list(
-      c("hexose metabolic\nprocess", "phenylalanine\ntransport"), c("tricarboxylic\nacid cycle", "phenylalanine\ntransport"),
-      c("phenylalanine\ntransport", "protein folding")
-    ),
-    annotation = c("**", "**", "*"), y_position = c(0.007, 0.0075, 0.008)
-  ) +
+  ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
+#  geom_signif(
+#    comparisons = list(
+#      c("hexose metabolic\nprocess", "phenylalanine\ntransport"), c("tricarboxylic\nacid cycle", "phenylalanine\ntransport"),
+#      c("phenylalanine\ntransport", "protein folding")
+#    ),
+#    annotation = c("**", "**", "*"), y_position = c(0.007, 0.0075, 0.008)
+#  ) +
   #    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
   xlab("") +
   ylab("Sensitivity") +
@@ -663,6 +432,7 @@ go_plots <- cowplot::plot_grid(
   ncol = 3, labels = c("B", "C", "", "D", "E", "")
 )
 combined <- cowplot::plot_grid(nw_img, go_plots, nrow = 2, rel_heights = c(0.4, 0.6), labels = c("A", ""))
-ggsave("reports/figures/paper_figures_0202_pcc_only/fig6.png", plot = combined, width = 9, height = 12)
+ggsave(glue("{figure_folder}/fig6.png"), plot = combined, width = 9, height = 12)
+
 ```
 
