@@ -10,15 +10,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(reticulate)
-source('src/R/get.subclusters.dendrogram.R')
 #use_python("/home/oma21/miniconda3/envs/enm/bin/python")
 use_condaenv('enm')
 setwd('../')
 #source('src/R/plot_density_prs.R')
+source('src/R/get.subclusters.dendrogram.R')
 library(RColorBrewer)
-col = brewer.pal(n=9,name='Set1')
-sensor_colors = col[1:6]
-effector_colors = col[7:9]
+col = colorRampPalette(brewer.pal(n=9,name='Set1'))(10)
+sensor_colors = col[1:8]
+effector_colors = col[9:10]
 ```
 
 # Read data
@@ -48,8 +48,8 @@ sensors_pcc = e_pcc.sensors_df#e_pcc.df.loc[e_pcc.df.sens>np.quantile(e_pcc.df.s
 effector_pcc = e_pcc.effectors_df
 sensor_sub_pcc = get_subnetwork(e_pcc.graph_gc, sensors_pcc.orf_name.values)
 effector_sub_pcc = get_subnetwork(e_pcc.graph_gc, effector_pcc.orf_name.values)
-effector_order = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
-sensor_order = sensors_pcc.groupby('go_group').sens.median().sort_values().index.tolist()
+effector_order = effector_pcc.groupby('go_term').eff.median().sort_values().index.tolist()
+sensor_order = sensors_pcc.groupby('go_term').sens.median().sort_values().index.tolist()
 effector_colors_dict = dict(zip(effector_order,r.effector_colors))
 sensor_colors_dict = dict(zip(sensor_order,r.sensor_colors))
 #sensor_colors_dict['none']=sensor_colors_dict[None]
@@ -86,7 +86,7 @@ col_dist_sqr = sch.distance.squareform(col_dist)
 
 ```
 # Plot heatmap
-Using the clustering with `euclidian` distance and `ward` linkage, plot the heatmap with row and column colors are the GO term annotations found from effector and sensor analysis
+Using the clustering with `seuclidian` distance and `ward` linkage, plot the heatmap with row and column colors are the GO term annotations found from effector and sensor analysis
 
 ```{r}
 library(tidyverse)
@@ -99,15 +99,16 @@ hclust_col = hclust(dist_col, cluster_method)
 
 go_color_map = unlist(append(py$effector_colors_dict,py$sensor_colors_dict))
 go_color_map['none'] = 'white'
-clrs = map(py$eff_sens_go_list, ~ifelse(is.null(.x), 'none',.x))%>%unlist()
+clrs = go_color_map# map(py$eff_sens_go_list, ~ifelse(is.null(.x), 'none',.x))%>%unlist()
 
-rowColors = rowAnnotation(rowColors=clrs,
+rowColors = rowAnnotation(rowColors=py$e_pcc$df%>%left_join(py$effector_pcc)%>%select(go_term)%>%pull%>%map(~ifelse(is.na(.x), 'none',.x))%>%unlist(),
                           col=list(rowColors = go_color_map ),
                           #width=unit(100,'mm'),
                           simple_anno_size=unit(3,'cm'),
                           show_annotation_name=FALSE,
                           show_legend=FALSE)
-colColors = columnAnnotation(colColors=clrs,
+colColors = columnAnnotation(colColors=py$e_pcc$df%>%left_join(py$sensors_pcc)%>%select(go_term)%>%pull%>%map(~ifelse(is.null(.x), 'none',
+                                                                                                                      ifelse(is.nan(.x),'none',.x)))%>%unlist(),
                           col=list(colColors = go_color_map ),
                           simple_anno_size=unit(3,'cm'),
                           #annotation_height=unit(20,'mm'),
