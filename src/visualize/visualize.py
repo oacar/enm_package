@@ -360,12 +360,14 @@ def heatmap_annotated(prs_mat, prs_mat_cl_orig, figure_path, row_linkage, col_li
     #plt.axis('off')
     ax_heatmap.set_xticks([])
     ax_heatmap.set_yticks([])
-    plt.colorbar(im, ax=ax_colorbar)
+    cbar = plt.colorbar(im, ax=ax_colorbar)
     
+    cbar.ax.get_yaxis().set_ticks_position('left')
+    cbar.ax.get_yaxis().set_label_position('left')
     # plt.show()
     outname = f"{figure_path}/{kwargs.pop('figure_name','prs_heatmap')}.{kwargs.pop('figure_extension','png')}"
     if save_figure:
-        plt.savefig(outname)
+        plt.savefig(outname,bbox_inches='tight')
 
         # plt.figure()
         # plt.plot(range(len(col_data)),col_data,'-')

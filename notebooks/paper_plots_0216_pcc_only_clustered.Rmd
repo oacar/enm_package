@@ -13,6 +13,7 @@ library(reticulate)
 use_condaenv("enm")
 setwd("../")
 source("src/R/plot_density_prs.R")
+source("src/R/get.subclusters.dendrogram.R")
 ```
 
 ```{python}
@@ -255,9 +256,9 @@ ggsave(glue("{figure_folder}fig5.pdf"), width = 6, height = 6)
 
 ```{r}
 library(RColorBrewer)
-col <- colorRampPalette(brewer.pal(n = 9, name = "Set1"))(12)
-sensor_colors <- col[1:8] # brewer.pal(n = 6, name = "Set1")
-effector_colors <- col[9:12] # brewer.pal(n=3, name= "Set1_r")
+col <- brewer.pal(n = 8, name = "Set1")
+sensor_colors <- col[1:4] # brewer.pal(n = 6, name = "Set1")
+effector_colors <- col[5:8] # brewer.pal(n=3, name= "Set1_r")
 ```
 
 
@@ -266,10 +267,12 @@ sensor_colors = r.sensor_colors
 effector_colors = r.effector_colors
 sensors_pcc = e_pcc.sensors_df
 sensors_pcc['go_group'] = sensors_pcc['cluster_go_term']
+sensors_pcc['go_group'] = ['None'  if pd.isna(i) else i for i in sensors_pcc['go_group'].tolist()]
 effector_pcc = e_pcc.effectors_df
 effector_pcc['go_group'] = effector_pcc['cluster_go_term']
-effector_order = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
-sensor_order = sensors_pcc.groupby('go_group').sens.median().sort_values().index.tolist()
+effector_order = effector_pcc.groupby('go_group').clusters.median().sort_values().index.tolist()
+sensor_order = sensors_pcc.groupby('go_group').clusters.median().sort_values().index.tolist()
+#sensor_order.append(None)
 ```
 
 ```{python}
@@ -433,6 +436,205 @@ go_plots <- cowplot::plot_grid(
 )
 combined <- cowplot::plot_grid(nw_img, go_plots, nrow = 2, rel_heights = c(0.4, 0.6), labels = c("A", ""))
 ggsave(glue("{figure_folder}/fig6.png"), plot = combined, width = 9, height = 12)
+
+```
+
+```{python}
+import copy
+import scipy.cluster.hierarchy as sch
+prs_mat = e_pcc.prs_mat
+quantile_threshold =  0.95
+method = 'ward'
+metric = 'seuclidean'
+q99 = np.quantile(prs_mat, quantile_threshold)
+prs_mat_cl = copy.deepcopy(prs_mat)
+prs_mat_cl[prs_mat_cl > q99] = q99
+prs_mat_cl_orig = prs_mat_cl
+# , optimal_ordering=True)
+#row_linkage_cl = sch.linkage(sch.distance.pdist(prs_mat_cl), method=method)
+# ,optimal_ordering=True)
+#col_linkage_cl = sch.linkage(sch.distance.pdist(prs_mat_cl.T), method=method)
+
+row_dist_orig = sch.distance.pdist((prs_mat),metric = metric)
+col_dist_orig = sch.distance.pdist((prs_mat.T),metric = metric)
+row_dist_orig_sqr = sch.distance.squareform(row_dist_orig)
+col_dist_orig_sqr = sch.distance.squareform(col_dist_orig)
+
+row_dist = sch.distance.pdist(prs_mat_cl,metric = metric)
+col_dist = sch.distance.pdist(prs_mat_cl.T,metric = metric)
+
+row_dist_sqr = sch.distance.squareform(row_dist)
+col_dist_sqr = sch.distance.squareform(col_dist)
+
+```
+
+```{r}
+cluster_method = 'ward.D2'
+dist_row = as.dist(py$row_dist_sqr)
+hclust_row = hclust(dist_row, cluster_method)
+dist_col = as.dist(py$col_dist_sqr)
+hclust_col = hclust(dist_col, cluster_method)
+dend_row  <- as.dendrogram(hclust_row)
+dend_col  <- as.dendrogram(hclust_col)
+#effector_pcc <- get.subclusters.dendrogram(dend_row, effector_pcc)
+#sensors_pcc <- get.subclusters.dendrogram(dend_col, sensors_pcc%>%select(-rowname))
+library(dendextend)
+#png('reports/figures/dendrogram021721/row_dendrogram_colored.png',width=800,height=800)
+dend_row_plot <- dend_row[[2]] %>% 
+    set("branches_k_color", k = 4,value = effector_colors[c(4,2,3,1)]) %>% 
+    set("labels", NA) %>%    # change labelsk
+    as.ggdend()%>%
+    ggplot()#    plot(xlab="", sub="")}
+#dev.off()
+#png('reports/figures/dendrogram021721/col_dendrogram_colored.png',width=800,height=800)
+dend_col_plot <-     dend_col[[1]] %>% 
+    set("branches_k_color", k = 4,value = sensor_colors[c(3,2,4,1)]) %>% 
+    set("labels", NA) %>%    # change labelsk
+    as.ggdend()%>%
+    ggplot()#    plot(xlab="", sub="")}
+#dev.off()
+```
+
+```{python}
+from matplotlib.lines import Line2D
+pos = e_pcc_old.graph_gc.nodes('pos')
+fig, ax = plt.subplots(figsize=(12,12))
+legend_elements = [    ]
+e_pcc.plot_network_spring(ax=ax,
+                          node_size=1,
+                          node_color='black',
+ #                        node_size = [100 if i in sensors_pcc.orf_name.values or i in effector_pcc.orf_name.values else 1 for i in e_pcc.nodes],
+                         #node_color = ['red' if i in sensors_pcc.orf_name.values else 'blue' if i in effector_pcc.orf_name.values else 'black' for i in e_pcc.nodes],
+                         edge_color='black')
+#                         node_shape=['^' if i in sensors_pcc.orf_name.values else 'v' if i in effector_pcc.orf_name.values else 'o' for i in e_pcc.nodes])
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=sensors_pcc.orf_name.values, node_size=200, pos=pos,
+                          node_color='black',
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+for itr, i in enumerate(sensor_order):
+    orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=sensor_colors[itr],
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+    legend_elements.append(
+        Line2D([0], [0], marker='^', color='black', label=f'Sensors ({i})',
+                              markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
+    )
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='red', alpha=0.5)
+ax.set_facecolor('white')
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=4, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
+                              markerfacecolor='black', markersize=0, linestyle="-"),
+                   Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor edges',
+                              markerfacecolor='#018571', markersize=0, linestyle="-")]
+)
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+plt.savefig(f'{r.figure_folder}tmp_nw_sens.png',bbox_inches='tight')
+
+```
+
+```{python}
+from matplotlib.lines import Line2D
+pos = e_pcc_old.graph_gc.nodes('pos')
+fig, ax = plt.subplots(figsize=(12,12))
+legend_elements = [    ]
+e_pcc.plot_network_spring(ax=ax,
+                          node_size=1,
+                          node_color='black',
+ #                        node_size = [100 if i in sensors_pcc.orf_name.values or i in effector_pcc.orf_name.values else 1 for i in e_pcc.nodes],
+                         #node_color = ['red' if i in sensors_pcc.orf_name.values else 'blue' if i in effector_pcc.orf_name.values else 'black' for i in e_pcc.nodes],
+                         edge_color='black')
+#                         node_shape=['^' if i in sensors_pcc.orf_name.values else 'v' if i in effector_pcc.orf_name.values else 'o' for i in e_pcc.nodes])
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=effector_pcc.orf_name.values, node_size=100, pos=pos,
+                      node_color='black',
+                      node_shape='o')
+for itr, i in enumerate(effector_order):
+    orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=effector_colors[itr],
+                          node_shape='o',edgecolors='black',
+                          linewidths=1)
+    legend_elements.append(
+            Line2D([0], [0], marker='o', color='black', label=f'Effectors ({i})',
+                                  markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")
+        )
+ax.set_facecolor('white')
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=4, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
+                              markerfacecolor='black', markersize=0, linestyle="-"),
+                   Line2D([0], [0], marker='o', color='blue', label= 'Effector-Effector edges',
+                              markerfacecolor='#a6611a', markersize=0, linestyle="-")]
+)
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
+plt.savefig(f'{r.figure_folder}tmp_nw_eff.png',bbox_inches='tight')
+
+from src.visualize.visualize import heatmap_annotated
+#import src
+#import importlib
+importlib.reload(src.visualize.visualize)
+heatmap_annotated(prs_mat, prs_mat_cl_orig, figure_path=r.figure_folder, row_linkage=e_pcc.row_linkage, col_linkage=e_pcc.col_linkage, save_figure=True)#,
+#                 row_colors=colors, col_colors=colors)
+
+```
+
+```{r}
+library(coin)
+df <- py$e_pcc$df%>%mutate(eff_group = as.factor(ifelse(orf_name%in%effector_pcc$orf_name,'eff','other')),
+                    sens_group = factor(ifelse(orf_name%in%sensors_pcc$orf_name,'sens','other'),levels=c('sens','other')),
+                    eff_norm = eff / nrow(.),
+                    sens_norm = sens/ nrow(.))
+pval_eff = pvalue(independence_test(eff~eff_group,df))
+pval_sens = pvalue(independence_test(sens~sens_group,df))
+
+eff_group_box <- df%>%ggplot(aes(x=eff_group,y=eff_norm))+
+    geom_boxplot()+
+  geom_signif(comparisons = list(c("eff", "other")), 
+              map_signif_level=TRUE, y_position = 0.006)+
+    xlab('')+
+    ylab('Effectiveness')+
+    scale_x_discrete(labels=c('Effectors','Others'))+
+    theme_bw()
+sens_group_box <- df%>%ggplot(aes(x=sens_group,y=sens_norm))+
+    geom_boxplot()+
+  geom_signif(comparisons = list(c("sens", "other")), 
+              map_signif_level=TRUE, y_position = 0.0075)+
+    xlab('')+
+    ylab('Sensitivity')+
+    scale_x_discrete(labels=c('Sensors','Others'))+
+    theme_bw()+ylim(0,0.008)
+#ggsave('tmp.png',sens_group_box)
+heatmap_img <- glue('{figure_folder}prs_heatmap.png')%>%
+    magick::image_read()
+heatmap_img <- cowplot::ggdraw()+
+    cowplot::draw_image(heatmap_img, width = 1)
+eff_nw_img <- glue('{figure_folder}tmp_nw_eff.png') %>%
+  magick::image_read() # %>%
+eff_nw_img <- cowplot::ggdraw() +
+  cowplot::draw_image(eff_nw_img, width = 1)
+sens_nw_img <- glue('{figure_folder}tmp_nw_sens.png') %>%
+  magick::image_read() # %>%
+sens_nw_img <- cowplot::ggdraw() +
+  cowplot::draw_image(sens_nw_img, width = 1)
+cowplot::plot_grid(plot_grid(heatmap_img, plot_grid(sens_group_box, eff_group_box+ylim(0,0.007), nrow=2,labels=c('B','C')), nrow=1, rel_widths = c(0.7,0.3),labels=c('A','')),
+                   plot_grid(dend_col_plot, sens_nw_img, nrow=1, rel_widths=c(0.2,.8), labels=c('D','E')),
+                   plot_grid(dend_row_plot, eff_nw_img, nrow=1, rel_widths=c(0.2,.8), labels=c('F','G')), nrow=3, rel_heights=c(.5,.25,.25))
+ggsave(glue('{figure_folder}fig1.pdf'),height=10,width=8)
+
 
 ```
 

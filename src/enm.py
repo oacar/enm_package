@@ -366,11 +366,15 @@ class Enm():
         mat_cl = copy.deepcopy(mat)
         mat_cl[mat_cl > q99] = q99
         if cluster_normalized:
-            row_linkage = sch.linkage(sch.distance.pdist(mat_cl, metric=distance_metric), method=method,optimal_ordering=optimal_ordering)
-            col_linkage = sch.linkage(sch.distance.pdist(mat_cl.T, metric=distance_metric), method=method,optimal_ordering=optimal_ordering)
+            row_dist = sch.distance.pdist(mat_cl, metric=distance_metric)
+            col_dist = sch.distance.pdist(mat_cl.T, metric=distance_metric)
+            row_linkage = sch.linkage(row_dist, method=method,optimal_ordering=optimal_ordering)
+            col_linkage = sch.linkage(col_dist, method=method,optimal_ordering=optimal_ordering)
         else:
-            row_linkage = sch.linkage(sch.distance.pdist(mat, metric=distance_metric), method=method,optimal_ordering=optimal_ordering)
-            col_linkage = sch.linkage(sch.distance.pdist(mat.T, metric=distance_metric), method=method,optimal_ordering=optimal_ordering)
+            row_dist = sch.distance.pdist(mat, metric=distance_metric)
+            col_dist = sch.distance.pdist(mat.T, metric=distance_metric)
+            row_linkage = sch.linkage(row_dist, method=method,optimal_ordering=optimal_ordering)
+            col_linkage = sch.linkage(col_dist, method=method,optimal_ordering=optimal_ordering)
 
         root_row, tree_list_row = sch.to_tree(row_linkage, True)
         root_col, tree_list_col = sch.to_tree(col_linkage, True)
@@ -378,6 +382,8 @@ class Enm():
         # ,optimal_ordering=True)
         self.row_linkage = row_linkage
         self.col_linkage = col_linkage
+        self.row_dist = row_dist
+        self.col_dist = col_dist
         self.mat_cl = mat_cl
         self.root_row = root_row
         self.root_col = root_col

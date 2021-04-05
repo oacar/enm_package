@@ -522,6 +522,10 @@ nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=sensors_pcc.orf_name.values, nod
                           node_color='black',
                           node_shape='^',edgecolors='black',
                           linewidths=1)
+legend_elements.append(
+    Line2D([0], [0], marker='^', color='black', label=f'Sensors (No GO enrichment)',
+                          markerfacecolor=sensor_colors[0], markersize=12, linestyle="None")
+)
 for itr, i in enumerate(sensor_order):
     #print(i, effector_colors[itr])
 
@@ -532,27 +536,8 @@ for itr, i in enumerate(sensor_order):
                           linewidths=1)
     legend_elements.append(
         Line2D([0], [0], marker='^', color='black', label=f'Sensors ({i})',
-                              markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
+                              markerfacecolor=sensor_colors[itr], markersize=16, linestyle="None")
     )
-nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=effector_pcc.orf_name.values, node_size=100, pos=pos,
-                      node_color='black',
-                      node_shape='o')
-for itr, i in enumerate(effector_order):
-    orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
-    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
-                          node_color=effector_colors[itr],
-                          node_shape='o',edgecolors='black',
-                          linewidths=1)
-    if i == 'mito':
-        lbl = 'Respiratory complex assembly'
-    elif i == 'golgi':
-        lbl = "Golgi vesicle transport"
-    else:
-        lbl = 'Chromosome segregation'
-    legend_elements.append(
-            Line2D([0], [0], marker='o', color='black', label=f'Effectors ({lbl})',
-                                  markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")
-        )
 nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='red', alpha=0.5)
 ax.set_facecolor('white')
 legend_elements.extend(
@@ -565,10 +550,60 @@ legend_elements.extend(
                        Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
                               markerfacecolor='black', markersize=0, linestyle="-"),
                    Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor edges',
-                              markerfacecolor='#018571', markersize=0, linestyle="-"),
+                              markerfacecolor='#018571', markersize=0, linestyle="-")
+])
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+plt.savefig('reports/figures/CSHL_plots_022621/tmp_nwsens.png',bbox_inches='tight')
+#plt.savefig('tmp_nw.png',bbox_inches='tight')
+```
+
+```{python}
+from matplotlib.lines import Line2D
+pos = e_pcc.graph_gc.nodes('pos')
+fig, ax = plt.subplots(figsize=(12,12))
+legend_elements = [    ]
+e_pcc.plot_network_spring(ax=ax,
+                          node_size=1,
+                          node_color='black',
+ #                        node_size = [100 if i in sensors_pcc.orf_name.values or i in effector_pcc.orf_name.values else 1 for i in e_pcc.nodes],
+                         #node_color = ['red' if i in sensors_pcc.orf_name.values else 'blue' if i in effector_pcc.orf_name.values else 'black' for i in e_pcc.nodes],
+                         edge_color='black')
+#        Line2D([0], [0], marker='^', color='black', label=f'Sensors ({i})',
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=effector_pcc.orf_name.values, node_size=100, pos=pos,
+                      node_color='black',
+                      node_shape='o')
+for itr, i in enumerate(effector_order):
+    orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=400, pos=pos,
+                          node_color=effector_colors[itr],
+                          node_shape='o',edgecolors='black',
+                          linewidths=1)
+    if i == 'mito':
+        lbl = 'Respiratory complex assembly'
+    elif i == 'golgi':
+        lbl = "Golgi vesicle transport"
+    else:
+        lbl = 'Chromosome segregation'
+    legend_elements.append(
+            Line2D([0], [0], marker='o', color='black', label=f'Effectors ({lbl})',
+                                  markerfacecolor=effector_colors[itr], markersize=16, linestyle="None")
+        )
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
+ax.set_facecolor('white')
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=4, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
+                              markerfacecolor='black', markersize=0, linestyle="-"),
+#                   Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor edges',
+#                              markerfacecolor='#018571', markersize=0, linestyle="-")
                    Line2D([0], [0], marker='o', color='blue', label= 'Effector-Effector edges',
-                              markerfacecolor='#a6611a', markersize=0, linestyle="-")]
-)
+                              markerfacecolor='#a6611a', markersize=0, linestyle="-")
+])
 lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
 
 nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
@@ -588,11 +623,12 @@ effector_eff_pval$res[effector_eff_pval$res$P.adj < 0.1, ]
 effector_deg_pval <- FSA::dunnTest(deg ~ go_group, effector_pcc)
 effector_deg_pval$res[effector_deg_pval$res$P.adj < 0.1, ]
 
-eff_deg_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, eff)), aes(x = go_group, y = deg, fill = go_group)) +
+eff_deg_comp <- ggplot(effector_pcc %>% right_join(py$e_pcc$df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Others")),go_group=fct_reorder(go_group, eff),go_group=fct_relevel(go_group,'Others',after=Inf)), 
+                       aes(x = go_group, y = deg, fill = go_group)) +
   geom_boxplot(outlier.shape = NA) +
   scale_fill_manual(
-    values = effector_colors,
-    labels = c("Chromosome\nSegragetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")
+    values = c(effector_colors,'black'),
+    labels = c("Chromosome\nSegragetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly",'Non-effector genes')
   ) +
   xlab("") +
   ylab("Degree") +
@@ -600,9 +636,11 @@ eff_deg_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, 
   geom_signif(
     comparisons = list(c("golgi", "chromatin"), c("golgi", "mito"), c("mito", "chromatin")),
     annotation = c("**", "***", "ns"),
-    y_position = c(110, 115, 120)
+    y_position = c(115, 120, 130)
   ) +
   theme(axis.text.x = element_blank(), legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
+ggsave("reports/figures/CSHL_plots_022621/tmp_eff_deg_nolegend.png", plot = eff_deg_comp+theme(legend.position='none'),width=4,height=4)
+
 eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, eff)) %>%
   mutate(eff_norm = eff / 5183), aes(x = go_group, y = eff_norm, fill = go_group)) +
   geom_boxplot() +
@@ -613,20 +651,23 @@ eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, 
   ylab("Effectiveness") +
   theme_bw() +
   theme(axis.text.x = element_blank(), legend.title = element_blank())
-ggsave("tmp.png", plot = eff_deg_comp)
+ggsave("reports/figures/CSHL_plots_022621/tmp_eff_eff.png", plot = eff_eff_comp+theme(legend.position='none'),width=4,height=4)
 
-sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reorder(go_group, sens)), aes(x = go_group, y = deg, fill = go_group)) +
-  geom_boxplot() +
+sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% right_join(py$e_pcc$df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Non-sensor genes")),go_group=fct_reorder(go_group, sens),go_group=fct_relevel(go_group,'Non-sensor genes',after=Inf)), aes(x = go_group, y = deg, fill = go_group)) +
+  geom_boxplot(
+    outlier.shape=NA) +
   #    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
   xlab("") +
   ylab("Degree") +
-  scale_fill_manual(values = sensor_colors) +
+  scale_fill_manual(values = c(sensor_colors[1:6],'black')) +
   ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
   theme_bw() +
   theme(
     axis.text.x = element_blank(), legend.title = element_blank(),
     legend.text = element_text(margin = margin(t = 10, b = 10))
-  ) # , legend.spacing.y = unit(2,'cm'))
+  )+scale_y_log10()
+  ggsave('reports/figures/CSHL_plots_022621/sens_deg_withlegend.png', plot=sens_deg_comp,width=4,height=4)
+
 sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)
 sensors_sens_pval <- FSA::dunnTest(sens ~ go_group, sensors_pcc)
 sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]
@@ -663,6 +704,8 @@ go_plots <- cowplot::plot_grid(
   ncol = 3, labels = c("B", "C", "", "D", "E", "")
 )
 combined <- cowplot::plot_grid(nw_img, go_plots, nrow = 2, rel_heights = c(0.4, 0.6), labels = c("A", ""))
+ggsave('reports/figures/CSHL_plots_022621/sens_deg.png', plot=sens_deg_comp+theme(legend.position='none'),width=4,height=4)
+ggsave('reports/figures/CSHL_plots_022621/sens_sens.png', plot=sens_sens_comp+theme(legend.position='none'),width=4,height=4)
 ggsave("reports/figures/paper_figures_0202_pcc_only/fig6.png", plot = combined, width = 9, height = 12)
 ```
 

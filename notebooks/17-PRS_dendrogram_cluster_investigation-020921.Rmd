@@ -16,9 +16,9 @@ setwd('../')
 #source('src/R/plot_density_prs.R')
 source('src/R/get.subclusters.dendrogram.R')
 library(RColorBrewer)
-col = colorRampPalette(brewer.pal(n=9,name='Set1'))(10)
-sensor_colors = col[1:8]
-effector_colors = col[9:10]
+col =brewer.pal(n=8,name='Set1')
+sensor_colors = col[1:4]
+effector_colors = col[5:8]
 ```
 
 # Read data
@@ -173,16 +173,19 @@ for(i in 1:4){
     print(i)
     subcluster <- effector_pcc%>%filter(clusters==i)
     query <- utils$query_goatools(subcluster,goea,geneid2name)
+    print(head(query))
     eff_go_terms[i] = query[1,4]
 }
-effector_pcc <- unlist(eff_go_terms)%>%as.data.frame()%>%rownames_to_column()%>%mutate(rowname=as.numeric(rowname))%>%rename(cluster_go_term='.')%>%right_join(effector_pcc,by=c('rowname'='clusters'))
+effector_pcc <- as.character(eff_go_terms)%>%as.data.frame()%>%rownames_to_column()%>%mutate(rowname=as.numeric(rowname))%>%rename(cluster_go_term='.')%>%right_join(effector_pcc,by=c('rowname'='clusters'))%>%rename(clusters=rowname)
+
 for(i in 1:4){
     print(i)
     subcluster <- sensors_pcc%>%filter(clusters==i)
     query <- utils$query_goatools(subcluster,goea,geneid2name)
+    print(query)
     sens_go_terms[i] = query[1,4]
 }
-sensors_pcc <- unlist(sens_go_terms)%>%as.data.frame()%>%rownames_to_column()%>%mutate(rowname=as.numeric(rowname))%>%rename(cluster_go_term='.')%>%right_join(sensors_pcc,by=c('rowname'='clusters'))
+sensors_pcc <- as.character(sens_go_terms)%>%as.data.frame()%>%rownames_to_column()%>%mutate(rowname=as.numeric(rowname))%>%rename(cluster_go_term='.')%>%right_join(sensors_pcc,by=c('rowname'='clusters'))%>%rename(clusters=rowname)
 
 #py$e_pcc$df%>%left_join(effector_pcc)%>%ggplot(aes(x=deg,y=eff,color=cluster_go_term))+geom_point()+
 #    xlim(0,NA)+ylim(0,NA)+theme(legend.position='none')
