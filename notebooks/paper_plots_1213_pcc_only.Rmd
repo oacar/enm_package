@@ -13,6 +13,7 @@ library(reticulate)
 use_condaenv("enm")
 setwd("../")
 source("src/R/plot_density_prs.R")
+figure_path = 'reports/figures/0404_paperfigure_sensors/'
 ```
 
 ```{python}
@@ -37,6 +38,7 @@ pcc_gc_pos = (dict(pcc_gc.nodes(data='pos')))
 
 ```{r}
 library(tidyverse)
+library(glue)
 library(cowplot)
 library(ggpubr)
 library(ggsignif)
@@ -506,6 +508,7 @@ effector_order = effector_pcc.groupby('go_group').eff.median().sort_values().ind
 sensor_order = sensors_pcc.groupby('go_group').sens.median().sort_values().index.tolist()
 ```
 
+# Network plot only sensors
 ```{python}
 from matplotlib.lines import Line2D
 pos = e_pcc.graph_gc.nodes('pos')
@@ -553,7 +556,8 @@ legend_elements.extend(
                               markerfacecolor='#018571', markersize=0, linestyle="-")
 ])
 lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
-plt.savefig('reports/figures/CSHL_plots_022621/tmp_nwsens.png',bbox_inches='tight')
+figure_path = r.figure_path
+plt.savefig(f'{figure_path}//tmp_nwsens.png',bbox_inches='tight')
 #plt.savefig('tmp_nw.png',bbox_inches='tight')
 ```
 
@@ -628,7 +632,7 @@ eff_deg_comp <- ggplot(effector_pcc %>% right_join(py$e_pcc$df)%>% mutate(go_gro
   geom_boxplot(outlier.shape = NA) +
   scale_fill_manual(
     values = c(effector_colors,'black'),
-    labels = c("Chromosome\nSegragetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly",'Non-effector genes')
+    labels = c("Chromosome\nSegregetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly",'Non-effector genes')
   ) +
   xlab("") +
   ylab("Degree") +
@@ -638,35 +642,43 @@ eff_deg_comp <- ggplot(effector_pcc %>% right_join(py$e_pcc$df)%>% mutate(go_gro
     annotation = c("**", "***", "ns"),
     y_position = c(115, 120, 130)
   ) +
-  theme(axis.text.x = element_blank(), legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
-ggsave("reports/figures/CSHL_plots_022621/tmp_eff_deg_nolegend.png", plot = eff_deg_comp+theme(legend.position='none'),width=4,height=4)
+  theme(
+       axis.text.y=element_text(size=10),
+        axis.title.y=element_text(size=14), axis.text.x = element_blank(), legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
+ggsave(glue('{figure_path}//tmp_eff_deg_nolegend.png'), plot = eff_deg_comp+theme(legend.position='none'),width=4,height=4)
+ggsave(glue('{figure_path}//tmp_eff_deg_withlegend.png'), plot = eff_deg_comp,width=6,height=4)
 
 eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, eff)) %>%
   mutate(eff_norm = eff / 5183), aes(x = go_group, y = eff_norm, fill = go_group)) +
   geom_boxplot() +
-  # scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+  # scale_x_discrete(labels=c('Chromosome\nSegregetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
   xlab("") +
   ggpubr::stat_compare_means(method = "kruskal.test") +
   scale_fill_manual(values = effector_colors) +
   ylab("Effectiveness") +
   theme_bw() +
-  theme(axis.text.x = element_blank(), legend.title = element_blank())
-ggsave("reports/figures/CSHL_plots_022621/tmp_eff_eff.png", plot = eff_eff_comp+theme(legend.position='none'),width=4,height=4)
+  theme(
+        axis.text.y=element_text(size=10),
+        axis.title.y=element_text(size=14),axis.text.x = element_blank(), legend.title = element_blank())
+ggsave(glue('{figure_path}//tmp_eff_eff.png'), plot = eff_eff_comp+theme(legend.position='none'),width=4,height=4)
 
 sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% right_join(py$e_pcc$df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Non-sensor genes")),go_group=fct_reorder(go_group, sens),go_group=fct_relevel(go_group,'Non-sensor genes',after=Inf)), aes(x = go_group, y = deg, fill = go_group)) +
   geom_boxplot(
     outlier.shape=NA) +
-  #    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+  #    scale_x_discrete(labels=c('Chromosome\nSegregetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
   xlab("") +
   ylab("Degree") +
   scale_fill_manual(values = c(sensor_colors[1:6],'black')) +
   ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
   theme_bw() +
   theme(
+        axis.title.y=element_text(size=14),
+        axis.text.y=element_text(size=10),
     axis.text.x = element_blank(), legend.title = element_blank(),
     legend.text = element_text(margin = margin(t = 10, b = 10))
   )+scale_y_log10()
-  ggsave('reports/figures/CSHL_plots_022621/sens_deg_withlegend.png', plot=sens_deg_comp,width=4,height=4)
+  ggsave(glue('{figure_path}//sens_deg_withlegend.png'), plot=sens_deg_comp+theme(legend.position='bottom'),width=6,height=4)
+ggsave(glue('{figure_path}//sens_deg.png'), plot=sens_deg_comp+theme(legend.position='none'),width=4,height=4)
 
 sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)
 sensors_sens_pval <- FSA::dunnTest(sens ~ go_group, sensors_pcc)
@@ -682,12 +694,16 @@ sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reo
     ),
     annotation = c("**", "**", "*"), y_position = c(0.007, 0.0075, 0.008)
   ) +
-  #    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+  #    scale_x_discrete(labels=c('Chromosome\nSegregetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
   xlab("") +
   ylab("Sensitivity") +
   scale_fill_manual(values = sensor_colors) +
   theme_bw() +
-  theme(axis.text.x = element_blank(), legend.title = element_blank())
+  theme(
+        axis.title.y=element_text(size=14),
+        axis.text.y=element_text(size=10),
+        axis.text.x = element_blank(), legend.title = element_blank())
+ggsave(glue('{figure_path}//sens_sens.png'), plot=sens_sens_comp+theme(legend.position='none'),width=4,height=4)
 
 img <- "tmp_nw.png" %>%
   magick::image_read() # %>%
@@ -704,8 +720,8 @@ go_plots <- cowplot::plot_grid(
   ncol = 3, labels = c("B", "C", "", "D", "E", "")
 )
 combined <- cowplot::plot_grid(nw_img, go_plots, nrow = 2, rel_heights = c(0.4, 0.6), labels = c("A", ""))
-ggsave('reports/figures/CSHL_plots_022621/sens_deg.png', plot=sens_deg_comp+theme(legend.position='none'),width=4,height=4)
-ggsave('reports/figures/CSHL_plots_022621/sens_sens.png', plot=sens_sens_comp+theme(legend.position='none'),width=4,height=4)
-ggsave("reports/figures/paper_figures_0202_pcc_only/fig6.png", plot = combined, width = 9, height = 12)
+ggsave(glue('{figure_path}//sens_deg.png'), plot=sens_deg_comp+theme(legend.position='none'),width=4,height=4)
+ggsave(glue('{figure_path}//sens_sens.png'), plot=sens_sens_comp+theme(legend.position='none'),width=4,height=4)
+#ggsave("reports/figures/paper_figures_0202_pcc_only/fig6.png", plot = combined, width = 9, height = 12)
 ```
 
