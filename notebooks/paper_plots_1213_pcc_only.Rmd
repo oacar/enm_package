@@ -11,10 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 library(reticulate)
 # use_python("/home/oma21/miniconda3/envs/enm/bin/python")
 use_condaenv("enm")
-setwd("../")
+#setwd("../")
 source("src/R/plot_density_prs.R")
 figure_path = 'reports/figures/0404_paperfigure_sensors/'
 ```
+
 
 ```{python}
 import matplotlib.pyplot as plt

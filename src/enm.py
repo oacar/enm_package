@@ -332,6 +332,7 @@ class Enm():
             nx.set_edge_attributes(self.graph_gc,0,'weight')
         if node_weight is None:
             node_weight = (1/self.prs_mat_df.loc[source,:]).to_dict()
+#            node_weight[source] = 1
         if target is not None:
             distances = nx.single_source_dijkstra(self.graph_gc, source=source,target=target, weight=weight, node_weight=node_weight)
         else:

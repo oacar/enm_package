@@ -1,0 +1,581 @@
+---
+title: "Paper figures"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reticulate)
+# use_python("/home/oma21/miniconda3/envs/enm/bin/python")
+use_condaenv("enm")
+setwd("../")
+source("src/R/plot_density_prs.R")
+source("src/R/get.subclusters.dendrogram.R")
+```
+
+```{python}
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import networkx as nx
+import numpy as np
+import pandas as pd
+import plotnine as p9
+import pickle 
+import os
+import re
+import itertools as itr
+from src.enm import Enm
+
+with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
+    e_pcc_old = pickle.load(f)
+with open(f'data/interim/pcc_021521_withclustering/pcc_10_r.pickle','rb') as f:
+    e_pcc = pickle.load(f)
+pcc_df = e_pcc.df
+pcc_gc = e_pcc.graph_gc
+pcc_gc_pos = (dict(pcc_gc.nodes(data='pos')))
+```
+
+```{r}
+library(tidyverse)
+library(cowplot)
+library(ggpubr)
+library(ggsignif)
+library(glue)
+figure_folder = 'reports/figures/CSHL_plots_022621/'
+pcc_df_random <- data.table::rbindlist(lapply(py$e_pcc$e_list, function(x) x$df), fill = T, idcol = "random_id") %>% mutate(random_id = as.factor(random_id))
+pcc_df <- py$pcc_df %>%
+  mutate(data = "pcc") %>%
+  mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real") %>%
+  bind_rows(
+    pcc_df_random %>% mutate(data = "pcc") %>% mutate(sens_norm = sens / nrow(py$pcc_df), eff_norm = eff / nrow(py$pcc_df), group = "random")
+  ) %>%
+  mutate(group = fct_relevel(group, c("real", "random")))
+combined_df <- pcc_df
+```
+
+Degree - Eff - Sens distributions
+```{r}
+
+pcc_eff_dens <-
+  plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness")
+dens_lgn <- cowplot::get_legend(pcc_eff_dens + theme(legend.position = "right"))
+pcc_degree_dens <- cowplot::ggdraw(plot_density_prs(pcc_df, deg, xlab = "Degree") + theme(legend.position = "none")) #+
+#  cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+pcc_eff_dens <-
+  cowplot::ggdraw(plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness") + theme(legend.position = "none") +
+    coord_trans(x = "log10", xlim = c(NA, 10e-2)) +
+    scale_x_continuous(
+      breaks = scales::trans_breaks("log10", function(x) 10^x),
+      labels = scales::trans_format("log10", scales::math_format(10^.x))
+    )) #+
+#   cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+# annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+pcc_sensitivity_dens <-
+  cowplot::ggdraw(plot_density_prs(pcc_df, sens_norm, xlab = "Sensitivity") + theme(legend.position = "none")) #+
+#        cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+# title <- cowplot::ggdraw() + cowplot::draw_label("Yeast GI Profile Similarity", fontface='bold')
+pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none"),
+  pcc_sensitivity_dens + theme(legend.position = "none"),
+  #+theme(legend.position='none'),
+  ncol = 2
+)
+# pcc_dens_comb_title = cowplot::plot_grid(title, pcc_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
+# dens_lgn = cowplot::get_legend(pcc_sensitivity_dens)
+dens_plots <- pcc_dens_comb # cowplot::plot_grid(pcc_dens_comb_title,nrow=1)
+# cowplot::plot_grid(dens_plots, dens_lgn,nrow=2,rel_heights=c(.9,.1))
+ggsave(glue('{figure_folder}/dens_comb.png', plot=pcc_dens_comb,width=8,height=8)
+```
+
+```{r}
+real_random_labels <- c("PSN", "Rewired\nnetwork")
+names(real_random_labels) <- c("real", "random")
+pcc_deg_eff <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+  ggplot(aes(x = deg, y = eff_norm)) +
+  geom_point() +
+  #    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+  theme_bw() +
+  ylab("Effectiveness") +
+  xlab("Degree") +
+  stat_cor(method = "pearson", cor.coef.name = "R", label.x.npc = 0.1) +
+  theme(strip.text.y = element_text(angle = 0)) +
+  scale_y_continuous(labels = scales::label_scientific(digits = 1))
+pcc_deg_sens <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+  ggplot(aes(x = deg, y = sens_norm)) +
+  geom_point() +
+  #    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+  theme_bw() +
+  ylab("Sensitivity") +
+  xlab("Degree") +
+  stat_cor(method = "spearman", cor.coef.name = "rho", label.x.npc = 0.1) +
+  theme(strip.text.y = element_text(angle = 0)) +
+  scale_y_continuous(labels = scales::label_scientific(digits = 1))
+deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
+#  labels = c("A", "B"),
+  ncol = 2
+)
+ggsave(glue("{figure_folder}/fig2.png"), plot = deg_scatter_plots, width = 10, height = 5)
+```
+
+```{r}
+pcc_rewire_df <- read_csv("data/interim/pcc_021521_withclustering//rewire_data.csv")
+rewire_df <- pcc_rewire_df %>% mutate(data = "pcc")
+network_labels <- c("Yeast GI Profile Similarity")
+facet_labels <- network_labels
+names(facet_labels) <- c("pcc")
+combined_rewire_df <- rewire_df %>%
+  select(data, eff_deg_pearson, sens_deg_spearman) %>%
+  mutate(type = "random") %>%
+  bind_rows(
+    data.frame(
+      sens_deg_spearman = c(cor(pcc_df[pcc_df$group == "real", ]$deg, pcc_df[pcc_df$group == "real", ]$sens, method = "spearman")),
+      eff_deg_pearson = c(cor(pcc_df[pcc_df$group == "real", ]$deg, pcc_df[pcc_df$group == "real", ]$eff, method = "pearson")), type = "real", data = c("pcc")
+    )
+  ) %>%
+  mutate(data = fct_relevel(data, c("pcc")))
+
+p3 <-
+  ggplot() +
+  #    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+  #    geom_boxplot()+
+  #    geom_jitter()+
+  geom_density(data = combined_rewire_df %>% filter(type != "real"), aes(x = eff_deg_pearson, color = type, y = ..scaled..), linetype = "dashed") +
+  geom_vline(data = combined_rewire_df %>% filter(type == "real"), aes(xintercept = eff_deg_pearson, color = type)) +
+  guides(color = guide_legend(title = "Data type"), shape = guide_legend(title = "Network type")) +
+  ylab("Density") +
+  xlab("Effectiveness degree correlation") +
+  theme_bw() +
+  theme(panel.spacing = unit(2, "lines")) +
+  scale_y_continuous(expand = c(0, 0))
+p4 <-
+  ggplot() +
+      facet_grid(cols = vars(name), labeller = labeller(data=facet_labels))+
+  #    geom_boxplot()+
+  #    geom_jitter()+
+  geom_boxplot(data = combined_rewire_df %>% filter(type != "real")%>%select(data, sens_deg_spearman,eff_deg_pearson)%>%pivot_longer(-data), 
+               aes(y = value, x = name, color = name)) +
+#  geom_density(data = combined_rewire_df %>% filter(type != "real"), aes(x = sens_deg_spearman, y = ..scaled.., color = type), linetype = "dashed") +
+  geom_point(data = combined_rewire_df %>% filter(type == "real")%>%select(data, sens_deg_spearman,eff_deg_pearson)%>%pivot_longer(-data), 
+             aes(x=name,y=value,color=name)) +
+#  guides(color = guide_legend(title = "Data type"), shape = guide_legend(title = "Network type")) +
+#  ylab("Density") +
+#  xlab("Sensitivity degree correlation") +
+  theme_bw() +
+  theme(panel.spacing = unit(2, "lines"), legend.position = "bottom") 
+#  scale_color_discrete(labels = c("Random networks", "Genetic network")) +
+#  scale_y_continuous(expand = c(0, 0))
+lgn34 <- cowplot::get_legend(p4)
+distr_plots <- plot_grid(pcc_degree_dens + theme(legend.position = ""),
+  ggdraw(p3 + theme(legend.position = "")),
+  ggdraw(p4 + theme(legend.position = "")),
+#  labels = c("C", "D", "E"), 
+  nrow = 3
+)
+# distr_plots_withlgn <- plot_grid(distr_plots, lgn34,
+# nrow=2,rel_heights = c(0.9,0.1))
+# ggsave('reports/figures/paper_figures_0916/fig2.png',plot=distr_plots , width=7)
+ggsave(glue("{figure_folder}/distr_plots.pdf"), plot= p4, width = 4, height = 10)
+
+#plot_grid(deg_scatter_plots, distr_plots, dens_plots, nrow = 3, rel_heights = c(0.3, 0.4, .3))
+#ggsave(glue("{figure_folder}fig3.pdf"), width = 10, height = 12)
+```
+
+```{r}
+library(RColorBrewer)
+col <- brewer.pal(n = 8, name = "Set1")
+sensor_colors <- c(
+'#dadaeb',
+'#bcbddc',
+'#9e9ac8',
+'#807dba',
+'#6a51a3',
+'#4a1486'
+)#col[1:4] # brewer.pal(n = 6, name = "Set1")
+effector_colors <- c('#bae4b3',
+'#74c476',
+'#238b45')#col[5:8] # brewer.pal(n=3, name= "Set1_r")
+```
+
+
+```{python}
+sensor_colors = r.sensor_colors
+effector_colors = r.effector_colors
+sensors_pcc = e_pcc_old.sensors_df
+sensors_pcc['go_group'] = sensors_pcc['cluster_go_term']
+sensors_pcc['go_group'] = ['None'  if pd.isna(i) else i for i in sensors_pcc['go_group'].tolist()]
+effector_pcc = e_pcc.effectors_df
+effector_pcc['go_group'] = effector_pcc['cluster_go_term']
+effector_order = effector_pcc.groupby('go_group').clusters.median().sort_values().index.tolist()
+sensor_order = sensors_pcc.groupby('go_group').clusters.median().sort_values().index.tolist()
+#sensor_order.append(None)
+```
+# Dendrogram cluster network plots
+```{python}
+import copy
+import scipy.cluster.hierarchy as sch
+prs_mat = e_pcc.prs_mat
+quantile_threshold =  0.95
+method = 'ward'
+metric = 'seuclidean'
+q99 = np.quantile(prs_mat, quantile_threshold)
+prs_mat_cl = copy.deepcopy(prs_mat)
+prs_mat_cl[prs_mat_cl > q99] = q99
+prs_mat_cl_orig = prs_mat_cl
+# , optimal_ordering=True)
+#row_linkage_cl = sch.linkage(sch.distance.pdist(prs_mat_cl), method=method)
+# ,optimal_ordering=True)
+#col_linkage_cl = sch.linkage(sch.distance.pdist(prs_mat_cl.T), method=method)
+
+row_dist_orig = sch.distance.pdist((prs_mat),metric = metric)
+col_dist_orig = sch.distance.pdist((prs_mat.T),metric = metric)
+row_dist_orig_sqr = sch.distance.squareform(row_dist_orig)
+col_dist_orig_sqr = sch.distance.squareform(col_dist_orig)
+
+row_dist = sch.distance.pdist(prs_mat_cl,metric = metric)
+col_dist = sch.distance.pdist(prs_mat_cl.T,metric = metric)
+
+row_dist_sqr = sch.distance.squareform(row_dist)
+col_dist_sqr = sch.distance.squareform(col_dist)
+
+```
+
+```{r}
+cluster_method = 'ward.D2'
+dist_row = as.dist(py$row_dist_sqr)
+hclust_row = hclust(dist_row, cluster_method)
+dist_col = as.dist(py$col_dist_sqr)
+hclust_col = hclust(dist_col, cluster_method)
+dend_row  <- as.dendrogram(hclust_row)
+dend_col  <- as.dendrogram(hclust_col)
+#effector_pcc <- get.subclusters.dendrogram(dend_row, effector_pcc)
+#sensors_pcc <- get.subclusters.dendrogram(dend_col, sensors_pcc%>%select(-rowname))
+library(dendextend)
+png(glue('{figure_folder}/row_dendrogram_colored.png'),width=400,height=400)
+dend_row_plot <- dend_row[[2]] %>% 
+    set("branches_k_color", k = 4,value = effector_colors[c(4,2,3,1)]) %>% 
+    set("labels", NA) %>%    # change labelsk
+    as.ggdend()%>%
+    ggplot()+
+    coord_flip()#    plot(xlab="", sub="")}
+dend_row_plot
+dev.off()
+png(glue('{figure_folder}/col_dendrogram_colored.png'),width=400,height=400)
+dend_col_plot <-     dend_col[[1]] %>% 
+    set("branches_k_color", k = 4,value = sensor_colors[c(3,2,4,1)]) %>% 
+    set("labels", NA) %>%    # change labelsk
+    as.ggdend()%>%
+    ggplot()
+dend_col_plot
+dev.off()
+```
+
+```{python}
+from matplotlib.lines import Line2D
+pos = e_pcc_old.graph_gc.nodes('pos')
+fig, ax = plt.subplots(figsize=(12,12))
+legend_elements = [    ]
+e_pcc.plot_network_spring(ax=ax,
+                          node_size=1,
+                          node_color='black',
+ #                        node_size = [100 if i in sensors_pcc.orf_name.values or i in effector_pcc.orf_name.values else 1 for i in e_pcc.nodes],
+                         #node_color = ['red' if i in sensors_pcc.orf_name.values else 'blue' if i in effector_pcc.orf_name.values else 'black' for i in e_pcc.nodes],
+                         edge_color='black')
+#                         node_shape=['^' if i in sensors_pcc.orf_name.values else 'v' if i in effector_pcc.orf_name.values else 'o' for i in e_pcc.nodes])
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=sensors_pcc.orf_name.values, node_size=200, pos=pos,
+                          node_color='black',
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+for itr, i in enumerate(sensor_order):
+    orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=sensor_colors[itr],
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+    legend_elements.append(
+        Line2D([0], [0], marker='^', color='black', label=f'Column cluster ({itr+1})',
+                              markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
+    )
+#nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='red', alpha=0.5)
+ax.set_facecolor('white')
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=4, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
+                              markerfacecolor='black', markersize=0, linestyle="-")]
+#                   Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor edges',
+#                              markerfacecolor='#018571', markersize=0, linestyle="-")]
+)
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+plt.savefig(f'{r.figure_folder}tmp_nw_sens.png',bbox_inches='tight')
+
+```
+
+```{python}
+from matplotlib.lines import Line2D
+pos = e_pcc_old.graph_gc.nodes('pos')
+fig, ax = plt.subplots(figsize=(12,12))
+legend_elements = [    ]
+e_pcc.plot_network_spring(ax=ax,
+                          node_size=1,
+                          node_color='black',
+ #                        node_size = [100 if i in sensors_pcc.orf_name.values or i in effector_pcc.orf_name.values else 1 for i in e_pcc.nodes],
+                         #node_color = ['red' if i in sensors_pcc.orf_name.values else 'blue' if i in effector_pcc.orf_name.values else 'black' for i in e_pcc.nodes],
+                         edge_color='black')
+#                         node_shape=['^' if i in sensors_pcc.orf_name.values else 'v' if i in effector_pcc.orf_name.values else 'o' for i in e_pcc.nodes])
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=effector_pcc.orf_name.values, node_size=100, pos=pos,
+                      node_color='black',
+                      node_shape='o')
+for itr, i in enumerate(effector_order):
+    orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=effector_colors[itr],
+                          node_shape='o',edgecolors='black',
+                          linewidths=1)
+    legend_elements.append(
+            Line2D([0], [0], marker='o', color='black', label=f'Row cluster ({itr+1})',
+                                  markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")
+        )
+ax.set_facecolor('white')
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=4, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
+                              markerfacecolor='black', markersize=0, linestyle="-")]
+#                   Line2D([0], [0], marker='o', color='blue', label= 'Effector-Effector edges',
+ #                             markerfacecolor='#a6611a', markersize=0, linestyle="-")]
+)
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+
+#nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
+plt.savefig(f'{r.figure_folder}tmp_nw_eff.png',bbox_inches='tight')
+
+from src.visualize.visualize import heatmap_annotated
+#import src
+#import importlib
+#importlib.reload(src.visualize.visualize)
+heatmap_annotated(prs_mat, prs_mat_cl_orig, figure_path=r.figure_folder, row_linkage=e_pcc.row_linkage, col_linkage=e_pcc.col_linkage, save_figure=True)#,
+#                 row_colors=colors, col_colors=colors)
+
+```
+
+```{r}
+library(coin)
+df <- py$e_pcc$df%>%mutate(eff_group = as.factor(ifelse(orf_name%in%effector_pcc$orf_name,'eff','other')),
+                    sens_group = factor(ifelse(orf_name%in%sensors_pcc$orf_name,'sens','other'),levels=c('sens','other')),
+                    eff_norm = eff / nrow(.),
+                    sens_norm = sens/ nrow(.))
+pval_eff = pvalue(independence_test(eff~eff_group,df))
+pval_sens = pvalue(independence_test(sens~sens_group,df))
+
+eff_group_box <- df%>%ggplot(aes(x=eff_group,y=eff_norm))+
+    geom_boxplot()+
+  geom_signif(comparisons = list(c("eff", "other")), 
+              map_signif_level=TRUE, y_position = 0.006)+
+    xlab('')+
+    ylab('Effectiveness')+
+    scale_x_discrete(labels=c('Effectors','Others'))+
+    theme_bw()
+sens_group_box <- df%>%ggplot(aes(x=sens_group,y=sens_norm))+
+    geom_boxplot()+
+  geom_signif(comparisons = list(c("sens", "other")), 
+              map_signif_level=TRUE, y_position = 0.0075)+
+    xlab('')+
+    ylab('Sensitivity')+
+    scale_x_discrete(labels=c('Sensors','Others'))+
+    theme_bw()+ylim(0,0.008)
+#ggsave('tmp.png',sens_group_box)
+heatmap_img <- glue('{figure_folder}prs_heatmap.png')%>%
+    magick::image_read()
+heatmap_img <- cowplot::ggdraw()+
+    cowplot::draw_image(heatmap_img, width = 1)
+eff_nw_img <- glue('{figure_folder}tmp_nw_eff.png') %>%
+  magick::image_read() # %>%
+eff_nw_img <- cowplot::ggdraw() +
+  cowplot::draw_image(eff_nw_img, width = 1)
+sens_nw_img <- glue('{figure_folder}tmp_nw_sens.png') %>%
+  magick::image_read() # %>%
+sens_nw_img <- cowplot::ggdraw() +
+  cowplot::draw_image(sens_nw_img, width = 1)
+cowplot::plot_grid(plot_grid(heatmap_img, plot_grid(sens_group_box, eff_group_box+ylim(0,0.007), nrow=2,labels=c('B','C')), nrow=1, rel_widths = c(0.7,0.3),labels=c('A','')),
+                   plot_grid(dend_col_plot, sens_nw_img, nrow=1, rel_widths=c(0.2,.8), labels=c('D','E')),
+                   plot_grid(dend_row_plot, eff_nw_img, nrow=1, rel_widths=c(0.2,.8), labels=c('F','G')), nrow=3, rel_heights=c(.5,.25,.25))
+ggsave(glue('{figure_folder}fig1.pdf'),height=10,width=8)
+
+
+```
+
+# Go term network plots
+```{python}
+from matplotlib.lines import Line2D
+pos = e_pcc_old.graph_gc.nodes('pos')
+fig, ax = plt.subplots(figsize=(12,12))
+legend_elements = [    ]
+e_pcc.plot_network_spring(ax=ax,
+                          node_size=1,
+                          node_color='black',
+ #                        node_size = [100 if i in sensors_pcc.orf_name.values or i in effector_pcc.orf_name.values else 1 for i in e_pcc.nodes],
+                         #node_color = ['red' if i in sensors_pcc.orf_name.values else 'blue' if i in effector_pcc.orf_name.values else 'black' for i in e_pcc.nodes],
+                         edge_color='black')
+#                         node_shape=['^' if i in sensors_pcc.orf_name.values else 'v' if i in effector_pcc.orf_name.values else 'o' for i in e_pcc.nodes])
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=sensors_pcc.orf_name.values, node_size=200, pos=pos,
+                          node_color='black',
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+for itr, i in enumerate(sensor_order):
+    #print(i, effector_colors[itr])
+
+    orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+#    print(orf_names_to_plot)
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=sensor_colors[itr],
+                          node_shape='^',edgecolors='black',
+                          linewidths=1)
+    legend_elements.append(
+        Line2D([0], [0], marker='^', color='black', label=f'Column Cluster ({i})',
+                              markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
+    )
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=effector_pcc.orf_name.values, node_size=100, pos=pos,
+                      node_color='black',
+                      node_shape='o')
+for itr, i in enumerate(effector_order):
+    orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
+    nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                          node_color=effector_colors[itr],
+                          node_shape='o',edgecolors='black',
+                          linewidths=1)
+    if i == 'mito':
+        lbl = 'Respiratory complex assembly'
+    elif i == 'golgi':
+        lbl = "Golgi vesicle transport"
+    else:
+        lbl = 'Chromosome segregation'
+    legend_elements.append(
+            Line2D([0], [0], marker='o', color='black', label=f'Effectors ({i})',
+                                  markerfacecolor=effector_colors[itr], markersize=12, linestyle="None")
+        )
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='red', alpha=0.5)
+ax.set_facecolor('white')
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=4, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
+                              markerfacecolor='black', markersize=0, linestyle="-"),
+                   Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor edges',
+                              markerfacecolor='#018571', markersize=0, linestyle="-"),
+                   Line2D([0], [0], marker='o', color='blue', label= 'Effector-Effector edges',
+                              markerfacecolor='#a6611a', markersize=0, linestyle="-")]
+)
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
+plt.savefig('tmp_nw.png',bbox_inches='tight')
+
+```
+
+```{r}
+effector_pcc <- py$effector_pcc
+sensors_pcc <- py$sensors_pcc %>% mutate(go_group = (as.character(go_group)), go_group = ifelse(go_group == "NaN", NA, go_group))%>%drop_na()
+# library(tidyverse)
+effector_pcc$go_group <- as.factor(effector_pcc$go_group)
+
+# res.aov <- kruskal.test(eff~go_group, data= effector_pcc)
+# res.aov
+effector_eff_pval <- FSA::dunnTest(eff ~ go_group, effector_pcc)
+effector_eff_pval$res[effector_eff_pval$res$P.adj < 0.1, ]
+effector_deg_pval <- FSA::dunnTest(deg ~ go_group, effector_pcc)
+effector_deg_pval$res[effector_deg_pval$res$P.adj < 0.1, ]
+
+eff_deg_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, eff)), aes(x = go_group, y = deg, fill = go_group)) +
+  geom_boxplot(outlier.shape = NA) +
+  scale_fill_manual(
+    values = effector_colors,
+#    labels = c("Chromosome\nSegragetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")
+  ) +
+  xlab("") +
+  ylab("Degree") +
+  theme_bw() +
+  geom_signif(
+    comparisons = list(c("golgi", "chromatin"), c("golgi", "mito"), c("mito", "chromatin")),
+    annotation = c("**", "***", "ns"),
+    y_position = c(110, 115, 120)
+  ) +
+  theme(axis.text.x = element_blank(), legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
+eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, eff)) %>%
+  mutate(eff_norm = eff / 5183), aes(x = go_group, y = eff_norm, fill = go_group)) +
+  geom_boxplot() +
+  # scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+  xlab("") +
+  ggpubr::stat_compare_means(method = "kruskal.test") +
+  scale_fill_manual(values = effector_colors) +
+  ylab("Effectiveness") +
+  theme_bw() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank())
+ggsave("tmp.png", plot = eff_eff_comp)
+
+sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reorder(go_group, sens)), aes(x = go_group, y = deg, fill = go_group)) +
+  geom_boxplot() +
+  #    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+  xlab("") +
+  ylab("Degree") +
+  scale_fill_manual(values = sensor_colors) +
+  ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_blank(), legend.title = element_blank(),
+    legend.text = element_text(margin = margin(t = 10, b = 10))
+  ) # , legend.spacing.y = unit(2,'cm'))
+sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)
+sensors_sens_pval <- FSA::dunnTest(sens ~ go_group, sensors_pcc)
+sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]
+
+sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reorder(go_group, sens)) %>%
+  mutate(sens_norm = sens / 5183), aes(x = go_group, y = sens_norm, fill = go_group)) +
+  geom_boxplot() +
+  ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
+#  geom_signif(
+#    comparisons = list(
+#      c("hexose metabolic\nprocess", "phenylalanine\ntransport"), c("tricarboxylic\nacid cycle", "phenylalanine\ntransport"),
+#      c("phenylalanine\ntransport", "protein folding")
+#    ),
+#    annotation = c("**", "**", "*"), y_position = c(0.007, 0.0075, 0.008)
+#  ) +
+  #    scale_x_discrete(labels=c('Chromosome\nSegragetion','Golgi vesicle\nTransport','Respiratory complex\nassembly'))+
+  xlab("") +
+  ylab("Sensitivity") +
+  scale_fill_manual(values = sensor_colors) +
+  theme_bw() +
+  theme(axis.text.x = element_blank(), legend.title = element_blank())
+
+img <- "tmp_nw.png" %>%
+  magick::image_read() # %>%
+# magick::image_resize("570x380")
+
+nw_img <- cowplot::ggdraw() +
+  cowplot::draw_image(img, width = 1)
+go_plots <- cowplot::plot_grid(
+  sens_deg_comp + theme(legend.position = "none"),
+  sens_sens_comp + theme(legend.position = "none"),
+  cowplot::get_legend(sens_deg_comp), eff_deg_comp + theme(legend.position = "none"),
+  eff_eff_comp + theme(legend.position = "none"),
+  cowplot::get_legend(eff_deg_comp),
+  ncol = 3, labels = c("B", "C", "", "D", "E", "")
+)
+combined <- cowplot::plot_grid(nw_img, go_plots, nrow = 2, rel_heights = c(0.4, 0.6), labels = c("A", ""))
+ggsave(glue("{figure_folder}/fig6.png"), plot = combined, width = 9, height = 12)
+
+```
+

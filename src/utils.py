@@ -267,3 +267,56 @@ def jaccard_index(G, a,b):
     intersect = np.intersect1d(a_neigh,b_neigh)
     jaccard = len(intersect)/len(union)
     return jaccard
+
+def get_max_path(enm, target_cluster, source_cluster):
+    """Calculate max information carrying path between 2 clusters by finding all possible nodes and returns based on maximum distance
+
+    :param enm: this will be used to calculate prs weighted paths
+    :type enm: Enm object
+    :param target_cluster: cluster which contains possible target nodes
+    :type target_cluster: networkx graph
+    :param source_cluster: cluster which contains possible source nodes
+    :type source_cluster: networkx graph
+    """
+    wmin = np.inf
+    lmin = 0
+    for source in source_cluster.nodes:
+        for target in target_cluster.nodes:
+            w, l1 = enm.get_prs_weighted_path(source,target)
+            #print(w)
+            num_of_sources = len([i for i in l1 if i in source_cluster.nodes])
+            if num_of_sources > 1 :
+                continue
+            if w < wmin :
+                lmin=l1
+    #if lmin == 0 :
+     #   lmin = l1
+    return wmin, lmin
+def get_path_positions(enm, sensors_sub, effectors_sub):
+    """
+        calculate positions for effectors and sensors
+        choose a random source and target form these, respectively
+        get PRS path between source and target
+        put the nodes on the path linearly in between clusters
+        change the source and target positions based on the initial cluster positions
+
+        :param enm: this will be used to calculate prs weighted paths
+        :type enm: Enm object
+    """
+    sensor_pos = nx.spring_layout(sensors_sub,center=(5,0))
+    effector_pos = nx.spring_layout(effectors_sub, center=(5,10),scale=2)
+    wmin, l1 = get_max_path(enm, sensors_sub, effectors_sub)
+#    source = random.choice([i for i in effector_pos.keys()])
+#    target = random.choice([i for i in sensor_pos.keys()])
+    #e_pcc.prs_mat_df=pd.DataFrame(e_pcc.prs_mat,columns=e_pcc.nodes, index=e_pcc.nodes)
+#    l1 = e_pcc.get_prs_weighted_path(source,target)[1]
+    #l1.extend(['fum1', 'fbp1'])
+    sub = nx.induced_subgraph(enm.graph_gc, l1)
+    path_init_pos=dict(zip(l1[1:-1],np.array(tuple(zip(np.repeat(5,(len(l1)-2)), np.linspace(effector_pos[l1[0]][1]-1,sensor_pos[l1[-1]][1],len(l1))[1:-1])))))
+    
+    for i in sub.nodes:
+        if i in effector_pos.keys():
+            path_init_pos[i]=effector_pos[i]
+        if i in sensor_pos.keys():
+            path_init_pos[i]=sensor_pos[i]
+    return sensor_pos, effector_pos, path_init_pos,sub, l1, wmin
