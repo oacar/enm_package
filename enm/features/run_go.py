@@ -1,8 +1,8 @@
 import pickle
 import numpy as np
 import pandas as pd
-from src.enm import Enm
-from src.utils import create_goea
+from enm.enm import Enm
+from enm.utils import create_goea
 from goatools.obo_parser import GODag
 from goatools.anno.genetogo_reader import Gene2GoReader
 from goatools.anno.gaf_reader import GafReader

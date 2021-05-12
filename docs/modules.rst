@@ -1,7 +1,7 @@
-src
+enm
 ===
 
 .. toctree::
    :maxdepth: 4
 
-   src
+   enm

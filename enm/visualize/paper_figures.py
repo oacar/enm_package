@@ -7,7 +7,7 @@ import pickle
 import os
 import re
 import itertools as itr
-from src.visualize.visualize import plot_correlation_density, plot_vector, plot_lambda_collectivity
+from enm.visualize.visualize import plot_correlation_density, plot_vector, plot_lambda_collectivity
 from mlxtend.evaluate import permutation_test 
 
 # Random collectivity

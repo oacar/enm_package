@@ -9,9 +9,9 @@ import pickle
 import os
 import re
 import itertools as itr
-from src.visualize.visualize import plot_correlation_density, plot_vector, plot_lambda_collectivity
-from src.enm import Enm
-from src.utils import *
+from enm.visualize.visualize import plot_correlation_density, plot_vector, plot_lambda_collectivity
+from enm.enm import Enm
+from enm.utils import *
 
 with open('data/interim/pcc_021521_withclustering//pcc_10_r.pickle','rb') as f:
     e_pcc = pickle.load(f)

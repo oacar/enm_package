@@ -29,8 +29,8 @@ import pickle
 import os
 import re
 import itertools as itr
-from src.visualize.visualize import plot_correlation_density, plot_vector, plot_lambda_collectivity
-from src.enm import Enm
+from enm.visualize.visualize import plot_correlation_density, plot_vector, plot_lambda_collectivity
+from enm.enm import Enm
 
 # %%
 import statsmodels.api as sm
@@ -337,7 +337,7 @@ val  = plot_subnetwork(e_pcc.graph_gc, pos=e_pcc.graph_gc.nodes('pos'),attr='sen
 e_pcc.plot_network_spring(node_color = e_pcc.df.sens.values,facecolor='white',figsize=(10,10),node_size=50)
 
 # %%
-from src.visualize.visualize import plot_network_spring
+from enm.visualize.visualize import plot_network_spring
 
 # %%
 

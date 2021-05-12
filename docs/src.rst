@@ -1,4 +1,4 @@
-src package
+enm package
 ===========
 
 Subpackages
@@ -7,33 +7,33 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   src.data
-   src.features
-   src.models
+   enm.data
+   enm.features
+   enm.models
 
 Submodules
 ----------
 
-src.enm module
+enm.enm module
 --------------
 
-.. automodule:: src.enm
+.. automodule:: enm.enm
    :members:
    :undoc-members:
    :show-inheritance:
 
-src.rewire module
+enm.rewire module
 -----------------
 
-.. automodule:: src.rewire
+.. automodule:: enm.rewire
    :members:
    :undoc-members:
    :show-inheritance:
 
-src.visualize module
+enm.visualize module
 --------------------
 
-.. automodule:: src.visualize
+.. automodule:: enm.visualize
    :members:
    :undoc-members:
    :show-inheritance:
@@ -42,7 +42,7 @@ src.visualize module
 Module contents
 ---------------
 
-.. automodule:: src
+.. automodule:: enm
    :members:
    :undoc-members:
    :show-inheritance:

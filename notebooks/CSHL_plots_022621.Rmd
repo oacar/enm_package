@@ -12,8 +12,8 @@ library(reticulate)
 # use_python("/home/oma21/miniconda3/envs/enm/bin/python")
 use_condaenv("enm")
 setwd("../")
-source("src/R/plot_density_prs.R")
-source("src/R/get.subclusters.dendrogram.R")
+source("enm/R/plot_density_prs.R")
+source("enm/R/get.subclusters.dendrogram.R")
 ```
 
 ```{python}
@@ -27,7 +27,7 @@ import pickle
 import os
 import re
 import itertools as itr
-from src.enm import Enm
+from enm.enm import Enm
 
 with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
     e_pcc_old = pickle.load(f)
@@ -359,10 +359,10 @@ lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_
 #nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
 plt.savefig(f'{r.figure_folder}tmp_nw_eff.png',bbox_inches='tight')
 
-from src.visualize.visualize import heatmap_annotated
-#import src
+from enm.visualize.visualize import heatmap_annotated
+#import enm
 #import importlib
-#importlib.reload(src.visualize.visualize)
+#importlib.reload(enm.visualize.visualize)
 heatmap_annotated(prs_mat, prs_mat_cl_orig, figure_path=r.figure_folder, row_linkage=e_pcc.row_linkage, col_linkage=e_pcc.col_linkage, save_figure=True)#,
 #                 row_colors=colors, col_colors=colors)
 

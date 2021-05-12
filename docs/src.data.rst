@@ -1,13 +1,13 @@
-src.data package
+enm.data package
 ================
 
 Submodules
 ----------
 
-src.data.make\_dataset module
+enm.data.make\_dataset module
 -----------------------------
 
-.. automodule:: src.data.make_dataset
+.. automodule:: enm.data.make_dataset
    :members:
    :undoc-members:
    :show-inheritance:
@@ -16,7 +16,7 @@ src.data.make\_dataset module
 Module contents
 ---------------
 
-.. automodule:: src.data
+.. automodule:: enm.data
    :members:
    :undoc-members:
    :show-inheritance:

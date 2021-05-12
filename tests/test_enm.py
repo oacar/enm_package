@@ -1,5 +1,5 @@
 import pytest
-from src.enm import Enm
+from enm.enm import Enm
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt

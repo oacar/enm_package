@@ -13,8 +13,8 @@ library(reticulate)
 #use_python("/home/oma21/miniconda3/envs/enm/bin/python")
 use_condaenv('enm')
 setwd('../')
-#source('src/R/plot_density_prs.R')
-source('src/R/get.subclusters.dendrogram.R')
+#source('enm/R/plot_density_prs.R')
+source('enm/R/get.subclusters.dendrogram.R')
 library(RColorBrewer)
 col =brewer.pal(n=8,name='Set1')
 sensor_colors = col[1:4]
@@ -34,8 +34,8 @@ import pickle
 import os
 import re
 import itertools as itr
-from src.enm import Enm
-from src.utils import *
+from enm.enm import Enm
+from enm.utils import *
 import scipy.cluster.hierarchy as sch
 
 with open(f'data/interim/pcc_021521_withclustering//pcc_10.pickle','rb') as f:
@@ -161,8 +161,8 @@ dend_col  <- as.dendrogram(hclust_col)
 effector_pcc <- get.subclusters.dendrogram(dend_row, effector_pcc)
 sensors_pcc <- get.subclusters.dendrogram(dend_col, sensors_pcc)
 
-# Import goatools functions from src/utils.py
-utils <- import('src.utils')
+# Import goatools functions from enm/utils.py
+utils <- import('enm.utils')
 create_goa = utils$create_goea(gaf = 'data/raw/ontology/sgd.gaf', obo_fname='data/raw/ontology/go-basic.obo', background='data/interim/costanzo_gc_bg.tsv', sgd_info_tab = 'data/raw/ontology/SGD_features.tab')
 goea = create_goa[[1]]
 geneid2name = create_goa[[2]]

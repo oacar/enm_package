@@ -8,8 +8,8 @@ import pickle
 import os
 import re
 import itertools as itr
-from src.enm import Enm
-from src.utils import *
+from enm.enm import Enm
+from enm.utils import *
 
 with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
     e_pcc = pickle.load(f)

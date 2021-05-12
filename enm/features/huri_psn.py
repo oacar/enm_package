@@ -1,12 +1,12 @@
-import src
+import enm
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import networkx as nx
 import pickle
 from tqdm import tqdm
-from src.enm import *
-from src.utils import *
+from enm.enm import *
+from enm.utils import *
 
 
 

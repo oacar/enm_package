@@ -1,11 +1,11 @@
-import src
+import enm
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import networkx as nx
 import pickle
-from src.enm import *
-from src.utils import *
+from enm.enm import *
+from enm.utils import *
 
 with open('data/interim/yuri_0916/yuri.pickle','rb') as f:
     e_yuri = pickle.load(f)

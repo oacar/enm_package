@@ -16,8 +16,8 @@ from mlxtend.evaluate import permutation_test
 import pickle
 import random
 from tqdm import tqdm
-from src.utils import sequential_deletion
-from src.enm import Enm
+from enm.utils import sequential_deletion
+from enm.enm import Enm
 
 with open(f'data/interim/pcc_0909/pcc.pickle','rb') as f:
     e_pcc = pickle.load(f)

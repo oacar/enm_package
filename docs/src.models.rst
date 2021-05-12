@@ -1,21 +1,21 @@
-src.models package
+enm.models package
 ==================
 
 Submodules
 ----------
 
-src.models.predict\_model module
+enm.models.predict\_model module
 --------------------------------
 
-.. automodule:: src.models.predict_model
+.. automodule:: enm.models.predict_model
    :members:
    :undoc-members:
    :show-inheritance:
 
-src.models.train\_model module
+enm.models.train\_model module
 ------------------------------
 
-.. automodule:: src.models.train_model
+.. automodule:: enm.models.train_model
    :members:
    :undoc-members:
    :show-inheritance:
@@ -24,7 +24,7 @@ src.models.train\_model module
 Module contents
 ---------------
 
-.. automodule:: src.models
+.. automodule:: enm.models
    :members:
    :undoc-members:
    :show-inheritance:

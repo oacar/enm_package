@@ -1,13 +1,13 @@
-src.features package
+enm.features package
 ====================
 
 Submodules
 ----------
 
-src.features.build\_features module
+enm.features.build\_features module
 -----------------------------------
 
-.. automodule:: src.features.build_features
+.. automodule:: enm.features.build_features
    :members:
    :undoc-members:
    :show-inheritance:
@@ -16,7 +16,7 @@ src.features.build\_features module
 Module contents
 ---------------
 
-.. automodule:: src.features
+.. automodule:: enm.features
    :members:
    :undoc-members:
    :show-inheritance:
