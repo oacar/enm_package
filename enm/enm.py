@@ -4,7 +4,7 @@ import networkx as nx
 import pandas as pd
 import prody
 import numpy as np
-import igraph
+#import igraph
 import scipy.cluster.hierarchy as sch
 import copy
 from tqdm import tqdm
@@ -156,7 +156,7 @@ class Enm():
         df_['sens'] = sens_orig
         eigenvector_centr = nx.eigenvector_centrality_numpy(self.graph_gc)
         closeness_centr = nx.closeness_centrality(self.graph_gc)
-        df_['btw'] = betweenness_nx(self.graph_gc, normalized=True)
+#        df_['btw'] = betweenness_nx(self.graph_gc, normalized=True)
         df_['trans'] = list((nx.clustering(self.graph_gc)).values())
         df_['eigenvec_centr'] = [eigenvector_centr[i]
                                  for i in eigenvector_centr]
@@ -172,36 +172,36 @@ class Enm():
                 jaccard_mat[i,j] = jc
         self.jaccard_mat = jaccard_mat
 
-    def fiedler_evaluation(self, figure_name = "lost_edges_node_counts", figure_extension = 'png', plot=False, **kwargs):
-        """This function evaluates fiedler vector cut. Using eigenvectors of Laplacian, calculates 2 subnetworks and return
-        the number of edges lost between 2 subnetworks with the cut and number of nodes in the smaller subnetwork
-        """
-        gc = self.graph_gc
-        eigvecs = self.gnm.getEigvecs()
-        orf_names = self.df.orf_name
-        lost_edges = [ ]
-        adj = nx.adjacency_matrix(gc).todense()
-        orf_names = self.df.orf_name
-        g_ig = igraph.Graph.Adjacency((adj > 0).tolist(), "UNDIRECTED")
-        g_ig.vs['name'] = orf_names
+#     def fiedler_evaluation(self, figure_name = "lost_edges_node_counts", figure_extension = 'png', plot=False, **kwargs):
+#         """This function evaluates fiedler vector cut. Using eigenvectors of Laplacian, calculates 2 subnetworks and return
+#         the number of edges lost between 2 subnetworks with the cut and number of nodes in the smaller subnetwork
+#         """
+#         gc = self.graph_gc
+#         eigvecs = self.gnm.getEigvecs()
+#         orf_names = self.df.orf_name
+#         lost_edges = [ ]
+#         adj = nx.adjacency_matrix(gc).todense()
+#         orf_names = self.df.orf_name
+#         g_ig = igraph.Graph.Adjacency((adj > 0).tolist(), "UNDIRECTED")
+#         g_ig.vs['name'] = orf_names
 
-        for i in tqdm(range(len(gc.nodes)-1)):
-            cl1 = [orf_names[i] for i, j in enumerate(eigvecs[:,i]) if j>0]
-            cl2 = [orf_names[i] for i, j in enumerate(eigvecs[:,i]) if j<0]
-            cg1 = g_ig.induced_subgraph(cl1)
-            cg2 = g_ig.induced_subgraph(cl2)
-            #cg1 = nx.induced_subgraph(gc, cl1)
-            #cg2 = nx.induced_subgraph(gc,cl2)
-            #lost_edges.append( len(gc.edges)-(len(cg2.edges)+len(cg1.edges)))
-            lost_edges.append( len(gc.edges)-(len(cg2.es)+len(cg1.es)))
+#         for i in tqdm(range(len(gc.nodes)-1)):
+#             cl1 = [orf_names[i] for i, j in enumerate(eigvecs[:,i]) if j>0]
+#             cl2 = [orf_names[i] for i, j in enumerate(eigvecs[:,i]) if j<0]
+#             cg1 = g_ig.induced_subgraph(cl1)
+#             cg2 = g_ig.induced_subgraph(cl2)
+#             #cg1 = nx.induced_subgraph(gc, cl1)
+#             #cg2 = nx.induced_subgraph(gc,cl2)
+#             #lost_edges.append( len(gc.edges)-(len(cg2.edges)+len(cg1.edges)))
+#             lost_edges.append( len(gc.edges)-(len(cg2.es)+len(cg1.es)))
 
-        node_counts_c1 = np.minimum(np.count_nonzero(eigvecs>0, axis=0),np.count_nonzero(eigvecs<0, axis=0))
-        node_counts_c2 = np.maximum(np.count_nonzero(eigvecs>0, axis=0),np.count_nonzero(eigvecs<0, axis=0))
-#        data = {'lost_edges':lost_edges, 'node_counts_c1':node_counts_c1}
-        self.lost_edges =  lost_edges#data
-        self.node_counts_c1 = node_counts_c1
-        if plot:
-            plot_fiedler_data(self, figure_name= figure_name, figure_extension=figure_extension)
+#         node_counts_c1 = np.minimum(np.count_nonzero(eigvecs>0, axis=0),np.count_nonzero(eigvecs<0, axis=0))
+#         node_counts_c2 = np.maximum(np.count_nonzero(eigvecs>0, axis=0),np.count_nonzero(eigvecs<0, axis=0))
+# #        data = {'lost_edges':lost_edges, 'node_counts_c1':node_counts_c1}
+#         self.lost_edges =  lost_edges#data
+#         self.node_counts_c1 = node_counts_c1
+#         if plot:
+#             plot_fiedler_data(self, figure_name= figure_name, figure_extension=figure_extension)
 
 
     def gnm_analysis(self, **kwargs):
@@ -488,16 +488,16 @@ def betweenness_ig(g, normalized=False):
     else:
         return btw
 
-def igraph_network(g,orf_names=None):
-    adj = nx.adjacency_matrix(g).todense()
-    g_ig = igraph.Graph.Adjacency((adj > 0).tolist(),'UNDIRECTED')
-    if orf_names is not None:
-        g_ig.vs['name'] = orf_names
-    return g_ig
+# def igraph_network(g,orf_names=None):
+#     adj = nx.adjacency_matrix(g).todense()
+#     g_ig = igraph.Graph.Adjacency((adj > 0).tolist(),'UNDIRECTED')
+#     if orf_names is not None:
+#         g_ig.vs['name'] = orf_names
+#     return g_ig
 
-def betweenness_nx(g, normalized=False):
-    g_ig = igraph_network(g)
-    return betweenness_ig(g_ig, normalized)
+# def betweenness_nx(g, normalized=False):
+#     g_ig = igraph_network(g)
+#     return betweenness_ig(g_ig, normalized)
 
 
 def rewire_network(Gc, **kwargs):
@@ -567,7 +567,6 @@ def simulate_rewire(Gc, rewired=False, rewire_df_name=None, arr_name=None, **kwa
         arr = np.zeros((len(Gc.nodes), len(Gc.nodes), int(sim_num)))
         # pearsonr(eff,degree)[0]
         rewire_df = pd.DataFrame(columns=['eff_deg_pearson', 'sens_deg_pearson', 'eff_deg_spearman', 'sens_deg_spearman',
-                                          'eff_btw_pearson', 'sens_btw_pearson', 'eff_btw_spearman', 'sens_btw_spearman',
                                           'eff_trans_pearson', 'sens_trans_pearson', 'eff_trans_spearman',
                                           'sens_trans_spearman'])
         e_list = []
@@ -605,15 +604,15 @@ def simulate_rewire(Gc, rewired=False, rewire_df_name=None, arr_name=None, **kwa
             # eff_hist_list.append(eff_rew)
             # sens_hist_list.append(eff_rew)
             # betweenness_nx(Gc_rew, normalized=True)
-            betweenness = enm_rew.df.btw.values
+            # betweenness = enm_rew.df.btw.values
             clustering_coeff = enm_rew.df.trans.values
             rewire_df_itr = pd.DataFrame([[pearsonr(eff_rew, degree)[0], pearsonr(sens_rew, degree)[0],
                                            spearmanr(eff_rew, degree)[0], spearmanr(
                                                sens_rew, degree)[0],
-                                           pearsonr(eff_rew, betweenness)[0], pearsonr(
-                                               sens_rew, betweenness)[0],
-                                           spearmanr(eff_rew, betweenness)[0], spearmanr(
-                                               sens_rew, betweenness)[0],
+                                        #    pearsonr(eff_rew, betweenness)[0], pearsonr(
+                                        #        sens_rew, betweenness)[0],
+                                        #    spearmanr(eff_rew, betweenness)[0], spearmanr(
+                                        #        sens_rew, betweenness)[0],
                                            pearsonr(eff_rew, clustering_coeff)[0], pearsonr(
                                                sens_rew, clustering_coeff)[0],
                                            spearmanr(
@@ -621,8 +620,6 @@ def simulate_rewire(Gc, rewired=False, rewire_df_name=None, arr_name=None, **kwa
                                            spearmanr(sens_rew, clustering_coeff)[0]]],
                                          columns=['eff_deg_pearson', 'sens_deg_pearson', 'eff_deg_spearman',
                                                   'sens_deg_spearman',
-                                                  'eff_btw_pearson', 'sens_btw_pearson', 'eff_btw_spearman',
-                                                  'sens_btw_spearman',
                                                   'eff_trans_pearson', 'sens_trans_pearson', 'eff_trans_spearman',
                                                   'sens_trans_spearman'])
             rewire_df = rewire_df.append(rewire_df_itr)
