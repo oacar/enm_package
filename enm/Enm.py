@@ -9,8 +9,7 @@ import scipy.cluster.hierarchy as sch
 import copy
 from tqdm import tqdm
 
-from .visualize.visualize import plot_collectivity,plot_correlation_density,plot_network_spring,plot_scatter,plot_vector,heatmap_annotated, plot_fiedler_data
-#from .utilities import *
+from .visualize import plot_collectivity,plot_correlation_density,plot_network_spring,plot_scatter,plot_vector,heatmap_annotated#from .utilities import *
 from .utils import jaccard_index, query_goatools
 
 
@@ -52,9 +51,10 @@ class Enm():
     def spring_pos(self):
         """Create spring layout of the giant component network and assign positions to nodes
         """
+        rs = np.random.RandomState(2)
         try:
             pos = nx.spring_layout(self.graph_gc, k=0.6,
-                                   scale=4, iterations=200)
+                                   scale=4, iterations=200, seed=rs)
             nx.set_node_attributes(self.graph_gc, pos, 'pos')
         except AttributeError:
             raise(
@@ -279,7 +279,7 @@ class Enm():
         components = [i for i in nx.connected_components(nx.induced_subgraph(self.graph_gc, df.orf_name))]
         dd = {}
         for i,j in dict(zip(range(len(components)),components)).items():
-            id_ = i if len(j)>3 else None
+            id_ = i if len(j)>=3 else None
             for item in j:
                 dd[item]=id_
         df.loc[:,col_name] = df['orf_name'].map(dd)
@@ -350,7 +350,7 @@ class Enm():
         self.dist_to_center = dist_to_center
 
     def cluster_matrix(self, mat, method='ward', distance_metric='seuclidean', quantile_threshold = 0.95, cluster_normalized=True, show_normalized=True, optimal_ordering=True):
-        """create row and column linkage for given matrix `max`
+        """create row and column linkage for given matrix `mat`
 
         :param mat: the input matrix to be clustered
         :type mat: numpy matrix, 2 dimensional
@@ -385,7 +385,7 @@ class Enm():
         self.col_linkage = col_linkage
         self.row_dist = row_dist
         self.col_dist = col_dist
-        self.mat_cl = mat_cl
+        self.prs_mat_cl = mat_cl
         self.root_row = root_row
         self.root_col = root_col
         self.q99 = q99
@@ -466,7 +466,7 @@ class Enm():
         """
         if self.prs_mat_cl is None:
             self.cluster_matrix(self.prs_mat, **kwargs)
-        return heatmap_annotated(self.prs_mat, self.figure_path, **kwargs)
+        return heatmap_annotated(self.prs_mat, self.prs_mat_cl, self.figure_path, self.row_linkage, self.col_linkage, **kwargs)
 
     def plot_vector(self, eigen_id='eig_0', color_id=0, sorted=False, **kwargs):
         data = self.df.loc[:, eigen_id]
