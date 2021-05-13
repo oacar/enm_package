@@ -1,7 +1,7 @@
 import numpy as np
 import networkx as nx
 import pickle
-from enm.enm import *
+from enm.Enm import *
 from enm.utils import *
 
 gaf = snakemake.input['gaf']

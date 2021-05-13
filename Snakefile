@@ -19,7 +19,7 @@ rule create_enm_object:
     params:
         output_path = OUTPUT_PATH
     output: 
-        pickle_file= f"{OUTPUT_PATH}/pcc.pickle"
+        pickle_file= f"{OUTPUT_PATH}/pcc.pickle",
         df_filename= f"{OUTPUT_PATH}/pcc_df.csv"
     script: "scripts/pcc.py"
 
