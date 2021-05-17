@@ -4,26 +4,18 @@ import pickle
 from enm.Enm import *
 from enm.utils import *
 
-gaf = snakemake.input['gaf']
-obo = snakemake.input['obo']
-background_file = snakemake.input['background_file']
-sgd_info = snakemake.input['sgd_info']
 pickle_file = snakemake.input[0]
 with open(pickle_file,'rb') as f:
     enm = pickle.load(f)
-
-print('clustering')
-enm.get_sensor_effector(use_threshold=False)
-
-print('go analysis')
-goea, geneid2name = create_goea(gaf = gaf, obo_fname=obo, 
-                                background=background_file, sgd_info_tab = sgd_info)
-enm.analyze_components_biology(goea, geneid2name, True)
-enm.analyze_components_biology(goea, geneid2name, False)
-
 print('rewiring')
-#Don't run
-enm.simulate_rewire(output_name=snakemake.output['rewired_dataframe'],save=True, normalized=False,sim_num=snakemake.params.n_sim)
+#Don't run with n>10, takes long
+enm.simulate_rewire(output_name='tmp',save=False, normalized=False,sim_num=snakemake.params.n_sim)
+df = pd.DataFrame()
+for i in range(snakemake.params.n_sim):
+    df_tmp = enm.e_list[i].df
+    df_tmp['random_id'] = i
+    df = df.append(df_tmp)
 
-with open(snakemake.output['pickle_file'],'wb') as f:
-    pickle.dump(enm,f, protocol=4)
+df.to_csv(snakemake.output.pcc_df_random, index=False)
+#with open(snakemake.output['pickle_file'],'wb') as f:
+#    pickle.dump(enm,f, protocol=4)

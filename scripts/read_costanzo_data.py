@@ -7,7 +7,9 @@ df = pd.read_csv(input_file,'\t',index_col=[0,1], header=[0,1])
 
 df_long = df.melt(ignore_index=False, col_level=0)
 
-df_long_renamed = df_long.reset_index(inplace=False).rename(columns = {'level_0':'gene1','level_1':'gene1_sys', 'variable':'gene2','value':'pcc'})
+df_long_renamed = df_long.reset_index(inplace=False).rename(columns = {'level_0':'gene1','level_1':'Systematic gene name', 'variable':'gene2','value':'pcc'})
 
 df_long_renamed.loc[df_long_renamed.pcc>=0.2,['gene1','gene2','pcc']].to_csv(output_file, index=False,float_format="%.6f")
 #df = df.rename(columns = {'index':'new column name'})
+
+df_long_renamed.iloc[:,[0,1]].drop_duplicates().to_csv(snakemake.output[1],index=False)

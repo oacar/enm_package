@@ -33,8 +33,8 @@ def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/o
         geneids,  # List of mouse protein-coding genes
         ns2assoc_excl,  # geneid/GO associations
         obodag,  # Ontologies
-        propagate_counts=True,
-        alpha=0.05,  # default significance cut-off
+        propagate_counts=False,
+        alpha=0.1,  # default significance cut-off
         methods=['fdr', 'bonferroni','fdr_bh'], prt=None)
 
     return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl

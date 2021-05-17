@@ -151,7 +151,7 @@ class Enm():
         eigvecs_df = pd.DataFrame(self.gnm.getEigvecs(
         )[:, self.coll_index_sorted[:8]], columns=[f'eig_{i}' for i in range(8)])
 
-        df_ = pd.merge(df, eigvecs_df, left_index=True, right_index=True)
+        df_ = df#pd.merge(df, eigvecs_df, left_index=True, right_index=True)
         df_['eff'] = eff_orig
         df_['sens'] = sens_orig
         eigenvector_centr = nx.eigenvector_centrality_numpy(self.graph_gc)
