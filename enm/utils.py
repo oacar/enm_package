@@ -18,7 +18,7 @@ def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/o
     
     #background='../data/raw/ontology/sgd_costanzogenes'
     obodag = GODag(obo_fname)
-    objanno = GafReader(gaf)
+    objanno = GafReader(gaf,namespaces=set(['BP']))
 #    ns2assoc = objanno.get_ns2assc()
 
     ns2assoc_excl = objanno.get_ns2assc( ev_exclude = {'HGI' , 'IGI'})
@@ -35,7 +35,7 @@ def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/o
         obodag,  # Ontologies
         propagate_counts=False,
         alpha=0.1,  # default significance cut-off
-        methods=['fdr', 'bonferroni','fdr_bh'], prt=None)
+        methods=['fdr','fdr_bh'], prt=None)
 
     return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl
 
@@ -123,7 +123,7 @@ def query_goatools(query, goea,geneid2name):
     """
     query_gene_ids = [key for key,value in geneid2name.items() if value in query.loc[:,'Systematic gene name'].unique()]
     goea_res_all = goea.run_study(query_gene_ids)
-    goea_res_sig = [r for r in goea_res_all if r.p_fdr <0.1]
+    goea_res_sig = [r for r in goea_res_all if r.p_fdr<0.1]
     go_df_sensor = goea_to_pandas(goea_res_sig, geneid2name)
     return go_df_sensor
 
@@ -235,7 +235,7 @@ def get_in_to_out_edge_ratio(G, nodes_df):
 
 def get_random_in_to_out_ratio(gnm_df, df , G):
     random_ratio_list = []
-    for i in range(100):
+    for i in range(10000):
         rand_nodes = sample_nodes_with_degree(gnm_df, df)
     #    print(len(rand_nodes))
         random_ratio_list.append(get_in_to_out_edge_ratio(G, rand_nodes))

@@ -1,0 +1,97 @@
+---
+title: "25-Figure3-051821"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages
+```{r, message=FALSE,warning=FALSE}
+library(tidyverse)
+library(glue)
+library(cowplot)
+library(ggpubr)
+library(ggsignif)
+source("../enm/R/plot_density_prs.R")#paste function in this file
+```
+
+
+# Sensor connectivity and neighbor degree
+
+```{r}
+sensor_connectivity_df <- read_csv("../data/interim/sensor_connectivity_df.csv") %>%
+  #mutate(data = fct_relevel(data, c("pcc", "gi", "yuri", "huri"))) %>%
+  filter(data == "pcc")
+pcc_df <- read_csv('../data/interim/pcc_df.csv')
+# effector_connectivity_df <- read_csv('data/interim/sensor_connectivity_1205/effector_connectivity_df.csv')%>%
+#    mutate(data= fct_relevel(data, c('pcc','gi','yuri','huri')))%>%filter(data=='pcc')
+# effector_connectivity_plot <-
+#    ggplot()+
+##    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+##    geom_boxplot()+
+##    geom_jitter()+
+#    geom_density(data =effector_connectivity_df%>%filter(type!='real'),aes(x=ratio,color=type, y=..scaled..),linetype = "dashed")+
+#    geom_vline(data =effector_connectivity_df%>%filter(type=='real'),aes(xintercept=ratio,color=type))+
+#    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
+#    ylab('Density')+xlab('Ratio of between group edges to outgroup edges')+
+#    theme_bw()+
+#    scale_color_discrete(labels=c('Random sampled set', 'Effectors'))+
+#    theme(legend.position='bottom')+
+#    scale_y_continuous(expand = c(0, 0))
+eff_neighbor_degree_plot <- pcc_df %>%
+  #filter(group == "real") %>%
+  #group_by(data) %>%
+  mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real")%>%
+  mutate(is_effector = factor(ifelse(eff_norm > quantile(eff_norm, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
+  #    mutate(is_effector = fct_relevel(is_effector,c(TRUE,FALSE)))%>%
+  ggplot(aes(x = is_effector, y = log(neighbor_degree))) +
+  #    facet_grid(cols=vars(data),labeller = labeller(data=facet_labels))+
+  #    geom_point()+
+  geom_boxplot() +
+  theme_bw() +
+  ylab("Log(Average neighbor degree)") +
+  xlab("") +
+  stat_compare_means() +
+  scale_x_discrete(labels = c("Effector", "Not Effector"))
+sensor_connectivity_plot <-
+  ggplot() +
+  #    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+  #    geom_boxplot()+
+  #    geom_jitter()+
+  geom_density(data = sensor_connectivity_df %>% filter(type != "real"), aes(x = ratio, color = type)) +
+  geom_vline(data = sensor_connectivity_df %>% filter(type == "real"), aes(xintercept = ratio, color = type)) +
+  guides(color = guide_legend(title = "Data type"), shape = guide_legend(title = "Network type")) +
+  ylab("Density") +
+  xlab("Ratio of between group edges\nto outgroup edges") +
+  theme_bw() +
+  scale_color_discrete(labels = c("Random sampled set", "Sensors")) +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(expand = c(0, 0))
+sensor_connectivity_plot
+neighbor_degree_plot <- combined_df %>%
+  filter(group == "real") %>%
+  group_by(data) %>%
+  mutate(is_sensor = factor(ifelse(sens_norm > quantile(sens_norm, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
+  #    mutate(is_sensor = fct_relevel(is_sensor,c(TRUE,FALSE)))%>%
+  ggplot(aes(x = is_sensor, y = log(neighbor_degree))) +
+  #    facet_grid(cols=vars(data),labeller = labeller(data=facet_labels))+
+  #    geom_point()+
+  geom_boxplot() +
+  theme_bw() +
+  ylab("Log(Average neighbor degree)") +
+  xlab("") +
+  stat_compare_means() +
+  scale_x_discrete(labels = c("Sensor", "Not Sensor"))
+sensor_conn_lgn <- get_legend(sensor_connectivity_plot + theme(legend.position = "right"))
+plot_grid(neighbor_degree_plot,
+  sensor_connectivity_plot + theme(legend.position = "none"), # effector_connectivity_plot,
+  eff_neighbor_degree_plot, sensor_conn_lgn,
+  nrow = 2,
+  labels = c("A", "B", "C", "")
+) # %>%
+#    plot_grid(, labels=c('','C'),nrow=2, rel_widths=c(2,1))
+#ggsave("reports/figures/paper_figures_0202_pcc_only/fig5.pdf", width = 6, height = 6)
+sensor_connectivity_df$ratio[sensor_connectivity_df$type=='random']/mean(sensor_connectivity_df$ratio[sensor_connectivity_df$type=='random'])
+```

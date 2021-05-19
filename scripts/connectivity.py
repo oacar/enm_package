@@ -1,7 +1,7 @@
 import pandas as pd
 import pickle 
 import itertools as itr
-from enm.enm import Enm
+from enm.Enm import Enm
 from enm.utils import *
 
 with open(snakemake.input[0],'rb') as f:
