@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
 # Load packages
@@ -14,7 +14,43 @@ library(glue)
 library(cowplot)
 library(ggpubr)
 library(ggsignif)
-source("../enm/R/plot_density_prs.R")#paste function in this file
+
+
+plot_density_prs <- 			# 
+    function
+(
+ 	df , x , xlab= 'Effectiveness', ylab='Density', coord_trans='log10', linesize = 1
+)
+{
+    color_pal <- c('#00BFC4','#F8766D')
+dens_plot <- 
+    ggplot()+
+    #facet_grid(rows=vars(data))+
+#    geom_density()+
+    geom_line(data= df%>%filter(group=='real'),
+               aes(x={{x}} ,y=..scaled.., color=group),
+               stat = 'density')+#, binwidth = 0.1) + 
+    geom_line(data= df%>%filter(group=='random'),
+               aes(x={{x}} ,y=..scaled..,fill=random_id, color=group),linetype='dashed',
+               stat = 'density' ,show.legend=F)+#, binwidth = 0.1) + 
+    geom_vline(data= df%>%filter(group=='real')%>%mutate(g = T),aes(xintercept = mean({{x}}), linetype='Real'),color=color_pal[1],size=linesize, show.legend=NA)+
+    geom_vline(data= df%>%filter(group=='random')%>%mutate(g = F),aes(xintercept = mean({{x}}),linetype='Random', group=random_id),color=color_pal[2], size=linesize,show.legend=NA)+
+    scale_linetype_manual(name = "Limits", labels = c("real", "random"), values = c("Real" = 3, "Random" = 3)) +
+    guides(colour=guide_legend(override.aes = list(linetype=1)),
+           linetype=guide_legend(override.aes=list(colour=color_pal)))+
+    theme_bw()+
+    ylab(ylab)+
+    xlab(xlab)+
+    coord_trans(x = coord_trans)+
+scale_x_continuous(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10", scales::math_format(10^.x))
+ ) +
+    scale_color_discrete(labels=c('Rewired\nnetworks','PSN'))+
+theme(legend.text = element_text(margin = margin(b = 10)), panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())
+dens_plot
+}
+
 ```
 
 # Load input dataframe
@@ -22,7 +58,7 @@ source("../enm/R/plot_density_prs.R")#paste function in this file
 #df_filename <-snakemake$input$df_filename
 #random_df_filename <-snakemake$input$df_filename
 pcc_df <- read_csv('../data/interim/pcc_df.csv')
-pcc_df_random <- read_csv('../data/interim/pcc_df_random.csv')
+pcc_df_random <- read_csv('../data/interim/pcc_df_random_100.csv')%>%mutate(random_id=factor(random_id))
 pcc_df <- pcc_df %>%
   mutate(data = "pcc") %>%
   mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real") %>%
@@ -34,37 +70,6 @@ pcc_df <- pcc_df %>%
 
 ```
 
-# Figure 2, G and F
-```{r}
-pcc_eff_dens <-
-  plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness")
-dens_lgn <- cowplot::get_legend(pcc_eff_dens + theme(legend.position = "right"))
-pcc_degree_dens <- cowplot::ggdraw(plot_density_prs(pcc_df, deg, xlab = "Degree") + theme(legend.position = "none")) #+
-#  cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
-pcc_eff_dens <-
-  cowplot::ggdraw(plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness") + theme(legend.position = "none") +
-    coord_trans(x = "log10", xlim = c(NA, 10e-2)) +
-    scale_x_continuous(
-      breaks = scales::trans_breaks("log10", function(x) 10^x),
-      labels = scales::trans_format("log10", scales::math_format(10^.x))
-    )) #+
-#   cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
-# annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
-pcc_sensitivity_dens <-
-  cowplot::ggdraw(plot_density_prs(pcc_df, sens_norm, xlab = "Sensitivity") + theme(legend.position = "none")) #+
-#        cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
-# title <- cowplot::ggdraw() + cowplot::draw_label("Yeast GI Profile Similarity", fontface='bold')
-pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none"),
-  pcc_sensitivity_dens + theme(legend.position = "none"),
-  #+theme(legend.position='none'),
-  labels = c("F", "G"), ncol = 2
-)
-# pcc_dens_comb_title = cowplot::plot_grid(title, pcc_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
-# dens_lgn = cowplot::get_legend(pcc_sensitivity_dens)
-#dens_plots <- 
-  pcc_dens_comb
-
-```
 
 # Figure2 A,B
 ```{r}
@@ -156,6 +161,40 @@ distr_plots <- plot_grid(pcc_degree_dens + theme(legend.position = ""),
 # distr_plots_withlgn <- plot_grid(distr_plots, lgn34,
 # nrow=2,rel_heights = c(0.9,0.1))
 # ggsave('reports/figures/paper_figures_0916/fig2.png',plot=distr_plots , width=7)
-plot_grid(deg_scatter_plots, distr_plots, dens_plots, nrow = 3, rel_heights = c(0.3, 0.4, .3))
+distr_plots
+#plot_grid(deg_scatter_plots, distr_plots, pcc_dens_comb, nrow = 3, rel_heights = c(0.3, 0.4, .3))
+#
 #ggsave("reports/figures/paper_figures_0202_pcc_only/fig3.pdf", width = 10, height = 12)
+```
+
+# Figure 2, G and F
+```{r}
+pcc_eff_dens <-
+  plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness")
+dens_lgn <- cowplot::get_legend(pcc_eff_dens + theme(legend.position = "right"))
+pcc_degree_dens <- cowplot::ggdraw(plot_density_prs(pcc_df, deg, xlab = "Degree") + theme(legend.position = "none")) #+
+#  cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+pcc_eff_dens <-
+  cowplot::ggdraw(plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness") + theme(legend.position = "none") +
+    coord_trans(x = "log10", xlim = c(NA, 10e-2)) +
+    scale_x_continuous(
+      breaks = scales::trans_breaks("log10", function(x) 10^x),
+      labels = scales::trans_format("log10", scales::math_format(10^.x))
+    )) #+
+#   cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+# annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+pcc_sensitivity_dens <-
+  cowplot::ggdraw(plot_density_prs(pcc_df, sens_norm, xlab = "Sensitivity") + theme(legend.position = "none")) #+
+#        cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+# title <- cowplot::ggdraw() + cowplot::draw_label("Yeast GI Profile Similarity", fontface='bold')
+pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none"),
+  pcc_sensitivity_dens + theme(legend.position = "none"),
+  #+theme(legend.position='none'),
+  labels = c("F", "G"), ncol = 2
+)
+# pcc_dens_comb_title = cowplot::plot_grid(title, pcc_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
+# dens_lgn = cowplot::get_legend(pcc_sensitivity_dens)
+#dens_plots <- 
+  pcc_dens_comb
+
 ```
