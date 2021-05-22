@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning=FALSE)
 ```
 
 # Load packages
@@ -14,52 +14,48 @@ library(glue)
 library(cowplot)
 library(ggpubr)
 library(ggsignif)
-source("../enm/R/plot_density_prs.R")#paste function in this file
+library(RColorBrewer)
+col <- brewer.pal(n = 9, name = "Set1")
+sensor_colors <- col[2:6] # brewer.pal(n = 6, name = "Set1")
+effector_colors <- col[7:9] # brewer.pal(n=3, name= "Set1_r")
 ```
 
-
-# Sensor connectivity and neighbor degree
-
+# Load necessary data
 ```{r}
-sensor_connectivity_df <- read_csv("../data/interim/sensor_connectivity_df.csv") %>%
-  #mutate(data = fct_relevel(data, c("pcc", "gi", "yuri", "huri"))) %>%
-  filter(data == "pcc")
+
+sensor_connectivity_df <- read_csv("../data/interim/sensor_connectivity_df.csv") 
 pcc_df <- read_csv('../data/interim/pcc_df.csv')
-# effector_connectivity_df <- read_csv('data/interim/sensor_connectivity_1205/effector_connectivity_df.csv')%>%
-#    mutate(data= fct_relevel(data, c('pcc','gi','yuri','huri')))%>%filter(data=='pcc')
-# effector_connectivity_plot <-
-#    ggplot()+
-##    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
-##    geom_boxplot()+
-##    geom_jitter()+
-#    geom_density(data =effector_connectivity_df%>%filter(type!='real'),aes(x=ratio,color=type, y=..scaled..),linetype = "dashed")+
-#    geom_vline(data =effector_connectivity_df%>%filter(type=='real'),aes(xintercept=ratio,color=type))+
-#    guides(color=guide_legend(title="Data type"),shape=guide_legend(title="Network type"))+
-#    ylab('Density')+xlab('Ratio of between group edges to outgroup edges')+
-#    theme_bw()+
-#    scale_color_discrete(labels=c('Random sampled set', 'Effectors'))+
-#    theme(legend.position='bottom')+
-#    scale_y_continuous(expand = c(0, 0))
-eff_neighbor_degree_plot <- pcc_df %>%
-  #filter(group == "real") %>%
-  #group_by(data) %>%
-  mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real")%>%
-  mutate(is_effector = factor(ifelse(eff_norm > quantile(eff_norm, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
-  #    mutate(is_effector = fct_relevel(is_effector,c(TRUE,FALSE)))%>%
-  ggplot(aes(x = is_effector, y = log(neighbor_degree))) +
-  #    facet_grid(cols=vars(data),labeller = labeller(data=facet_labels))+
-  #    geom_point()+
+sensors_pcc <- read_csv('../data/interim/sensors_df.csv')%>% mutate(go_group = (as.character(go_group)), go_group = ifelse(go_group == "NULL", NA, go_group))
+effector_pcc <- read_csv('../data/interim/effectors_df.csv')
+
+
+# Ranked groups GO enrichment results
+rwr_row <- read_csv('../data/interim/rwr_ranked_goa_rows.csv')%>%mutate(data = 'rwr_row')
+prs_row <- read_csv('../data/interim/prs_ranked_goa_rows.csv')%>%mutate(data = 'prs_row')
+rwr_column <- read_csv('../data/interim/rwr_ranked_goa_columns.csv')%>%mutate(data = 'rwr_col')
+prs_column <- read_csv('../data/interim/prs_ranked_goa_columns.csv')%>%mutate(data = 'prs_col')
+go_combined <- data.table::rbindlist(list(rwr_row,prs_row,rwr_column,prs_column))
+```
+# Figure3
+## A
+```{r}
+sensor_neighbor_degree_plot <- pcc_df %>%
+  mutate(is_sensor = factor(ifelse(sens > quantile(sens, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
+  ggplot(aes(x = is_sensor, y = log(neighbor_degree))) +
   geom_boxplot() +
   theme_bw() +
   ylab("Log(Average neighbor degree)") +
   xlab("") +
   stat_compare_means() +
-  scale_x_discrete(labels = c("Effector", "Not Effector"))
+  scale_x_discrete(labels = c("Sensor", "Not Sensor"))
+  sensor_neighbor_degree_plot
+
+```
+
+## B
+```{r}
 sensor_connectivity_plot <-
   ggplot() +
-  #    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
-  #    geom_boxplot()+
-  #    geom_jitter()+
   geom_density(data = sensor_connectivity_df %>% filter(type != "real"), aes(x = ratio, color = type)) +
   geom_vline(data = sensor_connectivity_df %>% filter(type == "real"), aes(xintercept = ratio, color = type)) +
   guides(color = guide_legend(title = "Data type"), shape = guide_legend(title = "Network type")) +
@@ -69,29 +65,185 @@ sensor_connectivity_plot <-
   scale_color_discrete(labels = c("Random sampled set", "Sensors")) +
   theme(legend.position = "bottom") +
   scale_y_continuous(expand = c(0, 0))
-sensor_connectivity_plot
-neighbor_degree_plot <- combined_df %>%
-  filter(group == "real") %>%
-  group_by(data) %>%
-  mutate(is_sensor = factor(ifelse(sens_norm > quantile(sens_norm, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
-  #    mutate(is_sensor = fct_relevel(is_sensor,c(TRUE,FALSE)))%>%
-  ggplot(aes(x = is_sensor, y = log(neighbor_degree))) +
-  #    facet_grid(cols=vars(data),labeller = labeller(data=facet_labels))+
-  #    geom_point()+
+  sensor_connectivity_plot
+```
+
+## D
+```{r}
+
+sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Non-sensor genes")),go_group=fct_reorder(go_group, sens),go_group=fct_relevel(go_group,'Non-sensor genes',after=Inf)), aes(x = go_group, y = deg, fill = go_group)) +
+  geom_boxplot(
+    outlier.shape=NA) +
+  xlab("") +
+  ylab("Degree") +
+  scale_fill_manual(values = c(sensor_colors[1:5],'black')) +
+  ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
+  theme_bw() +
+  theme(
+        axis.title.y=element_text(size=14),
+        axis.text.y=element_text(size=10),
+    axis.text.x = element_blank(), legend.title = element_blank(),
+    legend.text = element_text(margin = margin(t = 10, b = 10))
+  )+scale_y_log10()
+sens_deg_comp
+
+```
+
+## E
+```{r}
+
+sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)
+sensors_sens_pval <- FSA::dunnTest(sens ~ go_group, sensors_pcc)
+sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]
+
+sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reorder(go_group, sens)) %>%
+  mutate(sens_norm = sens / 5183), aes(x = go_group, y = sens_norm, fill = go_group)) +
+  geom_boxplot() +
+  geom_signif(
+    comparisons = list(
+      c("hexose metabolic process", "phenylalanine transport"), c("tricarboxylic acid cycle", "phenylalanine transport")#,
+      #c("phenylalanine\ntransport", "protein folding")
+    ),
+    annotation = c("**", "**"), y_position = c(0.007, 0.0075)#, 0.008)
+  ) +
+  xlab("") +
+  ylab("Sensitivity") +
+  scale_fill_manual(values = sensor_colors) +
+  theme_bw() +
+  theme(
+        axis.title.y=element_text(size=14),
+        axis.text.y=element_text(size=10),
+        axis.text.x = element_blank(), legend.title = element_blank())
+
+sens_sens_comp
+```
+
+# Figure4
+## A
+```{r}
+eff_neighbor_degree_plot <- pcc_df %>%
+  mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real")%>%
+  mutate(is_effector = factor(ifelse(eff_norm > quantile(eff_norm, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
+  ggplot(aes(x = is_effector, y = log(neighbor_degree))) +
   geom_boxplot() +
   theme_bw() +
   ylab("Log(Average neighbor degree)") +
   xlab("") +
   stat_compare_means() +
-  scale_x_discrete(labels = c("Sensor", "Not Sensor"))
-sensor_conn_lgn <- get_legend(sensor_connectivity_plot + theme(legend.position = "right"))
-plot_grid(neighbor_degree_plot,
-  sensor_connectivity_plot + theme(legend.position = "none"), # effector_connectivity_plot,
-  eff_neighbor_degree_plot, sensor_conn_lgn,
-  nrow = 2,
-  labels = c("A", "B", "C", "")
-) # %>%
-#    plot_grid(, labels=c('','C'),nrow=2, rel_widths=c(2,1))
-#ggsave("reports/figures/paper_figures_0202_pcc_only/fig5.pdf", width = 6, height = 6)
-sensor_connectivity_df$ratio[sensor_connectivity_df$type=='random']/mean(sensor_connectivity_df$ratio[sensor_connectivity_df$type=='random'])
+  scale_x_discrete(labels = c("Effector", "Not Effector"))
+eff_neighbor_degree_plot
+```
+
+## C
+```{r}
+effector_pcc$go_group <- as.factor(effector_pcc$go_group)
+
+# res.aov <- kruskal.test(eff~go_group, data= effector_pcc)
+# res.aov
+effector_eff_pval <- FSA::dunnTest(eff ~ go_group, effector_pcc)
+effector_eff_pval$res[effector_eff_pval$res$P.adj < 0.1, ]
+effector_deg_pval <- FSA::dunnTest(deg ~ go_group, effector_pcc)
+effector_deg_pval$res[effector_deg_pval$res$P.adj < 0.1, ]
+
+eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Others")),go_group=fct_reorder(go_group, eff),go_group=fct_relevel(go_group,'Others',after=Inf)), 
+                       aes(x = go_group, y = deg, fill = go_group)) +
+  geom_boxplot(outlier.shape = NA) +
+  scale_fill_manual(
+    values = c(effector_colors,'black'),
+    labels = c("Chromosome\nSegregetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly",'Non-effector genes')
+  ) +
+  xlab("") +
+  ylab("Degree") +
+  theme_bw() +
+  geom_signif(
+    comparisons = list(c("golgi", "chromatin"), c("golgi", "mito"), c("mito", "chromatin")),
+    annotation = c("**", "***", "ns"),
+    y_position = c(115, 120, 130)
+  ) +
+  theme(
+       axis.text.y=element_text(size=10),
+        axis.title.y=element_text(size=14), axis.text.x = element_blank(), legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
+eff_deg_comp
+```
+
+## D
+```{r}
+
+eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, eff)) %>%
+  mutate(eff_norm = eff / 5183), aes(x = go_group, y = eff_norm, fill = go_group)) +
+  geom_boxplot() +
+  xlab("") +
+  ggpubr::stat_compare_means(method = "kruskal.test") +
+  scale_fill_manual(values = effector_colors,
+  labels = c("Chromosome\nSegregetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")) +
+  ylab("Effectiveness") +
+  theme_bw() +
+  theme(
+        axis.text.y=element_text(size=10),
+        axis.title.y=element_text(size=14),axis.text.x = element_blank(), legend.title = element_blank())
+eff_eff_comp
+```
+
+# Figure 5
+## B
+```{r}
+ci <- function(p,n){
+   sd = sqrt(p*(1-p)/n)
+   ci = 1.96*sd
+   ci
+}
+# New facet label names for dose variable
+axis.labs <- c("Row-based", "Column-based")
+names(axis.labs) <- c("row", "col")
+go_summarised <- go_combined%>%
+  group_by(data)%>%
+  summarise(positives=n_distinct(orf_name_id))%>%
+  mutate(n_tot=5183, prop = positives/n_tot, ci_min=prop-ci(prop,n_tot),ci_max=prop+ci(prop,n_tot))%>%
+  separate(data,into=c('method','axis'))%>%
+  mutate(axis=factor(axis,levels=c('row','col')))
+
+p_val_row  <- go_summarised%>%
+  mutate(negatives = n_tot-positives)%>%
+  dplyr::filter(axis=="row")%>%
+  select(positives,negatives)%>%
+  as.matrix()%>%
+  prop.test(correct=FALSE)
+p_val_col <- go_summarised%>%
+  mutate(negatives = n_tot-positives)%>%
+  dplyr::filter(axis=="col")%>%
+  select(positives,negatives)%>%
+  as.matrix()%>%
+  prop.test(correct=FALSE)
+
+annotation_df <- data.frame(
+  axis = factor(c("row", "col")),
+  start = c("prs", "prs"),
+  end = c("rwr", "rwr"),
+  y = c(0.91, 0.91),
+  label = c(glue::glue("p = {format.pval(p_val_row$p.value,digits=2)}"), glue::glue("p{format.pval(p_val_col$p.value)}"))
+)
+
+ ggplot()+
+  facet_grid(vars(axis),
+  labeller = labeller(axis=axis.labs))+
+  geom_col(data=go_summarised,aes(x=method,y=prop,fill=method))+
+  geom_errorbar(data=go_summarised, aes(x=method, y=prop, ymin=ci_min, ymax=ci_max), width=.2) +
+  theme_bw()+
+  scale_x_discrete(labels=c('PRS','RWR'))+
+  xlab('')+
+  ylab('%of tests with GO enrichments')+
+  theme(
+   strip.background = element_rect(
+     color=,"black", fill="white", size=1.5, linetype="solid"
+     ),
+     legend.position='none',
+     panel.spacing = unit(2, "lines")
+   )+
+   geom_signif(
+    data = annotation_df,
+    aes(xmin = start, xmax = end, annotations = label, y_position = y),
+    textsize = 4,tip_length = .1,
+    manual = TRUE
+  )+
+  scale_y_continuous(expand=c(0,0),limits=c(0,1))
 ```

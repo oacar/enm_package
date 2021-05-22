@@ -58,3 +58,53 @@ rule effector_sensor_go:
         sensors_df_fname = f"{OUTPUT_PATH}/sensors_df.csv",
         effectors_df_fname = f"{OUTPUT_PATH}/effectors_df.csv",
     script: "scripts/effector_sensor_go.py"
+
+rule prs_row_go:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    output: 
+        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
+    script: "scripts/prs_row_go.py"
+rule prs_col_go:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    output: 
+        prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv"
+    script: "scripts/prs_row_go.py"
+rule rwr_row_go:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    output: 
+        rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv"
+    script: "scripts/prs_row_go.py"
+rule rwr_col_go:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    output: 
+        rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
+    script: "scripts/prs_row_go.py"
+rule prs_rwr_compare:
+    input: 
+        rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
+        prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv",
+        rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",
+        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv",
+    #output: 
+    #    plot = f"{OUTPUT_PATH}/figure5B.pdf"
+    #script: "scripts/figure5B.py"

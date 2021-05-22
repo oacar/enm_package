@@ -48,13 +48,13 @@ class Enm():
         """
         print(self.name)
 
-    def spring_pos(self):
+    def spring_pos(self, seed = None):
         """Create spring layout of the giant component network and assign positions to nodes
         """
-        rs = np.random.RandomState(2)
+#        rs = np.random.RandomState(2)
         try:
             pos = nx.spring_layout(self.graph_gc, k=0.6,
-                                   scale=4, iterations=200, seed=rs)
+                                   scale=4, iterations=200, seed=seed)
             nx.set_node_attributes(self.graph_gc, pos, 'pos')
         except AttributeError:
             raise(
@@ -414,20 +414,6 @@ class Enm():
 
         return plot_network_spring(Gc, self.figure_path, **kwargs)
 
-    def plot_collectivity(self, **kwargs):
-        """Plot collectivity values and color most collective modes
-        """
-        return plot_collectivity(self.coll, self.coll_index_sorted, self.figure_path, **kwargs)
-
-    def plot_scatter(self, x, y, **kwargs):
-        """Plot scatter plot of 2 columns in df
-
-        :param x: first variable name
-        :type x: string
-        :param y: second variable name
-        :type y: string
-        """
-        return plot_scatter(self.df, x, y, self.figure_path, **kwargs)
 
     def simulate_rewire(self, rewired=False, rewire_df_name=None, arr_name=None, **kwargs):
         """Wrapper around enm.simulate_rewire function out of the class
@@ -446,21 +432,6 @@ class Enm():
             self.rewire_df = rewire_df
             self.e_list = e_list
 
-        
-    def plot_correlation_density(self, x, y, **kwargs):
-        """Plot correlation density between x and y. Requires rewire_df
-
-        :param x: first variable name
-        :type x: string
-        :param y: second variable name
-        :type y: string
-        """
-        try:
-            return plot_correlation_density(self.df, self.rewire_df, x, y, self.figure_path, **kwargs)
-        except Exception as e:
-            raise(AttributeError(
-                'Make sure rewire_df is calculated. Call simulate_rewire() first'))
-
     def heatmap_annotated(self, **kwargs):
         """Plot PRS heatmap with clustering dendrograms
         """
@@ -468,14 +439,10 @@ class Enm():
             self.cluster_matrix(self.prs_mat, **kwargs)
         return heatmap_annotated(self.prs_mat, self.prs_mat_cl, self.figure_path, self.row_linkage, self.col_linkage, **kwargs)
 
-    def plot_vector(self, eigen_id='eig_0', color_id=0, sorted=False, **kwargs):
-        data = self.df.loc[:, eigen_id]
-        return plot_vector(data, sorted=sorted, figure_path=self.figure_path, color_id=color_id,**kwargs)
-
-    def save(self, **kwargs):
-        filename = kwargs.pop('filename', self.name)
-        with open(f"../data/interim/{filename}.pickle", 'wb') as handle:
-            pickle.dump(self, handle)
+    # def save(self, **kwargs):
+    #     filename = kwargs.pop('filename', self.name)
+    #     with open(f"../data/interim/{filename}.pickle", 'wb') as handle:
+    #         pickle.dump(self, handle)
 
 
 def betweenness_ig(g, normalized=False):

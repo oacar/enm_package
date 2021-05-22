@@ -153,6 +153,8 @@ p4 <-
   scale_color_discrete(labels = c("Random networks", "Genetic network")) +
   scale_y_continuous(expand = c(0, 0))
 lgn34 <- cowplot::get_legend(p4)
+
+pcc_degree_dens <- cowplot::ggdraw(plot_density_prs(pcc_df, deg, xlab = "Degree") + theme(legend.position = "none")) #+
 distr_plots <- plot_grid(pcc_degree_dens + theme(legend.position = ""),
   ggdraw(p3 + theme(legend.position = "")),
   ggdraw(p4 + theme(legend.position = "")),
@@ -172,7 +174,6 @@ distr_plots
 pcc_eff_dens <-
   plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness")
 dens_lgn <- cowplot::get_legend(pcc_eff_dens + theme(legend.position = "right"))
-pcc_degree_dens <- cowplot::ggdraw(plot_density_prs(pcc_df, deg, xlab = "Degree") + theme(legend.position = "none")) #+
 #  cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
 pcc_eff_dens <-
   cowplot::ggdraw(plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness") + theme(legend.position = "none") +

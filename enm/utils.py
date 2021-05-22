@@ -17,7 +17,7 @@ from .Enm import *
 def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/ontology/go-basic.obo', background='../data/raw/ontology/sgd_costanzogenes', sgd_info_tab='../data/raw/ontology/SGD_features.tab',species='yeast',**kwargs):
     
     #background='../data/raw/ontology/sgd_costanzogenes'
-    obodag = GODag(obo_fname)
+    obodag = GODag(obo_fname,optional_attrs={'relationship'})
     objanno = GafReader(gaf,namespaces=set(['BP']))
 #    ns2assoc = objanno.get_ns2assc()
 
@@ -33,7 +33,8 @@ def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/o
         geneids,  # List of mouse protein-coding genes
         ns2assoc_excl,  # geneid/GO associations
         obodag,  # Ontologies
-        propagate_counts=False,
+        propagate_counts=True,
+        relationships=True,
         alpha=0.1,  # default significance cut-off
         methods=['fdr','fdr_bh'], prt=None)
 
@@ -126,7 +127,15 @@ def query_goatools(query, goea,geneid2name):
     goea_res_sig = [r for r in goea_res_all if r.p_fdr<0.1]
     go_df_sensor = goea_to_pandas(goea_res_sig, geneid2name)
     return go_df_sensor
+def combine_data(list_of_dfs):
+    df_res_concat = pd.concat(list_of_dfs,ignore_index=False,keys=range(len(list_of_dfs)))
+    df_res_concat = (df_res_concat.
+                     reset_index(inplace=False).
+                     rename(columns = {'level_0':'orf_name_id'}).
+                    drop('level_1',axis=1))
 
+    df_res_concat
+    return df_res_concat
 # def network_chance_deletion(list_of_nodes,Gc,out_dict):
 #     random_hinges = list_of_nodes#df_.sort_values('deg',ascending=False).iloc[0:i,0].tolist()
 # #    gc_copy = igraph_network(Gc)
