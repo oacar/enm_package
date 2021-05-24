@@ -305,10 +305,10 @@ dependencies:
   - pip:
     - docopt==0.6.2
     - fisher==0.1.9
-    - goatools==1.0.15+17.gd58f9ec
+    - goatools==1.0.15
     - jupyter-contrib-core==0.3.3
-    - networkx==2.6rc1.dev20210522140548
-    - pyrwr==1.0.0
+    - git+git://github.com/oacar/networkx@node_weight#egg=networkx
+    - git+git://github.com/jinhongjung/pyrwr#egg=pyrwr
     - xlrd==1.2.0
-    - -e .
+    - git+git://github.com/oacar/enm_package@production#egg=enm
 #prefix: /home/oma21/miniconda3/envs/enm_snakemake

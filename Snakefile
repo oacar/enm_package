@@ -23,6 +23,8 @@ rule read_costanzo_data:
         f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     params: 
         output_path = OUTPUT_PATH
+    conda:
+        "enm_snakemake.yml"
     output: 
         f"{OUTPUT_PATH}/costanzo_pcc_ALL" ,
         f"{OUTPUT_PATH}/strain_ids.csv" ,
@@ -35,6 +37,8 @@ rule create_enm_object:
         strain_ids_file = f"{OUTPUT_PATH}/strain_ids.csv"
     params:
         output_path = OUTPUT_PATH
+    conda:
+        "enm_snakemake.yml"
     output: 
         pickle_file= PICKLE_FILE_NAME,
         df_filename= f"{OUTPUT_PATH}/pcc_df.csv"
@@ -44,6 +48,8 @@ rule rewire_network:
     input: PICKLE_FILE_NAME
     params:
         n_sim = N_SIM,
+    conda:
+        "enm_snakemake.yml"
     output: 
         pcc_df_random = f"{OUTPUT_PATH}/pcc_df_random_{N_SIM}.csv"
     script: "scripts/rewiring.py"
@@ -52,13 +58,10 @@ rule sensor_in_to_out_ratio:
     input: PICKLE_FILE_NAME
     params:
         output_path = OUTPUT_PATH
+    conda:
+        "enm_snakemake.yml"
     output: f"{OUTPUT_PATH}/sensor_connectivity_df.csv"
     script: "scripts/connectivity.py"
-
-rule go_analyze:
-    input: f"{OUTPUT_PATH}/figure6_data_051621/rows/prs/{{file}}.csv"
-    output: f"{OUTPUT_PATH}/figure6_data_051621/rows/prs/{{file}}.csv.terms"
-    run: "analyze.pl ~/enm_package/data/raw/sgd.gaf 5183 ~/enm_package/data/raw/ontology/go-basic.obo {input}" 
 
 rule effector_sensor_go:
     input:
@@ -80,6 +83,8 @@ rule prs_row_go:
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
         background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
     output: 
         prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
     script: "scripts/prs_row_go.py"
@@ -90,6 +95,8 @@ rule prs_col_go:
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
         background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
     output: 
         prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv"
     script: "scripts/prs_row_go.py"
@@ -100,6 +107,8 @@ rule rwr_row_go:
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
         background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
     output: 
         rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv"
     script: "scripts/prs_row_go.py"
@@ -110,6 +119,8 @@ rule rwr_col_go:
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
         background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
     output: 
         rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
     script: "scripts/prs_row_go.py"
@@ -159,6 +170,8 @@ rule figure_networks:
     log:
         # optional path to the processed notebook
         notebook="reports/01-Fig1bcd_3c_4b_5df-052421.ipynb"
+    conda:
+        "enm_snakemake.yml"
     output:
         notebook="reports/01-Fig1bcd_3c_4b_5df-052421.ipynb"
     notebook: "notebooks/01-Fig1bcd_3c_4b_5df-052421.ipynb"
@@ -166,5 +179,7 @@ rule figure_networks:
 rule figure_networks_html:
     input: 
         "reports/01-Fig1bcd_3c_4b_5df-052421.ipynb"
+    conda:
+        "enm_snakemake.yml"
     output: "reports/01-Fig1bcd_3c_4b_5df-052421.html"
     shell: "jupyter nbconvert {input} --to html"
