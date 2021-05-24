@@ -20,7 +20,7 @@ library(RColorBrewer)
 col <- brewer.pal(n = 9, name = "Set1")
 sensor_colors <- col[2:6] # brewer.pal(n = 6, name = "Set1")
 effector_colors <- col[7:9] # brewer.pal(n=3, name= "Set1_r")
-if(!require){
+if(!require("FSA")){
   remotes::install_github('droglenc/FSA')
 }
 ```
@@ -101,7 +101,13 @@ sens_deg_comp
 ## E
 ```{r}
 
-sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)
+sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)%>%fct_recode(
+  `Iron ion transport`  = "cellular response to iron ion starvation",
+  `Mitochondria-nucleus\nsignaling pathway\nand\nTricarboxylic acid cycle`="mitochondria-nucleus signaling pathway",
+  `Phenylalanine transport`="phenylalanine transport",
+  `Hexose metabolic process`="hexose metabolic process",
+  `Tricarboxylic acid cycle`="tricarboxylic acid cycle"
+)
 sensors_sens_pval <- FSA::dunnTest(sens ~ go_group, sensors_pcc)
 sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]
 
@@ -110,7 +116,7 @@ sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reo
   geom_boxplot() +
   geom_signif(
     comparisons = list(
-      c("hexose metabolic process", "phenylalanine transport"), c("tricarboxylic acid cycle", "phenylalanine transport")#,
+      c("Hexose metabolic process", "Phenylalanine transport"), c("Tricarboxylic acid cycle", "Phenylalanine transport")#,
       #c("phenylalanine\ntransport", "protein folding")
     ),
     annotation = c("**", "**"), y_position = c(0.007, 0.0075)#, 0.008)
@@ -122,7 +128,8 @@ sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reo
   theme(
         axis.title.y=element_text(size=14),
         axis.text.y=element_text(size=10),
-        axis.text.x = element_blank(), legend.title = element_blank())
+        axis.text.x = element_blank(),
+        legend.title = element_blank())
 
 sens_sens_comp
 ```
@@ -145,7 +152,11 @@ eff_neighbor_degree_plot
 
 ## C
 ```{r}
-effector_pcc$go_group <- as.factor(effector_pcc$go_group)
+effector_pcc$go_group <- as.factor(effector_pcc$go_group)%>%fct_recode(
+  golgi = "phosphatidylinositol biosynthetic process",
+  mito = "mitochondrial cytochrome c oxidase assembly",
+  chromosome = "replication fork protection"
+)
 
 # res.aov <- kruskal.test(eff~go_group, data= effector_pcc)
 # res.aov
@@ -165,13 +176,13 @@ eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = 
   ylab("Degree") +
   theme_bw() +
   geom_signif(
-    comparisons = list(c("golgi", "chromatin"), c("golgi", "mito"), c("mito", "chromatin")),
+    comparisons = list(c("golgi", "chromosome"), c("golgi", "mito"), c("mito", "chromosome")),
     annotation = c("**", "***", "ns"),
     y_position = c(115, 120, 130)
   ) +
   theme(
        axis.text.y=element_text(size=10),
-        axis.title.y=element_text(size=14), axis.text.x = element_blank(), legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
+        axis.title.y=element_text(size=14),legend.title = element_blank(),  axis.text.x = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
 eff_deg_comp
 ```
 
