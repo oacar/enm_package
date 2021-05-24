@@ -10,11 +10,11 @@ PICKLE_FILE_NAME = "data/interim/pcc.pickle"
 #rule clean:
 #    shell: "rm -rf data/interim/"
 
-# rule all:
-#     input: 
-#     "reports/01-Fig1bcd_3c_4b_5df-052421.html",
-#     "reports/02-Figure2-051321.html",
-#     "reports/03-Fig3abde_4acd_5b-051821.html"
+rule all:
+    input: 
+        "reports/01-Fig1bcd_3c_4b_5df-052421.html",
+        "reports/02-Figure2-051321.html",
+        "reports/03-Fig3abde_4acd_5b-051821.html"
 
 
 rule read_costanzo_data:
