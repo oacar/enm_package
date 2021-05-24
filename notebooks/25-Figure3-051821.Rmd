@@ -1,6 +1,8 @@
 ---
 title: "25-Figure3-051821"
-output: html_document
+output: 
+  html_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -18,22 +20,29 @@ library(RColorBrewer)
 col <- brewer.pal(n = 9, name = "Set1")
 sensor_colors <- col[2:6] # brewer.pal(n = 6, name = "Set1")
 effector_colors <- col[7:9] # brewer.pal(n=3, name= "Set1_r")
+if(!require){
+  remotes::install_github('droglenc/FSA')
+}
 ```
 
+```{r}
+sessionInfo()
+```
 # Load necessary data
 ```{r}
 
-sensor_connectivity_df <- read_csv("../data/interim/sensor_connectivity_df.csv") 
-pcc_df <- read_csv('../data/interim/pcc_df.csv')
-sensors_pcc <- read_csv('../data/interim/sensors_df.csv')%>% mutate(go_group = (as.character(go_group)), go_group = ifelse(go_group == "NULL", NA, go_group))
-effector_pcc <- read_csv('../data/interim/effectors_df.csv')
+sensor_connectivity_df <- read_csv(snakemake@input[['sensor_connectivity_df']])#"../data/interim/sensor_connectivity_df.csv") 
+pcc_df <- read_csv(snakemake@input[['pcc_df']])#'../data/interim/pcc_df.csv')
+sensors_pcc <- read_csv(snakemake@input[['sensors_pcc']])%>%#'../data/interim/sensors_df.csv')%>%
+ mutate(go_group = (as.character(go_group)), go_group = ifelse(go_group == "NULL", NA, go_group))
+effector_pcc <- read_csv(snakemake@input[['effector_pcc']])#'../data/interim/effectors_df.csv')
 
 
 # Ranked groups GO enrichment results
-rwr_row <- read_csv('../data/interim/rwr_ranked_goa_rows.csv')%>%mutate(data = 'rwr_row')
-prs_row <- read_csv('../data/interim/prs_ranked_goa_rows.csv')%>%mutate(data = 'prs_row')
-rwr_column <- read_csv('../data/interim/rwr_ranked_goa_columns.csv')%>%mutate(data = 'rwr_col')
-prs_column <- read_csv('../data/interim/prs_ranked_goa_columns.csv')%>%mutate(data = 'prs_col')
+rwr_row <- read_csv(snakemake@input[['rwr_row']])%>%mutate(data = 'rwr_row')
+prs_row <- read_csv(snakemake@input[['prs_row']])%>%mutate(data = 'prs_row')
+rwr_column <- read_csv(snakemake@input[['rwr_column']])%>%mutate(data = 'rwr_col')
+prs_column <- read_csv(snakemake@input[['prs_column']])%>%mutate(data = 'prs_col')
 go_combined <- data.table::rbindlist(list(rwr_row,prs_row,rwr_column,prs_column))
 ```
 # Figure3

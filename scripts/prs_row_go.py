@@ -31,7 +31,7 @@ ranked_goa_results_rows = []
 rwr_ranked_goa_results_rows = []
 if 'prs_row' in snakemake.output.keys():
     for i in tqdm(e_pcc.nodes):
-        goa_df_prs_row = query_goatools(e_pcc.df.loc[e_pcc.df.orf_name.isin(e_pcc.prs_mat_df.loc[i,:].sort_values(ascending=False)[:50].index)],
+        goa_df_prs_row = query_goatools(e_pcc.df.loc[e_pcc.df.orf_name.isin(e_pcc.prs_mat_df.loc[i,:].sort_values(ascending=False)[:52].index)],
                 goea,geneid2name)
         ranked_goa_results_rows.append(goa_df_prs_row)
     combined_df = combine_data(ranked_goa_results_rows)
@@ -40,7 +40,7 @@ if 'prs_row' in snakemake.output.keys():
     #    pickle.dump(ranked_goa_results_rows,f)
 elif 'rwr_row' in snakemake.output.keys():
     for i in tqdm(e_pcc.nodes):
-        goa_df_rwr_row = query_goatools(e_pcc.df.loc[e_pcc.df.orf_name.isin(e_pcc.rwr_mat_df.loc[i,:].sort_values(ascending=False)[:50].index)],
+        goa_df_rwr_row = query_goatools(e_pcc.df.loc[e_pcc.df.orf_name.isin(e_pcc.rwr_mat_df.loc[i,:].sort_values(ascending=False)[:52].index)],
                 goea,geneid2name)
         rwr_ranked_goa_results_rows.append(goa_df_rwr_row)
     combined_df = combine_data(rwr_ranked_goa_results_rows)
@@ -59,7 +59,7 @@ elif 'rwr_row' in snakemake.output.keys():
 #for i in tqdm(e_pcc.nodes):
 if 'prs_column' in snakemake.output.keys():
     for i in tqdm(e_pcc.nodes):
-        goa_df_prs_col = query_goatools(e_pcc.df.loc[e_pcc.df.orf_name.isin(e_pcc.prs_mat_df.loc[:,i].sort_values(ascending=False)[:50].index)],
+        goa_df_prs_col = query_goatools(e_pcc.df.loc[e_pcc.df.orf_name.isin(e_pcc.prs_mat_df.loc[:,i].sort_values(ascending=False)[:52].index)],
                 goea,geneid2name)
         ranked_goa_results.append(goa_df_prs_col)
 
@@ -67,7 +67,7 @@ if 'prs_column' in snakemake.output.keys():
     combined_df.to_csv(snakemake.output.prs_column,index=False)
 if 'rwr_column' in snakemake.output.keys():
     for i in tqdm(e_pcc.nodes):
-        goa_df_rwr_col = query_goatools(e_pcc.df.loc[e_pcc.df.orf_name.isin(e_pcc.rwr_mat_df.loc[:,i].sort_values(ascending=False)[:50].index)],
+        goa_df_rwr_col = query_goatools(e_pcc.df.loc[e_pcc.df.orf_name.isin(e_pcc.rwr_mat_df.loc[:,i].sort_values(ascending=False)[:52].index)],
                 goea,geneid2name)
         rwr_ranked_goa_results.append(goa_df_rwr_col)
     combined_df = combine_data(rwr_ranked_goa_results)

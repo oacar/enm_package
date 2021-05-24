@@ -36,7 +36,7 @@ def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/o
         propagate_counts=True,
         relationships=True,
         alpha=0.1,  # default significance cut-off
-        methods=['fdr','fdr_bh'], prt=None)
+        methods=['fdr'], prt=None)
 
     return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl
 

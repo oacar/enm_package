@@ -1,6 +1,8 @@
 ---
 title: "23-Figure2-051321"
-output: html_document
+output: 
+  html_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -57,8 +59,8 @@ dens_plot
 ```{r}
 #df_filename <-snakemake$input$df_filename
 #random_df_filename <-snakemake$input$df_filename
-pcc_df <- read_csv('../data/interim/pcc_df.csv')
-pcc_df_random <- read_csv('../data/interim/pcc_df_random_100.csv')%>%mutate(random_id=factor(random_id))
+pcc_df <- read_csv(snakemake@input[['pcc_df']])
+pcc_df_random <- read_csv(snakemake@input[['pcc_df_random']])%>%mutate(random_id=factor(random_id))
 pcc_df <- pcc_df %>%
   mutate(data = "pcc") %>%
   mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real") %>%
@@ -169,7 +171,7 @@ distr_plots
 #ggsave("reports/figures/paper_figures_0202_pcc_only/fig3.pdf", width = 10, height = 12)
 ```
 
-# Figure 2, G and F
+# Figure2 G, F
 ```{r}
 pcc_eff_dens <-
   plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness")

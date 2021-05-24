@@ -1,4 +1,7 @@
 
+from signal import NSIG
+
+
 OUTPUT_PATH= "data/interim"
 RAW_INPUT_PATH = "data/raw"
 N_SIM=100
@@ -6,6 +9,13 @@ PICKLE_FILE_NAME = "data/interim/pcc.pickle"
 
 #rule clean:
 #    shell: "rm -rf data/interim/"
+
+# rule all:
+#     input: 
+#     "reports/22-Figure1-bcd-051221.html",
+#     "reports/23-Figure2-051321.html",
+#     "reports/25-Figure3-051821.html"
+
 
 rule read_costanzo_data:
     input: f"{RAW_INPUT_PATH}/Data File S3. Genetic interaction profile similarity matrices/cc_ALL.txt"
@@ -57,6 +67,7 @@ rule effector_sensor_go:
     output:
         sensors_df_fname = f"{OUTPUT_PATH}/sensors_df.csv",
         effectors_df_fname = f"{OUTPUT_PATH}/effectors_df.csv",
+        effector_sensor_combined_go_df = f"{OUTPUT_PATH}/effector_sensor_combined_go_df.csv"
     script: "scripts/effector_sensor_go.py"
 
 rule prs_row_go:
@@ -104,7 +115,53 @@ rule prs_rwr_compare:
         rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
         prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv",
         rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",
-        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv",
+        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
     #output: 
     #    plot = f"{OUTPUT_PATH}/figure5B.pdf"
     #script: "scripts/figure5B.py"
+
+
+rule figure2:
+    input:
+        pcc_df="data/interim/pcc_df.csv",
+        pcc_df_random=f"data/interim/pcc_df_random_{N_SIM}.csv"
+    conda:
+        "r_env.yml"
+    output: "reports/23-Figure2-051321.html"
+    script:
+        "notebooks/23-Figure2-051321.Rmd"
+
+rule figure3_4:
+    input:
+        pcc_df="data/interim/pcc_df.csv",
+        sensor_connectivity_df = "data/interim/sensor_connectivity_df.csv",
+        sensors_pcc = "data/interim/sensors_df.csv",
+        effector_pcc = "data/interim/effectors_df.csv",
+        rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
+        prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv",
+        rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",
+        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
+        #pcc_df_random=f"data/interim/pcc_df_random_{N_SIM}.csv"
+    conda:
+        "r_env.yml"
+    output: "reports/25-Figure3-051821.html"
+    script:
+        "notebooks/25-Figure3-051821.Rmd"
+
+rule figure_networks:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        sensors_pcc = "data/interim/sensors_df.csv",
+        effector_pcc = "data/interim/effectors_df.csv"
+    log:
+        # optional path to the processed notebook
+        notebook="reports/22-Figure1-bcd-051221.ipynb"
+    output:
+        notebook="reports/22-Figure1-bcd-051221.ipynb"
+    notebook: "notebooks/22-Figure1-bcd-051221.ipynb"
+
+rule figure_networks_html:
+    input: 
+        "reports/22-Figure1-bcd-051221.ipynb"
+    output: "reports/22-Figure1-bcd-051221.html"
+    shell: "jupyter nbconvert {input} --to html"
