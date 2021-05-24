@@ -1,31 +1,21 @@
 enm package
 ===========
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   enm.data
-   enm.features
-   enm.models
-
 Submodules
 ----------
 
-enm.enm module
+enm.Enm module
 --------------
 
-.. automodule:: enm.enm
+.. automodule:: enm.Enm
    :members:
    :undoc-members:
    :show-inheritance:
 
-enm.rewire module
------------------
+enm.utils module
+----------------
 
-.. automodule:: enm.rewire
+.. automodule:: enm.utils
    :members:
    :undoc-members:
    :show-inheritance:
@@ -37,7 +27,6 @@ enm.visualize module
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

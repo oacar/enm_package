@@ -91,6 +91,27 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
 
 
 def heatmap_annotated(prs_mat, prs_mat_cl_orig, figure_path, row_linkage, col_linkage, row_colors = None, col_colors=None, save_figure=False, **kwargs):
+    """create a heatmap with dendrograms
+
+    :param prs_mat: original matrix
+    :type prs_mat: np.array
+    :param prs_mat_cl_orig: matrix clustered
+    :type prs_mat_cl_orig: np.array
+    :param figure_path: a figure path for saving the figure
+    :type figure_path: string
+    :param row_linkage: scipy linkage for row reordering
+    :type row_linkage: ndarray
+    :param col_linkage: scipy linkage for column reordering
+    :type col_linkage: ndarray
+    :param row_colors: list of colors for coloring rows, defaults to None
+    :type row_colors: list, optional
+    :param col_colors: list of colors for coloring the columns, defaults to None
+    :type col_colors: list, optional
+    :param save_figure: if true, save figure to figure_path, defaults to False
+    :type save_figure: bool, optional
+    :return: row and column averages
+    :rtype: list of numbers
+    """
     from seaborn.matrix import ClusterGrid
     from seaborn import heatmap
     fig = plt.figure(figsize=kwargs.pop('figsize', (8, 8)))
