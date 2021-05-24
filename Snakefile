@@ -18,12 +18,15 @@ PICKLE_FILE_NAME = "data/interim/pcc.pickle"
 
 
 rule read_costanzo_data:
-    input: f"{RAW_INPUT_PATH}/Data File S3. Genetic interaction profile similarity matrices/cc_ALL.txt"
+    input: 
+        f"{RAW_INPUT_PATH}/Data File S3. Genetic interaction profile similarity matrices/cc_ALL.txt",
+        f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     params: 
         output_path = OUTPUT_PATH
     output: 
         f"{OUTPUT_PATH}/costanzo_pcc_ALL" ,
-        f"{OUTPUT_PATH}/strain_ids.csv" 
+        f"{OUTPUT_PATH}/strain_ids.csv" ,
+        f"{OUTPUT_PATH}/go_background_list"
     script: "scripts/read_costanzo_data.py"
 
 rule create_enm_object:
@@ -62,7 +65,7 @@ rule effector_sensor_go:
         pickle_file_name= PICKLE_FILE_NAME,
         gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     output:
         sensors_df_fname = f"{OUTPUT_PATH}/sensors_df.csv",
@@ -75,7 +78,7 @@ rule prs_row_go:
         pickle_file_name= PICKLE_FILE_NAME,
         gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     output: 
         prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
@@ -85,7 +88,7 @@ rule prs_col_go:
         pickle_file_name= PICKLE_FILE_NAME,
         gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     output: 
         prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv"
@@ -95,7 +98,7 @@ rule rwr_row_go:
         pickle_file_name= PICKLE_FILE_NAME,
         gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     output: 
         rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv"
@@ -105,7 +108,7 @@ rule rwr_col_go:
         pickle_file_name= PICKLE_FILE_NAME,
         gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = "data/interim_bak/costanzo_gc_bg.tsv",
+        background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     output: 
         rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
