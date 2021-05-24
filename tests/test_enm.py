@@ -1,5 +1,5 @@
 import pytest
-from enm.enm import Enm
+from enm.Enm import Enm
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -107,22 +107,22 @@ def test_create_df(enm):
 #     enm.giant_component()
 #     plot_network_spring
 
-def test_get_sensor_effector(enm):
-  enm.get_sensor_effector(use_threshold=True, quantile_threshold=0.99)
-  sensors_df = np.array([[ 3.00000000e+00,  1.00000000e+00,  5.32351458e-02,
-        -9.94778394e-02,  2.16280074e-02,  5.22439257e-02,
-        -9.02056208e-16,  5.75928194e-16,  7.51687882e-03,
-        -3.29597460e-15,  1.26467409e-01,  3.39568011e+00,
-         0.00000000e+00,  0.00000000e+00,  7.35503582e-02,
-         5.00000000e-01, -9.40221504e-01]])
-  effectors_df = np.array([[ 6.00000000e+00,  7.00000000e+00,  7.91791550e-01,
-         1.15440817e-01, -3.97381472e-01, -2.97773277e-01,
-         3.05311332e-15, -2.49800181e-16, -1.89390545e-02,
-         1.48769885e-14,  7.47506518e-01,  3.36493299e-02,
-         7.73148148e-02,  5.71428571e-01,  4.02157939e-01,
-         8.18181818e-01,  1.13136700e-01]])
-  np.testing.assert_array_almost_equal(sensors_df,enm.sensors_df.values)
-  np.testing.assert_array_almost_equal(effectors_df,enm.effectors_df.values)
+# def test_get_sensor_effector(enm):
+#   enm.get_sensor_effector(use_threshold=True, quantile_threshold=0.99)
+#   sensors_df = np.array([[ 3.00000000e+00,  1.00000000e+00,  5.32351458e-02,
+#         -9.94778394e-02,  2.16280074e-02,  5.22439257e-02,
+#         -9.02056208e-16,  5.75928194e-16,  7.51687882e-03,
+#         -3.29597460e-15,  1.26467409e-01,  3.39568011e+00,
+#          0.00000000e+00,  0.00000000e+00,  7.35503582e-02,
+#          5.00000000e-01, -9.40221504e-01]])
+#   effectors_df = np.array([[ 6.00000000e+00,  7.00000000e+00,  7.91791550e-01,
+#          1.15440817e-01, -3.97381472e-01, -2.97773277e-01,
+#          3.05311332e-15, -2.49800181e-16, -1.89390545e-02,
+#          1.48769885e-14,  7.47506518e-01,  3.36493299e-02,
+#          7.73148148e-02,  5.71428571e-01,  4.02157939e-01,
+#          8.18181818e-01,  1.13136700e-01]])
+#   np.testing.assert_array_almost_equal(sensors_df,enm.sensors_df.values)
+#   np.testing.assert_array_almost_equal(effectors_df,enm.effectors_df.values)
 
 def is_dataframe_big(dataframe):
 

@@ -12,9 +12,9 @@ PICKLE_FILE_NAME = "data/interim/pcc.pickle"
 
 # rule all:
 #     input: 
-#     "reports/22-Figure1-bcd-051221.html",
-#     "reports/23-Figure2-051321.html",
-#     "reports/25-Figure3-051821.html"
+#     "reports/01-Fig1bcd_3c_4b_5df-052421.html",
+#     "reports/02-Figure2-051321.html",
+#     "reports/03-Fig3abde_4acd_5b-051821.html"
 
 
 rule read_costanzo_data:
@@ -127,11 +127,11 @@ rule figure2:
         pcc_df_random=f"data/interim/pcc_df_random_{N_SIM}.csv"
     conda:
         "r_env.yml"
-    output: "reports/23-Figure2-051321.html"
+    output: "reports/02-Figure2-051321.html"
     script:
-        "notebooks/23-Figure2-051321.Rmd"
+        "notebooks/02-Figure2-051321.Rmd"
 
-rule figure3_4:
+rule figure3_4_5:
     input:
         pcc_df="data/interim/pcc_df.csv",
         sensor_connectivity_df = "data/interim/sensor_connectivity_df.csv",
@@ -144,9 +144,9 @@ rule figure3_4:
         #pcc_df_random=f"data/interim/pcc_df_random_{N_SIM}.csv"
     conda:
         "r_env.yml"
-    output: "reports/25-Figure3-051821.html"
+    output: "reports/03-Fig3abde_4acd_5b-051821.html"
     script:
-        "notebooks/25-Figure3-051821.Rmd"
+        "notebooks/03-Fig3abde_4acd_5b-051821.Rmd"
 
 rule figure_networks:
     input: 
@@ -155,13 +155,13 @@ rule figure_networks:
         effector_pcc = "data/interim/effectors_df.csv"
     log:
         # optional path to the processed notebook
-        notebook="reports/22-Figure1-bcd-051221.ipynb"
+        notebook="reports/01-Fig1bcd_3c_4b_5df-052421.ipynb"
     output:
-        notebook="reports/22-Figure1-bcd-051221.ipynb"
-    notebook: "notebooks/22-Figure1-bcd-051221.ipynb"
+        notebook="reports/01-Fig1bcd_3c_4b_5df-052421.ipynb"
+    notebook: "notebooks/01-Fig1bcd_3c_4b_5df-052421.ipynb"
 
 rule figure_networks_html:
     input: 
-        "reports/22-Figure1-bcd-051221.ipynb"
-    output: "reports/22-Figure1-bcd-051221.html"
+        "reports/01-Fig1bcd_3c_4b_5df-052421.ipynb"
+    output: "reports/01-Fig1bcd_3c_4b_5df-052421.html"
     shell: "jupyter nbconvert {input} --to html"
