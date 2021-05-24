@@ -4,13 +4,12 @@ import networkx as nx
 import pandas as pd
 import prody
 import numpy as np
-#import igraph
 import scipy.cluster.hierarchy as sch
 import copy
 from tqdm import tqdm
 
-from .visualize import plot_collectivity,plot_correlation_density,plot_network_spring,plot_scatter,plot_vector,heatmap_annotated#from .utilities import *
-from .utils import jaccard_index, query_goatools
+from .visualize import plot_network_spring,heatmap_annotated
+from .utils import query_goatools
 
 
 class Enm():
@@ -164,46 +163,6 @@ class Enm():
         df_['smallest_eigenvec'] = self.gnm.getEigvecs()[:, 0]
         self.df = df_
 
-    def get_jaccard_mat(self):
-        jaccard_mat = np.zeros((len(self.nodes),len(self.nodes)))
-        for i, a in tqdm(enumerate(self.nodes)):
-            for j,b in enumerate(self.nodes):
-                jc = jaccard_index(self.graph_gc,a,b)
-                jaccard_mat[i,j] = jc
-        self.jaccard_mat = jaccard_mat
-
-#     def fiedler_evaluation(self, figure_name = "lost_edges_node_counts", figure_extension = 'png', plot=False, **kwargs):
-#         """This function evaluates fiedler vector cut. Using eigenvectors of Laplacian, calculates 2 subnetworks and return
-#         the number of edges lost between 2 subnetworks with the cut and number of nodes in the smaller subnetwork
-#         """
-#         gc = self.graph_gc
-#         eigvecs = self.gnm.getEigvecs()
-#         orf_names = self.df.orf_name
-#         lost_edges = [ ]
-#         adj = nx.adjacency_matrix(gc).todense()
-#         orf_names = self.df.orf_name
-#         g_ig = igraph.Graph.Adjacency((adj > 0).tolist(), "UNDIRECTED")
-#         g_ig.vs['name'] = orf_names
-
-#         for i in tqdm(range(len(gc.nodes)-1)):
-#             cl1 = [orf_names[i] for i, j in enumerate(eigvecs[:,i]) if j>0]
-#             cl2 = [orf_names[i] for i, j in enumerate(eigvecs[:,i]) if j<0]
-#             cg1 = g_ig.induced_subgraph(cl1)
-#             cg2 = g_ig.induced_subgraph(cl2)
-#             #cg1 = nx.induced_subgraph(gc, cl1)
-#             #cg2 = nx.induced_subgraph(gc,cl2)
-#             #lost_edges.append( len(gc.edges)-(len(cg2.edges)+len(cg1.edges)))
-#             lost_edges.append( len(gc.edges)-(len(cg2.es)+len(cg1.es)))
-
-#         node_counts_c1 = np.minimum(np.count_nonzero(eigvecs>0, axis=0),np.count_nonzero(eigvecs<0, axis=0))
-#         node_counts_c2 = np.maximum(np.count_nonzero(eigvecs>0, axis=0),np.count_nonzero(eigvecs<0, axis=0))
-# #        data = {'lost_edges':lost_edges, 'node_counts_c1':node_counts_c1}
-#         self.lost_edges =  lost_edges#data
-#         self.node_counts_c1 = node_counts_c1
-#         if plot:
-#             plot_fiedler_data(self, figure_name= figure_name, figure_extension=figure_extension)
-
-
     def gnm_analysis(self, **kwargs):
         """Wrapper to run gnm, prs and create_df
         """
@@ -212,8 +171,7 @@ class Enm():
         self.create_df()
 
     def get_category(self, strain_ids_df_file):
-        """ Uses costanzo strain id file to determine categories. File is created by pgsNetwork project earlier
-            
+        """ Uses costanzo strain id file to determine categories. File is created by pgsNetwork project earlier, depreceated
         """
         strain_ids = pd.read_csv(strain_ids_df_file)
         combined_df = pd.merge(self.df, strain_ids, left_on='orf_name',right_on='Allele Gene name')
@@ -314,19 +272,13 @@ class Enm():
         else:
             nds = left.pre_order()
         return nds
-
-    def set_perturb_profile(self,source, get_col=True):
-        if get_col:
-            gene_perturb_profile = self.prs_mat_df.loc[source,:]
-        else:
-            gene_perturb_profile = self.prs_mat_df.loc[:,source] 
-        nx.set_node_attributes(self.graph_gc, gene_perturb_profile.to_dict(), name='perturb_profile')
-
+         
     def get_prs_weighted_path(self, source, target=None, weight='weight', node_weight=None):
         """
             calculate shortest path using the PRS matrix values caused by perturbations on source node
             This uses an adjusted version of networkx dijkstra functions to incorporate node_weight parameter
-            networkx source code should be under /home/oma21/networkx
+            networkx source code could be installed using
+            pip install git+git://github.com/oacar/networkx@node_weight#egg=networkx  -U 
         """
         if nx.get_edge_attributes(self.graph_gc,'weight') == {}:
             nx.set_edge_attributes(self.graph_gc,0,'weight')
@@ -338,16 +290,6 @@ class Enm():
         else:
             distances = nx.single_source_dijkstra(self.graph_gc, source=source, weight=weight, node_weight=node_weight)
         return distances
-
-    def get_node_distances(self):
-        dist_to_center = {}
-        if len(nx.get_node_attributes(self.graph_gc, 'pos')) == 0:
-            self.spring_pos()
-
-        pos = self.graph_gc.nodes('pos')
-        for i,val_i in enumerate(self.nodes):
-            dist_to_center[val_i]=np.linalg.norm(pos[val_i])
-        self.dist_to_center = dist_to_center
 
     def cluster_matrix(self, mat, method='ward', distance_metric='seuclidean', quantile_threshold = 0.95, cluster_normalized=True, show_normalized=True, optimal_ordering=True):
         """create row and column linkage for given matrix `mat`
@@ -391,6 +333,11 @@ class Enm():
         self.q99 = q99
 
     def get_rwr_mat(self, c=0.15):
+        """use pyrwr to calculate Random walk with rewiring for each nodes in the network and create rwr_mat/rwr_mat_df 
+
+        :param c: restart probability, defaults to 0.15
+        :type c: float, optional
+        """
         from pyrwr.rwr import RWR
         rwr = RWR()
         rwr.A = nx.adj_matrix(self.graph_gc, weight=None)
@@ -443,28 +390,6 @@ class Enm():
     #     filename = kwargs.pop('filename', self.name)
     #     with open(f"../data/interim/{filename}.pickle", 'wb') as handle:
     #         pickle.dump(self, handle)
-
-
-def betweenness_ig(g, normalized=False):
-    n = g.vcount()
-    btw = g.betweenness()
-
-    if normalized:
-        norm = [2 * a / (n * n - 3 * n + 2) for a in btw]
-        return norm
-    else:
-        return btw
-
-# def igraph_network(g,orf_names=None):
-#     adj = nx.adjacency_matrix(g).todense()
-#     g_ig = igraph.Graph.Adjacency((adj > 0).tolist(),'UNDIRECTED')
-#     if orf_names is not None:
-#         g_ig.vs['name'] = orf_names
-#     return g_ig
-
-# def betweenness_nx(g, normalized=False):
-#     g_ig = igraph_network(g)
-#     return betweenness_ig(g_ig, normalized)
 
 
 def rewire_network(Gc, **kwargs):
