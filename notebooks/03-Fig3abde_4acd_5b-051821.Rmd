@@ -170,7 +170,7 @@ eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = 
   geom_boxplot(outlier.shape = NA) +
   scale_fill_manual(
     values = c(effector_colors,'black'),
-    labels = c("Chromosome\nSegregetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly",'Non-effector genes')
+    labels = c("Chromosome\nSegregation", "Golgi vesicle\nTransport", "Respiratory complex\nassembly",'Non-effector genes')
   ) +
   xlab("") +
   ylab("Degree") +
@@ -195,7 +195,7 @@ eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, 
   xlab("") +
   ggpubr::stat_compare_means(method = "kruskal.test") +
   scale_fill_manual(values = effector_colors,
-  labels = c("Chromosome\nSegregetion", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")) +
+  labels = c("Chromosome\nSegregation", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")) +
   ylab("Effectiveness") +
   theme_bw() +
   theme(
