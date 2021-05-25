@@ -309,6 +309,6 @@ dependencies:
     - jupyter-contrib-core==0.3.3
     - git+git://github.com/jinhongjung/pyrwr#egg=pyrwr
     - xlrd==1.2.0
-    - "--editable=git+git://github.com/oacar/enm_package@production#egg=enm"
+    - "--editable=git+git://github.com/oacar/enm_package#egg=enm"
     - "--editable=git+git://github.com/oacar/networkx@node_weight#egg=networkx"
 #prefix: /home/oma21/miniconda3/envs/enm_snakemake
