@@ -8,7 +8,7 @@ Project Organization
 ------------
 
     ├── LICENSE
-    ├── Snakefile           <- Snakemake with rules to create intermediate data from raw data 
+    ├── Snakefile          <- Snakemake with rules to create intermediate data from raw data 
     ├── README.md          <- The top-level README for people using this project.
     ├── data
     │   ├── interim        <- Intermediate data that has been transformed and used for figure generation.
@@ -20,17 +20,17 @@ Project Organization
     ├── reports            <- Folder to re-generate notebooks as HTML, PDF, LaTeX, etc.
     ├── reports_done       <- Generated notebooks as HTML, PDF, LaTeX, etc.
     │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
+    ├── enm_snakemake.yml  <- The environment file for reproducing the analysis conda environment. Used for python scripts in Snakemake
+    ├── r_env.yml          <- The environment file for reproducing the analysis conda environment. Used for R scripts in Snakemake
     │
     ├── setup.py           <- makes project pip installable (pip install -e .) so enm can be imported
     ├── enm                <- Source code for use in this project.
     │   ├── __init__.py    <- Makes enm a Python module
     │   ├── Enm.py         <- Contains Enm class and related functions 
-    │   ├── visualize.py    <- Makes enm a Python module
+    │   ├── visualize.py   <- Makes enm a Python module
     │   ├── utils.py       <- Contains functions that have been used in this project 
     │
-    ├── scripts            <- Contains scripts to generate intermediate data. All scripts could be run with Snakemake 
+    ├── scripts            <- Contains scripts to generate intermediate data/results. All scripts could be run with Snakemake 
     └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
 
 
@@ -53,4 +53,4 @@ This will run rules based on the following DAG:
 
 `--use-conda` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter and r/rmarkdown files.
 
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. Though many edits were applied. #cookiecutterdatascience</small></p>

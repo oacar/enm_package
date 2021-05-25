@@ -52,7 +52,7 @@ scale_x_continuous(
 theme(legend.text = element_text(margin = margin(b = 10)), panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())
 dens_plot
 }
-
+message(snakemake@params['save'])
 ```
 
 # Load input dataframe
@@ -200,4 +200,13 @@ pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none
 #dens_plots <- 
   pcc_dens_comb
 
+```
+
+
+```{r}
+if(snakemake@params['save']==TRUE){
+  figure_folder = "reports/figures/paper_figures_052521/"
+combined_plot <- plot_grid(deg_scatter_plots, distr_plots, pcc_dens_comb, nrow = 3, rel_heights = c(0.3, 0.4, .3))
+ggsave(glue("{figure_folder}/fig2.png"),plot=combined_plot,width=10,height=12)
+}
 ```

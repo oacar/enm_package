@@ -6,7 +6,7 @@ OUTPUT_PATH= "data/interim"
 RAW_INPUT_PATH = "data/raw"
 N_SIM=100
 PICKLE_FILE_NAME = "data/interim/pcc.pickle"
-
+SAVE_FIGURES = True
 #rule clean:
 #    shell: "rm -rf data/interim/"
 
@@ -138,7 +138,8 @@ rule prs_rwr_compare:
 rule figure2:
     input:
         pcc_df="data/interim/pcc_df.csv",
-        pcc_df_random=f"data/interim/pcc_df_random_{N_SIM}.csv"
+    params:
+        save=SAVE_FIGURES
     conda:
         "r_env.yml"
     output: "reports/02-Figure2-051321.html"
@@ -156,6 +157,8 @@ rule figure3_4_5:
         rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",
         prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
         #pcc_df_random=f"data/interim/pcc_df_random_{N_SIM}.csv"
+    params:
+        save=SAVE_FIGURES
     conda:
         "r_env.yml"
     output: "reports/03-Fig3abde_4acd_5b-051821.html"
@@ -167,6 +170,8 @@ rule figure_networks:
         pickle_file_name= PICKLE_FILE_NAME,
         sensors_pcc = "data/interim/sensors_df.csv",
         effector_pcc = "data/interim/effectors_df.csv"
+    params:
+        save=SAVE_FIGURES
     log:
         # optional path to the processed notebook
         notebook="reports/01-Fig1bcd_3c_4b_5df-052421.ipynb"

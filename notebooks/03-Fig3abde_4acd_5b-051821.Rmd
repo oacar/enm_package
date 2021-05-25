@@ -85,6 +85,13 @@ sensor_connectivity_plot <-
 ```{r}
 sensors_pcc %>% drop_na()%>%kruskal.test(deg~go_group,data=.)
 
+sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)%>%fct_recode(
+  `Iron ion transport`  = "cellular response to iron ion starvation",
+  `Mitochondria-nucleus\nsignaling pathway\nand\nTricarboxylic acid cycle`="mitochondria-nucleus signaling pathway",
+  `Phenylalanine transport`="phenylalanine transport",
+  `Hexose metabolic process`="hexose metabolic process",
+  `Tricarboxylic acid cycle`="tricarboxylic acid cycle"
+)
 sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Non-sensor genes")),go_group=fct_reorder(go_group, sens),go_group=fct_relevel(go_group,'Non-sensor genes',after=Inf)), aes(x = go_group, y = deg, fill = go_group)) +
   geom_boxplot(
     outlier.shape=NA) +
@@ -106,13 +113,6 @@ sens_deg_comp
 ## E
 ```{r}
 
-sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)%>%fct_recode(
-  `Iron ion transport`  = "cellular response to iron ion starvation",
-  `Mitochondria-nucleus\nsignaling pathway\nand\nTricarboxylic acid cycle`="mitochondria-nucleus signaling pathway",
-  `Phenylalanine transport`="phenylalanine transport",
-  `Hexose metabolic process`="hexose metabolic process",
-  `Tricarboxylic acid cycle`="tricarboxylic acid cycle"
-)
 sensors_sens_pval <- FSA::dunnTest(sens ~ go_group, sensors_pcc)
 sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]
 
@@ -134,7 +134,8 @@ sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reo
         axis.title.y=element_text(size=14),
         axis.text.y=element_text(size=10),
         axis.text.x = element_blank(),
-        legend.title = element_blank())
+        legend.title = element_blank())+
+        ylim(NA, 0.008)
 
 sens_sens_comp
 ```
@@ -250,7 +251,7 @@ annotation_df <- data.frame(
   label = c(glue::glue("p = {format.pval(p_val_row$p.value,digits=2)}"), glue::glue("p{format.pval(p_val_col$p.value)}"))
 )
 
- ggplot()+
+ prs_rwr_comp <- ggplot()+
   facet_grid(vars(axis),
   labeller = labeller(axis=axis.labs))+
   geom_col(data=go_summarised,aes(x=method,y=prop,fill=method))+
@@ -273,4 +274,32 @@ annotation_df <- data.frame(
     manual = TRUE
   )+
   scale_y_continuous(expand=c(0,0),limits=c(0,1))
+
+prs_rwr_comp
+```
+
+```{r}
+if(snakemake@params['save']==TRUE){
+  figure_folder = "reports/figures/paper_figures_052521/"
+ggsave(glue("{figure_folder}/fig3a.png"),plot=sensor_neighbor_degree_plot,width=3,height=3)
+ggsave(glue("{figure_folder}/fig3b.png"),plot=sensor_connectivity_plot+theme(legend.position='none'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig3d.png"),plot=sens_deg_comp+theme(legend.position='none'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig3e.png"),plot=sens_sens_comp+theme(legend.position='none'),width=3,height=3)
+
+
+ggsave(glue("{figure_folder}/fig4a.png"),plot=eff_neighbor_degree_plot,width=3,height=3)
+ggsave(glue("{figure_folder}/fig4c.png"),plot=eff_deg_comp+theme(legend.position='none'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig4d.png"),plot=eff_eff_comp+theme(legend.position='none'),width=3,height=3)
+
+ggsave(glue("{figure_folder}/fig5b.png"),plot=prs_rwr_comp, width=3,height=4)
+
+
+# Using the cowplot package
+legend <- cowplot::get_legend(sens_deg_comp+theme(legend.position='bottom',
+legend.key.height = unit(2, 'cm')))
+        
+        #guides(fill = guide_legend(override.aes = list(size = 5))))
+legend_plot <- ggdraw(legend)
+ggsave(glue("{figure_folder}/fig3d_legend.pdf"),plot=legend_plot, width=10, height=2)
+}
 ```
