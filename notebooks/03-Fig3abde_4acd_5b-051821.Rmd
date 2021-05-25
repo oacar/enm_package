@@ -25,8 +25,12 @@ if(!require("FSA")){
 }
 ```
 
-```{r}
-sessionInfo()
+```{r, include=FALSE, eval=FALSE}
+# sessionInfo()
+# smake<-setClass("smake",slots=list(input="list"))
+# snakemake <- new("smake",input=list("sensor_connectivity_df"="../data/interim/sensor_connectivity_df.csv", "pcc_df"='../data/interim/pcc_df.csv',"sensors_pcc"="../data/interim/sensors_df.csv",'effector_pcc'='../data/interim/effectors_df.csv',
+# "rwr_row"="../data/interim/rwr_ranked_goa_rows.csv","prs_row"="../data/interim/prs_ranked_goa_rows.csv",
+# "rwr_column"="../data/interim/rwr_ranked_goa_columns.csv","prs_column"="../data/interim/prs_ranked_goa_columns.csv"))
 ```
 # Load necessary data
 ```{r}
@@ -79,6 +83,7 @@ sensor_connectivity_plot <-
 
 ## D
 ```{r}
+sensors_pcc %>% drop_na()%>%kruskal.test(deg~go_group,data=.)
 
 sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Non-sensor genes")),go_group=fct_reorder(go_group, sens),go_group=fct_relevel(go_group,'Non-sensor genes',after=Inf)), aes(x = go_group, y = deg, fill = go_group)) +
   geom_boxplot(
@@ -152,12 +157,13 @@ eff_neighbor_degree_plot
 
 ## C
 ```{r}
-effector_pcc$go_group <- as.factor(effector_pcc$go_group)%>%fct_recode(
-  golgi = "phosphatidylinositol biosynthetic process",
-  mito = "mitochondrial cytochrome c oxidase assembly",
-  chromosome = "replication fork protection"
-)
-
+# effector_pcc$go_group <- as.factor(effector_pcc$go_group)%>%fct_recode(
+#   golgi = "phosphatidylinositol biosynthetic process",
+#   mito = "mitochondrial cytochrome c oxidase assembly",
+#   chromosome = "replication fork protection"
+# )
+effector_pcc  <- effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff), 
+          go_group = factor(go_group,labels=c('chromosome','golgi','mito')))
 # res.aov <- kruskal.test(eff~go_group, data= effector_pcc)
 # res.aov
 effector_eff_pval <- FSA::dunnTest(eff ~ go_group, effector_pcc)
@@ -165,7 +171,8 @@ effector_eff_pval$res[effector_eff_pval$res$P.adj < 0.1, ]
 effector_deg_pval <- FSA::dunnTest(deg ~ go_group, effector_pcc)
 effector_deg_pval$res[effector_deg_pval$res$P.adj < 0.1, ]
 
-eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Others")),go_group=fct_reorder(go_group, eff),go_group=fct_relevel(go_group,'Others',after=Inf)), 
+
+eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Others")),go_group=fct_relevel(go_group,'Others',after=Inf)), 
                        aes(x = go_group, y = deg, fill = go_group)) +
   geom_boxplot(outlier.shape = NA) +
   scale_fill_manual(
