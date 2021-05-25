@@ -96,3 +96,6 @@ reports/figures
 .RData
 .vim
 *.Rproj
+
+.snakemake
+GO-TermFinder-0.86

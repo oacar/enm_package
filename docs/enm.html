@@ -1,0 +1,553 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>enm package &#8212; enm  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="enm-package">
+<h1>enm package<a class="headerlink" href="#enm-package" title="Permalink to this headline">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-enm.Enm">
+<span id="enm-enm-module"></span><h2>enm.Enm module<a class="headerlink" href="#module-enm.Enm" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="enm.Enm.Enm">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">enm.Enm.</span></span><span class="sig-name descname"><span class="pre">Enm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This object is wrapper around prody GNM object and networkx analysis</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.analyze_components_biology">
+<span class="sig-name descname"><span class="pre">analyze_components_biology</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goea</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geneid2name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.analyze_components_biology" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use sets of sensors or effectors to find connected components among them and calculate GO term enrichments</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>goea</strong> – GOAtools object for GO enrichment analysis</p></li>
+<li><p><strong>geneid2name</strong> (<em>dict</em>) – dictionary for name convention</p></li>
+<li><p><strong>sensors</strong> (<em>bool</em><em>, </em><em>optional</em>) – if true uses self.sensors_df, else uses self.effectors_df for analysis, defaults to True</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.cluster_matrix">
+<span class="sig-name descname"><span class="pre">cluster_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ward'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'seuclidean'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.95</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster_normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimal_ordering</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.cluster_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>create row and column linkage for given matrix <cite>mat</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mat</strong> (<em>numpy matrix</em><em>, </em><em>2 dimensional</em>) – the input matrix to be clustered</p></li>
+<li><p><strong>method</strong> (<em>str</em><em>, </em><em>optional</em>) – clustering method. see <cite>scipy.cluster.hierarchy.linkage</cite> for details, defaults to ‘ward’</p></li>
+<li><p><strong>quantile_threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – any values above this quantile will be equal to quantile value , defaults to 0.95</p></li>
+<li><p><strong>cluster_normalized</strong> (<em>bool</em><em>, </em><em>optional</em>) – whether to cluster the matrix after using quantile threshold or not, defaults to True</p></li>
+<li><p><strong>optimal_ordering</strong> (<em>bool</em><em>, </em><em>optional</em>) – use optimal leaf ordering for linkage calculation. see, <cite>scipy.cluster.hierarchy.linkage</cite>.  defaults to True</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.create_df">
+<span class="sig-name descname"><span class="pre">create_df</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.create_df" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create an overall dataframe to store network related and GNM related values</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.get_category">
+<span class="sig-name descname"><span class="pre">get_category</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strain_ids_df_file</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.get_category" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses costanzo strain id file to determine categories. File is created by pgsNetwork project earlier, depreceated</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.get_clustered_nodes">
+<span class="sig-name descname"><span class="pre">get_clustered_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dimension</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'row'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.get_clustered_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uses the prs matrix clustering for row or columns separately and takes the smaller cluster of 2nd level as the effector or sensor nodes cluster</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dimension</strong> (<em>str</em><em>, </em><em>optional</em>) – which linkage should be used, defaults to ‘row’</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>node ids</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.get_gnm">
+<span class="sig-name descname"><span class="pre">get_gnm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.get_gnm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate GNM modes and collectivity values</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.get_prs">
+<span class="sig-name descname"><span class="pre">get_prs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.get_prs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate Perturbation response matrix</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.get_prs_weighted_path">
+<span class="sig-name descname"><span class="pre">get_prs_weighted_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'weight'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.get_prs_weighted_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate shortest path using the PRS matrix values caused by perturbations on source node
+This uses an adjusted version of networkx dijkstra functions to incorporate node_weight parameter
+networkx source code could be installed using
+pip install git+git://github.com/oacar/networkx&#64;node_weight#egg=networkx  -U</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.get_rwr_mat">
+<span class="sig-name descname"><span class="pre">get_rwr_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.get_rwr_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>use pyrwr to calculate Random walk with rewiring for each nodes in the network and create rwr_mat/rwr_mat_df</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>c</strong> (<em>float</em><em>, </em><em>optional</em>) – restart probability, defaults to 0.15</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.get_sensor_effector">
+<span class="sig-name descname"><span class="pre">get_sensor_effector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantile_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.99</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.get_sensor_effector" title="Permalink to this definition">¶</a></dt>
+<dd><p>create sensor and effector sub dataframes using PRS matrix clusters or effectiveness sensitivity thresholds</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>use_threshold</strong> (<em>bool</em><em>, </em><em>optional</em>) – if true, the nodes with effectiveness/sensitivity above quantile threshold will be taken as effectors and sensors, defaults to True</p></li>
+<li><p><strong>quantile_threshold</strong> (<em>float</em><em>, </em><em>optional</em>) – any effectiveness/sensitivity value above this quantile will be important, defaults to 0.99</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.giant_component">
+<span class="sig-name descname"><span class="pre">giant_component</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.giant_component" title="Permalink to this definition">¶</a></dt>
+<dd><p>From the graph variable create giant component and assing nodes and degree to Enm object</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.gnm_analysis">
+<span class="sig-name descname"><span class="pre">gnm_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.gnm_analysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper to run gnm, prs and create_df</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.heatmap_annotated">
+<span class="sig-name descname"><span class="pre">heatmap_annotated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.heatmap_annotated" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot PRS heatmap with clustering dendrograms</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.laplacian_matrix">
+<span class="sig-name descname"><span class="pre">laplacian_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">normalized</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.laplacian_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>get Laplacian matrix of the giant component. Wrapper around networkx.laplacian_matrix</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.plot_network_spring">
+<span class="sig-name descname"><span class="pre">plot_network_spring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.plot_network_spring" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot network with spring layout</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.print_name">
+<span class="sig-name descname"><span class="pre">print_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.print_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>This prints name variable</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.read_network">
+<span class="sig-name descname"><span class="pre">read_network</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.read_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read network file and assign it to object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>string</em>) – Network file path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.simulate_rewire">
+<span class="sig-name descname"><span class="pre">simulate_rewire</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rewired</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewire_df_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arr_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.simulate_rewire" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrapper around enm.simulate_rewire function out of the class</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="enm.Enm.Enm.spring_pos">
+<span class="sig-name descname"><span class="pre">spring_pos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.Enm.spring_pos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create spring layout of the giant component network and assign positions to nodes</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.Enm.rewire_network">
+<span class="sig-prename descclassname"><span class="pre">enm.Enm.</span></span><span class="sig-name descname"><span class="pre">rewire_network</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Gc</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.rewire_network" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is wrapper around networkx’s rewire functions for my purposes. It can rewire by keeping degree, or if not it will generate a network with same number of nodes and arbitrary number of edges using barabasi_albert_graph or erdos_renyi_graph</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>Gc</strong> (<em>networkx object</em>) – Network to be rewired</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Rewired network</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>networkx object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.Enm.simulate_rewire">
+<span class="sig-prename descclassname"><span class="pre">enm.Enm.</span></span><span class="sig-name descname"><span class="pre">simulate_rewire</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Gc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewired</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewire_df_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arr_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.Enm.simulate_rewire" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function reads rewired network GNM data or calls rewire function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Gc</strong> (<em>networkx object</em>) – network to be rewired</p></li>
+<li><p><strong>rewired</strong> (<em>bool</em><em>, </em><em>optional</em>) – Is there a rewired GNM data available, defaults to False</p></li>
+<li><p><strong>rewire_df_name</strong> (<em>string</em><em>, </em><em>optional</em>) – If rewired is True, related dataframe path should be given, defaults to None</p></li>
+<li><p><strong>arr_name</strong> (<em>string</em><em>, </em><em>optional</em>) – If rewired is True, related numpy array txt file path should be given, defaults to None</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If rewired is True and rewire_df_name or arr_name is not given, raises error</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>arr</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>numpy array</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>rewire_df</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pandas dataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-enm.utils">
+<span id="enm-utils-module"></span><h2>enm.utils module<a class="headerlink" href="#module-enm.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.combine_data">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">combine_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_of_dfs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.combine_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>given a list of dfs return a pandas dataframe by concatenating them</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>list_of_dfs</strong> (<em>list</em>) – a list of pandas dataframes, can contain None</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>pandas DataFrame</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.create_goea">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">create_goea</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gaf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/raw/ontology/sgd.gaf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obo_fname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/raw/ontology/go-basic.obo'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/raw/ontology/sgd_costanzogenes'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sgd_info_tab</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'../data/raw/ontology/SGD_features.tab'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">species</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'yeast'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.create_goea" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.get_degree_distribution">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">get_degree_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.get_degree_distribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>given a dataframe with a ‘deg’ column, find the counts of each degree value</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>pandas DataFrame</em>) – a dataframe with a ‘deg’ column representing degree of nodes</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dictionary showing counts of each degree</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.get_in_to_out_edge_ratio">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">get_in_to_out_edge_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">G</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.get_in_to_out_edge_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate edge ratio of number of edges within the nodes in nodes_df and
+to number of all edges these nodes have</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>G</strong> (<em>networkx graph</em>) – full network</p></li>
+<li><p><strong>nodes_df</strong> (<em>pandas DataFrame</em>) – subset of nodes with orf_name showing node names</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>ratio of between edges to total number of edges</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.get_max_path">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">get_max_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_cluster</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_cluster</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.get_max_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate max information carrying path between 2 clusters by finding all possible nodes and returns based on maximum distance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>enm</strong> (<em>Enm object</em>) – this will be used to calculate prs weighted paths</p></li>
+<li><p><strong>target_cluster</strong> (<em>networkx graph</em>) – cluster which contains possible target nodes</p></li>
+<li><p><strong>source_cluster</strong> (<em>networkx graph</em>) – cluster which contains possible source nodes</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.get_path_positions">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">get_path_positions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensors_sub</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">effectors_sub</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.get_path_positions" title="Permalink to this definition">¶</a></dt>
+<dd><p>calculate positions for effectors and sensors
+choose a random source and target form these, respectively
+get PRS path between source and target
+put the nodes on the path linearly in between clusters
+change the source and target positions based on the initial cluster positions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>enm</strong> (<em>Enm object</em>) – this will be used to calculate prs weighted paths</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.get_random_in_to_out_ratio">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">get_random_in_to_out_ratio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gnm_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.get_random_in_to_out_ratio" title="Permalink to this definition">¶</a></dt>
+<dd><p>generate null distribution of within edge ratio</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gnm_df</strong> (<em>pandas DataFrame</em>) – a dataframe containing all nodes in G with ‘deg’ column</p></li>
+<li><p><strong>df</strong> (<em>pandas DataFrame</em>) – a dataframe to be used to calculate wanted degree distribution</p></li>
+<li><p><strong>G</strong> (<em>networkx graph</em>) – full network</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a list of ratios</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.goea_to_pandas">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">goea_to_pandas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goea_results_sig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geneid2name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.goea_to_pandas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts goea object from goatools GO enrichment test to a Pandas dataframe
+:param goea_results_sig: Significant GO term objects
+:type goea_results_sig: list of GOEnrichmentStudy
+:return: Dataframe
+:rtype: Pandas DataFrame</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.query_goatools">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">query_goatools</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">goea</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geneid2name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.query_goatools" title="Permalink to this definition">¶</a></dt>
+<dd><p>get query dataframe and goa files and return enrichments</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<em>pandas dataframe</em>) – query gene dataframe</p></li>
+<li><p><strong>goea</strong> (<em>goatools.goea.go_enrichment_ns.GOEnrichmentStudyNS</em>) – goa object that will be used to run gene ontology analysis using GOAtools</p></li>
+<li><p><strong>geneid2name</strong> (<em>dict</em>) – dictionary to map geneids to gene names. needed to convert systematic names to intended names</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>enrichment dataframe</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas dataframe</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.sample_nodes">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">sample_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_space</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.sample_nodes" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a list of nodes from the sample space with given size</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample_space</strong> (<em>list</em>) – list of nodes</p></li>
+<li><p><strong>size</strong> (<em>int</em><em>, </em><em>optional</em>) – number of nodes to be sampled, defaults to 1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a random list of nodes</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.utils.sample_nodes_with_degree">
+<span class="sig-prename descclassname"><span class="pre">enm.utils.</span></span><span class="sig-name descname"><span class="pre">sample_nodes_with_degree</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gnm_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.utils.sample_nodes_with_degree" title="Permalink to this definition">¶</a></dt>
+<dd><p>sample nodes with given degree</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gnm_df</strong> (<em>pandas DataFrame</em>) – a dataframe of all nodes with ‘deg’ column</p></li>
+<li><p><strong>nodes_df</strong> (<em>pandas DataFrame</em>) – a dataframe of nodes to calculate expected degree distribution</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-enm.visualize">
+<span id="enm-visualize-module"></span><h2>enm.visualize module<a class="headerlink" href="#module-enm.visualize" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.visualize.create_contour">
+<span class="sig-prename descclassname"><span class="pre">enm.visualize.</span></span><span class="sig-name descname"><span class="pre">create_contour</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_pos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_pos</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.visualize.create_contour" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.visualize.heatmap_annotated">
+<span class="sig-prename descclassname"><span class="pre">enm.visualize.</span></span><span class="sig-name descname"><span class="pre">heatmap_annotated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prs_mat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prs_mat_cl_orig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_linkage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_linkage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.visualize.heatmap_annotated" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.visualize.plot_go_contours">
+<span class="sig-prename descclassname"><span class="pre">enm.visualize.</span></span><span class="sig-name descname"><span class="pre">plot_go_contours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Gc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">go_df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clabels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.visualize.plot_go_contours" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.visualize.plot_network_spring">
+<span class="sig-prename descclassname"><span class="pre">enm.visualize.</span></span><span class="sig-name descname"><span class="pre">plot_network_spring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Gc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_go</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">go_df_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0.1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savefig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.visualize.plot_network_spring" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots networkx object using spring_layout and a legend for nodes and edges</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Gc</strong> (<em>networkx object</em>) – The network to plot</p></li>
+<li><p><strong>figure_path</strong> (<em>string</em>) – Folder to save plotted figure</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>returns Axes for downstream pipeline</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Axes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="enm.visualize.remove_outliers">
+<span class="sig-prename descclassname"><span class="pre">enm.visualize.</span></span><span class="sig-name descname"><span class="pre">remove_outliers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.visualize.remove_outliers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-enm">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-enm" title="Permalink to this headline">¶</a></h2>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">enm</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Omer Acar.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/enm.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

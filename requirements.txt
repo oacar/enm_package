@@ -11,7 +11,7 @@ python-dotenv>=0.5.1
 pandas
 matplotlib
 prody
-networkx
+git+git://github.com/oacar/networkx@node_weight#egg=networkx
 numpy
 jupyter
 Biopython
