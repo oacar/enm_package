@@ -449,7 +449,28 @@ change the source and target positions based on the initial cluster positions</p
 <dl class="py function">
 <dt class="sig sig-object py" id="enm.visualize.heatmap_annotated">
 <span class="sig-prename descclassname"><span class="pre">enm.visualize.</span></span><span class="sig-name descname"><span class="pre">heatmap_annotated</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prs_mat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prs_mat_cl_orig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figure_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_linkage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_linkage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">row_colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_colors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_figure</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#enm.visualize.heatmap_annotated" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>create a heatmap with dendrograms</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prs_mat</strong> (<em>np.array</em>) – original matrix</p></li>
+<li><p><strong>prs_mat_cl_orig</strong> (<em>np.array</em>) – matrix clustered</p></li>
+<li><p><strong>figure_path</strong> (<em>string</em>) – a figure path for saving the figure</p></li>
+<li><p><strong>row_linkage</strong> (<em>ndarray</em>) – scipy linkage for row reordering</p></li>
+<li><p><strong>col_linkage</strong> (<em>ndarray</em>) – scipy linkage for column reordering</p></li>
+<li><p><strong>row_colors</strong> (<em>list</em><em>, </em><em>optional</em>) – list of colors for coloring rows, defaults to None</p></li>
+<li><p><strong>col_colors</strong> (<em>list</em><em>, </em><em>optional</em>) – list of colors for coloring the columns, defaults to None</p></li>
+<li><p><strong>save_figure</strong> (<em>bool</em><em>, </em><em>optional</em>) – if true, save figure to figure_path, defaults to False</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>row and column averages</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list of numbers</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="enm.visualize.plot_go_contours">
