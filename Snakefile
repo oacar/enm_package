@@ -138,6 +138,7 @@ rule prs_rwr_compare:
 rule figure2:
     input:
         pcc_df="data/interim/pcc_df.csv",
+        pcc_df_random = f"{OUTPUT_PATH}/pcc_df_random_{N_SIM}.csv"
     params:
         save=SAVE_FIGURES
     conda:
