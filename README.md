@@ -8,16 +8,18 @@ Project Organization
 ------------
 
     ├── LICENSE
-    ├── Snakefile          <- Snakemake with rules to create intermediate data from raw data 
+    ├── Snakefile          <- Snakemake with rules to create intermediate data and figures from raw data 
+    ├── Snakefile_with_supp<- Snakemake with rules to create figures from intermediate data
     ├── README.md          <- The top-level README for people using this project.
     ├── data
-    │   ├── interim        <- Intermediate data that has been transformed and used for figure generation.
+    │   ├── supp           <- Intermediate data that has been transformed and used for figure generation.
     │   └── raw            <- The original, immutable data dump.
     ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
     │
     ├── notebooks          <- Jupyter and/or Rmarkdown notebooks for figure generation.
     │
     ├── reports            <- Folder to re-generate notebooks as HTML, PDF, LaTeX, etc.
+    │   └── figures        <- Figures used in the paper 
     ├── reports_done       <- Generated notebooks as HTML, PDF, LaTeX, etc.
     │
     ├── enm_snakemake.yml  <- The environment file for reproducing the analysis conda environment. Used for python scripts in Snakemake
@@ -40,9 +42,11 @@ This repo contains a Snakefile and thus all pipeline can be run using Snakemake.
 
 Snakemake will use the raw data provided under `data/raw` to generate all intermediate data and results for figure generation.
 
+Raw data could be downloaded from `https://thecellmap.org/costanzo2016/data_files/Genetic%20interaction%20profile%20similarity%20matrices.zip`
+
 The Rmarkdown and Jupyter notebooks under `notebooks` directory can be used to create the figures in the paper. The html files for those notebooks are shared under `reports_done` folder. A rerun of snakemake pipeline will create `html` files to `reports` folder.
 
-To re-create the figures/reports run snakemake:
+To re-create the figures/reports starting from raw data run snakemake:
 
 ```bash
 snakemake -j10 --use-conda all
@@ -51,6 +55,11 @@ snakemake -j10 --use-conda all
 This will run rules based on the following DAG:
 ![Snakemake DAG](dag.png)
 
-`--use-conda` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter and r/rmarkdown files.
+`--use-conda` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter and r/rmarkdown files. Figure 2 and Figure 5 dependencies will take longer to run, depending on cpu and number of cores. I don't suggest running them blindly. 
 
+Alternatively, it is also possible to use interim data generated in the project to regenerate figures. `Snakefile_with_supp` will use data available in `data/supp` folder to regenerate Figure2 to Figure 5, except network figures.
+
+```bash
+snakemake -s Snakefile_with_supp -np
+```
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. Though many edits were applied. #cookiecutterdatascience</small></p>
