@@ -36,6 +36,21 @@ ci <- function(p,n){
    ci
 }
 
+prs_column$tolist  <-  str_remove_all(prs_column$study_items,'\\[|\\]')%>%
+  #str_split(.,', ')%>%
+  str_extract_all(.,"[^',]+[^']")# %>%list()
+
+
+
+df <- data.frame(matrix(ncol = 2, nrow = 0))
+colnames(df) <- c("orf_name_id", "count")
+for(i in unique(prs_column$orf_name_id)){
+  all_set = unlist(prs_column$tolist[prs_column$orf_name_id==i])
+  int_ <- length(intersect(all_set,effector_pcc$`Systematic gene name`))
+  df <- bind_rows(df,data.frame(orf_name_id=i,count=int_))
+}
+num_of_groups_with_effectors <- df%>%filter(count>0)%>%nrow()
+
 # New facet label names for dose variable
 axis.labs <- c("Row-based", "Column-based")
 names(axis.labs) <- c("row", "col")
