@@ -1,0 +1,104 @@
+
+---
+title: "04-Figure5b"
+output: 
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning=FALSE)
+```
+
+# Load packages
+```{r, message=FALSE,warning=FALSE}
+library(tidyverse)
+library(glue)
+library(cowplot)
+library(ggpubr)
+library(ggsignif)
+```
+
+
+# Figure 5
+## B
+```{r}
+
+# Ranked groups GO enrichment results
+rwr_row <- read_csv(snakemake@input[['rwr_row']])%>%mutate(data = 'rwr_row')
+prs_row <- read_csv(snakemake@input[['prs_row']])%>%mutate(data = 'prs_row')
+rwr_column <- read_csv(snakemake@input[['rwr_column']])%>%mutate(data = 'rwr_col')
+prs_column <- read_csv(snakemake@input[['prs_column']])%>%mutate(data = 'prs_col')
+go_combined <- data.table::rbindlist(list(rwr_row,prs_row,rwr_column,prs_column))
+ci <- function(p,n){
+   sd = sqrt(p*(1-p)/n)
+   ci = 1.96*sd
+   ci
+}
+
+# New facet label names for dose variable
+axis.labs <- c("Row-based", "Column-based")
+names(axis.labs) <- c("row", "col")
+go_summarised <- go_combined%>%
+  group_by(data)%>%
+  summarise(positives=n_distinct(orf_name_id))%>%
+  mutate(n_tot=5183, prop = positives/n_tot, ci_min=prop-ci(prop,n_tot),ci_max=prop+ci(prop,n_tot))%>%
+  separate(data,into=c('method','axis'))%>%
+  mutate(axis=factor(axis,levels=c('row','col')))
+
+p_val_row  <- go_summarised%>%
+  mutate(negatives = n_tot-positives)%>%
+  dplyr::filter(axis=="row")%>%
+  select(positives,negatives)%>%
+  as.matrix()%>%
+  prop.test(correct=FALSE)
+p_val_col <- go_summarised%>%
+  mutate(negatives = n_tot-positives)%>%
+  dplyr::filter(axis=="col")%>%
+  select(positives,negatives)%>%
+  as.matrix()%>%
+  prop.test(correct=FALSE)
+
+annotation_df <- data.frame(
+  axis = factor(c("row", "col")),
+  start = c("prs", "prs"),
+  end = c("rwr", "rwr"),
+  y = c(0.91, 0.91),
+  label = c(glue::glue("p = {format.pval(p_val_row$p.value,digits=2)}"), glue::glue("p{format.pval(p_val_col$p.value)}"))
+)
+
+ prs_rwr_comp <- ggplot()+
+  facet_grid(vars(axis),
+  labeller = labeller(axis=axis.labs))+
+  geom_col(data=go_summarised,aes(x=method,y=prop,fill=method))+
+  geom_errorbar(data=go_summarised, aes(x=method, y=prop, ymin=ci_min, ymax=ci_max), width=.2) +
+  theme_bw()+
+  scale_x_discrete(labels=c('PRS','RWR'))+
+  xlab('')+
+  ylab('%of tests with GO enrichments')+
+  theme(
+   strip.background = element_rect(
+     color=,"black", fill="white", size=1.5, linetype="solid"
+     ),
+     legend.position='none',
+     panel.spacing = unit(2, "lines")
+   )+
+   geom_signif(
+    data = annotation_df,
+    aes(xmin = start, xmax = end, annotations = label, y_position = y),
+    textsize = 4,tip_length = .1,
+    manual = TRUE
+  )+
+  scale_y_continuous(expand=c(0,0),limits=c(0,1))
+
+prs_rwr_comp
+```
+
+```{r}
+if(snakemake@params['save']==TRUE){
+
+  figure_folder = "reports/figures/paper_figures_052521/"
+    ggsave(glue("{figure_folder}/fig5b.png"),plot=prs_rwr_comp, width=3,height=4)
+}
+
+```

@@ -14,7 +14,8 @@ rule all:
     input: 
         "reports/01-Fig1bcd_3c_4b_5df-052421.html",
         "reports/02-Figure2-051321.html",
-        "reports/03-Fig3abde_4acd_5b-051821.html"
+        "reports/03-Fig3abde_4acd-051821.html",
+        "reports/04-Fig5b-052721.html"
 
 
 rule read_costanzo_data:
@@ -147,24 +148,33 @@ rule figure2:
     script:
         "notebooks/02-Figure2-051321.Rmd"
 
-rule figure3_4_5:
+rule figure3_4:
     input:
         pcc_df="data/interim/pcc_df.csv",
         sensor_connectivity_df = "data/interim/sensor_connectivity_df.csv",
         sensors_pcc = "data/interim/sensors_df.csv",
         effector_pcc = "data/interim/effectors_df.csv",
-        rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
-        prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv",
-        rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",
-        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
-        #pcc_df_random=f"data/interim/pcc_df_random_{N_SIM}.csv"
     params:
         save=SAVE_FIGURES
     conda:
         "r_env.yml"
-    output: "reports/03-Fig3abde_4acd_5b-051821.html"
+    output: "reports/03-Fig3abde_4acd-051821.html"
     script:
-        "notebooks/03-Fig3abde_4acd_5b-051821.Rmd"
+        "notebooks/03-Fig3abde_4acd-051821.Rmd"
+
+rule figure5:
+    input:
+        rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
+        prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv",
+        rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",
+        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
+    params:
+        save=SAVE_FIGURES
+    conda:
+        "r_env.yml"
+    output: "reports/04-Fig5b-052721.html"
+    script:
+        "notebooks/04-Fig5b-052721.Rmd"
 
 rule figure_networks:
     input: 

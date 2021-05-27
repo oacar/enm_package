@@ -42,12 +42,6 @@ sensors_pcc <- read_csv(snakemake@input[['sensors_pcc']])%>%#'../data/interim/se
 effector_pcc <- read_csv(snakemake@input[['effector_pcc']])#'../data/interim/effectors_df.csv')
 
 
-# Ranked groups GO enrichment results
-rwr_row <- read_csv(snakemake@input[['rwr_row']])%>%mutate(data = 'rwr_row')
-prs_row <- read_csv(snakemake@input[['prs_row']])%>%mutate(data = 'prs_row')
-rwr_column <- read_csv(snakemake@input[['rwr_column']])%>%mutate(data = 'rwr_col')
-prs_column <- read_csv(snakemake@input[['prs_column']])%>%mutate(data = 'prs_col')
-go_combined <- data.table::rbindlist(list(rwr_row,prs_row,rwr_column,prs_column))
 ```
 # Figure3
 ## A
@@ -73,7 +67,7 @@ sensor_connectivity_plot <-
   geom_vline(data = sensor_connectivity_df %>% filter(type == "real"), aes(xintercept = ratio, color = type)) +
   guides(color = guide_legend(title = "Data type"), shape = guide_legend(title = "Network type")) +
   ylab("Density") +
-  xlab("Ratio of between group edges\nto outgroup edges") +
+  xlab("% of between group edges\nto all edges") +
   theme_bw() +
   scale_color_discrete(labels = c("Random sampled set", "Sensors")) +
   theme(legend.position = "bottom") +
@@ -165,13 +159,15 @@ eff_neighbor_degree_plot
 # )
 effector_pcc  <- effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff), 
           go_group = factor(go_group,labels=c('chromosome','golgi','mito')))
-# res.aov <- kruskal.test(eff~go_group, data= effector_pcc)
-# res.aov
+res.aov <- kruskal.test(deg~go_group, data= effector_pcc)
+res.aov
 effector_eff_pval <- FSA::dunnTest(eff ~ go_group, effector_pcc)
 effector_eff_pval$res[effector_eff_pval$res$P.adj < 0.1, ]
 effector_deg_pval <- FSA::dunnTest(deg ~ go_group, effector_pcc)
 effector_deg_pval$res[effector_deg_pval$res$P.adj < 0.1, ]
 
+effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Others")),go_group=fct_relevel(go_group,'Others',after=Inf))%>%
+  kruskal.test(deg~go_group, data=.)
 
 eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Others")),go_group=fct_relevel(go_group,'Others',after=Inf)), 
                        aes(x = go_group, y = deg, fill = go_group)) +
@@ -212,71 +208,6 @@ eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, 
 eff_eff_comp
 ```
 
-# Figure 5
-## B
-```{r}
-ci <- function(p,n){
-   sd = sqrt(p*(1-p)/n)
-   ci = 1.96*sd
-   ci
-}
-# New facet label names for dose variable
-axis.labs <- c("Row-based", "Column-based")
-names(axis.labs) <- c("row", "col")
-go_summarised <- go_combined%>%
-  group_by(data)%>%
-  summarise(positives=n_distinct(orf_name_id))%>%
-  mutate(n_tot=5183, prop = positives/n_tot, ci_min=prop-ci(prop,n_tot),ci_max=prop+ci(prop,n_tot))%>%
-  separate(data,into=c('method','axis'))%>%
-  mutate(axis=factor(axis,levels=c('row','col')))
-
-p_val_row  <- go_summarised%>%
-  mutate(negatives = n_tot-positives)%>%
-  dplyr::filter(axis=="row")%>%
-  select(positives,negatives)%>%
-  as.matrix()%>%
-  prop.test(correct=FALSE)
-p_val_col <- go_summarised%>%
-  mutate(negatives = n_tot-positives)%>%
-  dplyr::filter(axis=="col")%>%
-  select(positives,negatives)%>%
-  as.matrix()%>%
-  prop.test(correct=FALSE)
-
-annotation_df <- data.frame(
-  axis = factor(c("row", "col")),
-  start = c("prs", "prs"),
-  end = c("rwr", "rwr"),
-  y = c(0.91, 0.91),
-  label = c(glue::glue("p = {format.pval(p_val_row$p.value,digits=2)}"), glue::glue("p{format.pval(p_val_col$p.value)}"))
-)
-
- prs_rwr_comp <- ggplot()+
-  facet_grid(vars(axis),
-  labeller = labeller(axis=axis.labs))+
-  geom_col(data=go_summarised,aes(x=method,y=prop,fill=method))+
-  geom_errorbar(data=go_summarised, aes(x=method, y=prop, ymin=ci_min, ymax=ci_max), width=.2) +
-  theme_bw()+
-  scale_x_discrete(labels=c('PRS','RWR'))+
-  xlab('')+
-  ylab('%of tests with GO enrichments')+
-  theme(
-   strip.background = element_rect(
-     color=,"black", fill="white", size=1.5, linetype="solid"
-     ),
-     legend.position='none',
-     panel.spacing = unit(2, "lines")
-   )+
-   geom_signif(
-    data = annotation_df,
-    aes(xmin = start, xmax = end, annotations = label, y_position = y),
-    textsize = 4,tip_length = .1,
-    manual = TRUE
-  )+
-  scale_y_continuous(expand=c(0,0),limits=c(0,1))
-
-prs_rwr_comp
-```
 
 ```{r}
 if(snakemake@params['save']==TRUE){
@@ -291,7 +222,6 @@ ggsave(glue("{figure_folder}/fig4a.png"),plot=eff_neighbor_degree_plot,width=3,h
 ggsave(glue("{figure_folder}/fig4c.png"),plot=eff_deg_comp+theme(legend.position='none'),width=3,height=3)
 ggsave(glue("{figure_folder}/fig4d.png"),plot=eff_eff_comp+theme(legend.position='none'),width=3,height=3)
 
-ggsave(glue("{figure_folder}/fig5b.png"),plot=prs_rwr_comp, width=3,height=4)
 
 
 # Using the cowplot package
