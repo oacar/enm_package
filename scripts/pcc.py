@@ -31,5 +31,5 @@ print("saving files")
 with open(snakemake.output.pickle_file,'wb') as f:
     pickle.dump(enm,f, protocol=4)
 
-enm.df.to_csv(snakemake.output.df_filename, index=False)
+enm.df.to_csv(snakemake.output.df_filename, index=True, index_label='orf_name_id')
 
