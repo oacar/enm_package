@@ -164,6 +164,7 @@ rule figure3_4:
 
 rule figure5:
     input:
+        effector_pcc = f"{OUTPUT_PATH}/effectors_df.csv",
         rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
         prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv",
         rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",

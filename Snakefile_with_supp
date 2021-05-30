@@ -9,7 +9,8 @@ PICKLE_FILE_NAME = f"{OUTPUT_PATH}/pcc.pickle"
 SAVE_FIGURES = True
 #rule clean:
 #    shell: "rm -rf data/interim/"
-
+rule test:
+    shell: 'RScript -e"library(tidyverse); sessionInfo()"'
 rule all:
     input: 
         #"reports/01-Fig1bcd_3c_4b_5df-052421.html",
@@ -155,6 +156,8 @@ rule figure3_4:
         effector_pcc = ancient(f"{OUTPUT_PATH}/effectors_df.csv"),
     params:
         save=SAVE_FIGURES
+    container:
+        "docker://rocker/tidyverse"
     conda:
         "r_env.yml"
     output: "reports/03-Fig3abde_4acd-051821.html"
@@ -163,6 +166,7 @@ rule figure3_4:
 
 rule figure5:
     input:
+        effector_pcc = ancient(f"{OUTPUT_PATH}/effectors_df.csv"),
         rwr_column=ancient(f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv"),
         prs_column=ancient(f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv"),
         rwr_row=ancient(f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv"),

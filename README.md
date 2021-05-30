@@ -44,6 +44,18 @@ Snakemake will use the raw data provided under `data/raw` to generate all interm
 
 Raw data could be downloaded from `https://thecellmap.org/costanzo2016/data_files/Genetic%20interaction%20profile%20similarity%20matrices.zip`
 
+Necessary files for Gene Ontology analysis were downloaded from Gene ontology consortium or from SGD on May 20, 2021.
+
+Following links could be used and should be placed under `data/raw/ontology`: 
+
+```
+https://downloads.yeastgenome.org/curation/chromosomal_feature/SGD_features.tab
+
+http://purl.obolibrary.org/obo/go.obo
+
+http://current.geneontology.org/annotations/sgd.gaf.gz
+```
+
 The Rmarkdown and Jupyter notebooks under `notebooks` directory can be used to create the figures in the paper. The html files for those notebooks are shared under `reports_done` folder. A rerun of snakemake pipeline will create `html` files to `reports` folder.
 
 To re-create the figures/reports starting from raw data, first create a conda environment and install snakemake:
