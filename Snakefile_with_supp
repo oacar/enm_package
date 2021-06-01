@@ -9,14 +9,14 @@ PICKLE_FILE_NAME = f"{OUTPUT_PATH}/pcc.pickle"
 SAVE_FIGURES = True
 #rule clean:
 #    shell: "rm -rf data/interim/"
-
+rule test:
+    shell: 'RScript -e"library(tidyverse); sessionInfo()"'
 rule all:
     input: 
         #"reports/01-Fig1bcd_3c_4b_5df-052421.html",
         "reports/02-Figure2-051321.html",
         "reports/03-Fig3abde_4acd-051821.html",
         "reports/04-Fig5b-052721.html"
-
 
 rule read_costanzo_data:
     input: 
@@ -34,8 +34,8 @@ rule read_costanzo_data:
 
 rule create_enm_object:
     input:
-        network_file = f"{OUTPUT_PATH}/costanzo_pcc_ALL" ,
-        strain_ids_file = f"{OUTPUT_PATH}/strain_ids.csv"
+        network_file = ancient(f"{OUTPUT_PATH}/costanzo_pcc_ALL") ,
+        strain_ids_file = ancient(f"{OUTPUT_PATH}/strain_ids.csv")
     params:
         output_path = OUTPUT_PATH
     conda:
@@ -46,7 +46,7 @@ rule create_enm_object:
     script: "scripts/pcc.py"
 
 rule rewire_network:
-    input: PICKLE_FILE_NAME
+    input: ancient(PICKLE_FILE_NAME)
     params:
         n_sim = N_SIM,
     conda:
@@ -56,7 +56,7 @@ rule rewire_network:
     script: "scripts/rewiring.py"
 
 rule sensor_in_to_out_ratio:
-    input: PICKLE_FILE_NAME
+    input: ancient(PICKLE_FILE_NAME)
     params:
         output_path = OUTPUT_PATH
     conda:
@@ -66,7 +66,7 @@ rule sensor_in_to_out_ratio:
 
 rule effector_sensor_go:
     input:
-        pickle_file_name= PICKLE_FILE_NAME,
+        pickle_file_name= ancient(PICKLE_FILE_NAME),
         gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
         background_file = f"{OUTPUT_PATH}/go_background_list",
@@ -156,6 +156,8 @@ rule figure3_4:
         effector_pcc = ancient(f"{OUTPUT_PATH}/effectors_df.csv"),
     params:
         save=SAVE_FIGURES
+    container:
+        "docker://rocker/tidyverse"
     conda:
         "r_env.yml"
     output: "reports/03-Fig3abde_4acd-051821.html"
@@ -164,6 +166,7 @@ rule figure3_4:
 
 rule figure5:
     input:
+        effector_pcc = ancient(f"{OUTPUT_PATH}/effectors_df.csv"),
         rwr_column=ancient(f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv"),
         prs_column=ancient(f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv"),
         rwr_row=ancient(f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv"),

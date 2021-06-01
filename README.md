@@ -44,22 +44,49 @@ Snakemake will use the raw data provided under `data/raw` to generate all interm
 
 Raw data could be downloaded from `https://thecellmap.org/costanzo2016/data_files/Genetic%20interaction%20profile%20similarity%20matrices.zip`
 
+Necessary files for Gene Ontology analysis were downloaded from Gene ontology consortium or from SGD on May 20, 2021.
+
+Following links could be used and should be placed under `data/raw/ontology`: 
+
+```
+https://downloads.yeastgenome.org/curation/chromosomal_feature/SGD_features.tab
+
+http://purl.obolibrary.org/obo/go/go-basic.obo
+
+http://current.geneontology.org/annotations/sgd.gaf.gz
+```
+
 The Rmarkdown and Jupyter notebooks under `notebooks` directory can be used to create the figures in the paper. The html files for those notebooks are shared under `reports_done` folder. A rerun of snakemake pipeline will create `html` files to `reports` folder.
 
-To re-create the figures/reports starting from raw data run snakemake:
+To re-create the figures/reports starting from raw data, first create a conda environment and install snakemake:
 
 ```bash
-snakemake -j10 --use-conda all
+conda create -n enm_package_env
+conda activate enm_package_env
+conda install snakemake
+```
+
+Then run snakemake:
+
+```bash
+snakemake -j10 --use-conda --conda-frontend conda all
 ```
 
 This will run rules based on the following DAG:
 ![Snakemake DAG](dag.png)
 
-`--use-conda` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter and r/rmarkdown files. Figure 2 and Figure 5 dependencies will take longer to run, depending on cpu and number of cores. I don't suggest running them blindly. 
+`--use-conda --conda-frontend` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter and r/rmarkdown files. Figure 2 and Figure 5 dependencies will take longer to run, depending on cpu and number of cores. I don't suggest running them blindly. 
 
 Alternatively, it is also possible to use interim data generated in the project to regenerate figures. `Snakefile_with_supp` will use data available in `data/supp` folder to regenerate Figure2 to Figure 5, except network figures.
 
 ```bash
-snakemake -s Snakefile_with_supp -np
+snakemake -s Snakefile_with_supp -j10 --use-conda --conda-frontend conda 
 ```
+
+Finally, one can also create a conda environment with following, change the input file names in scripts and notebooks manually and run them manually. This is not suggested.
+
+```bash
+conda env create -n enm_package_env -f enm_snakemake.yml
+```
+
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. Though many edits were applied. #cookiecutterdatascience</small></p>
