@@ -52,7 +52,6 @@ scale_x_continuous(
 theme(legend.text = element_text(margin = margin(b = 10)), panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())
 dens_plot
 }
-message(snakemake@params['save'])
 ```
 
 # Load input dataframe
@@ -103,6 +102,7 @@ deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
 )
 deg_scatter_plots
 #ggsave("reports/figures/paper_figures_0202_pcc_only/fig2.png", plot = deg_scatter_plots, width = 10, height = 10)
+print(cor.test(pcc_df$deg[pcc_df$deg<10],pcc_df$sens[pcc_df$deg<10],method='spearman',exact=FALSE))
 ```
 
 # Figure2 C,D,E
@@ -205,8 +205,8 @@ pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none
 
 ```{r}
 if(snakemake@params['save']==TRUE){
-  figure_folder = "reports/figures/paper_figures_052521/"
-combined_plot <- plot_grid(deg_scatter_plots, distr_plots, pcc_dens_comb, nrow = 3, rel_heights = c(0.3, 0.4, .3))
+  figure_folder = "../reports/figures/paper_figures_052521/"
+combined_plot <- plot_grid(deg_scatter_plots, distr_plots, pcc_dens_comb, nrow = 3, rel_heights = c(0.3, 0.2, .3))
 ggsave(glue("{figure_folder}/fig2.png"),plot=combined_plot,width=10,height=12)
 }
 ```
