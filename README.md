@@ -51,7 +51,7 @@ Following links could be used and should be placed under `data/raw/ontology`:
 ```
 https://downloads.yeastgenome.org/curation/chromosomal_feature/SGD_features.tab
 
-http://purl.obolibrary.org/obo/go.obo
+http://purl.obolibrary.org/obo/go/go-basic.obo
 
 http://current.geneontology.org/annotations/sgd.gaf.gz
 ```
