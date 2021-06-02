@@ -1,8 +1,9 @@
-enm
+Elastic Network Modeling of Cellular Networks Unveils Sensor and Effector Genes that Control Information Flow
 ==============================
 
-Elastic network model of the cell and identification of sensor and effector genes
 doi: this will be updated
+
+`Supplementary Data 1` can be found under `data/supp/`
 
 Project Organization
 ------------

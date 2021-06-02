@@ -141,7 +141,7 @@ sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reo
     annotation = c("**", "**"), y_position = c(0.007, 0.0075)#, 0.008)
   ) +
   xlab("") +
-  ylab("Sensitivity") +
+  ylab("Sensitivity (a.u.)") +
   scale_fill_manual(values = sensor_colors) +
   theme_bw() +
   theme(
@@ -220,7 +220,7 @@ eff_eff_comp <- ggplot(effector_pcc %>% mutate(go_group = fct_reorder(go_group, 
   ggpubr::stat_compare_means(method = "kruskal.test") +
   scale_fill_manual(values = effector_colors,
   labels = c("Chromosome\nSegregation", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")) +
-  ylab("Effectiveness") +
+  ylab("Effectiveness (a.u.)") +
   theme_bw() +
   theme(
         axis.text.y=element_text(size=10),

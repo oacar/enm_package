@@ -7,6 +7,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+Sys.setenv(TAR = "/bin/tar")
 ```
 
 # Load packages
@@ -40,7 +41,7 @@ if (!require('RColorBrewer')) {
 plot_density_prs <- 			# 
     function
 (
- 	df , x , xlab= 'Effectiveness', ylab='Density', coord_trans='log10', linesize = 1
+ 	df , x , xlab= 'Effectiveness (a.u.)', ylab='Density', coord_trans='log10', linesize = 1
 )
 {
     color_pal <- c('#00BFC4','#F8766D')
@@ -100,7 +101,7 @@ pcc_deg_eff <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_n
   geom_point() +
   #    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
   theme_bw() +
-  ylab("Effectiveness") +
+  ylab("Effectiveness (a.u.)") +
   xlab("Degree") +
   stat_cor(method = "pearson", cor.coef.name = "R", label.x.npc = 0.1) +
   theme(strip.text.y = element_text(angle = 0)) +
@@ -110,7 +111,7 @@ pcc_deg_sens <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_
   geom_point() +
   #    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
   theme_bw() +
-  ylab("Sensitivity") +
+  ylab("Sensitivity (a.u.)") +
   xlab("Degree") +
   stat_cor(method = "spearman", cor.coef.name = "rho", label.x.npc = 0.1) +
   theme(strip.text.y = element_text(angle = 0)) +
@@ -206,7 +207,7 @@ pcc_eff_dens <-
 #   cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
 # annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
 pcc_sensitivity_dens <-
-  cowplot::ggdraw(plot_density_prs(pcc_df, sens_norm, xlab = "Sensitivity") + theme(legend.position = "none")) #+
+  cowplot::ggdraw(plot_density_prs(pcc_df, sens_norm, xlab = "Sensitivity (a.u.)") + theme(legend.position = "none")) #+
 #        cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
 # title <- cowplot::ggdraw() + cowplot::draw_label("Yeast GI Profile Similarity", fontface='bold')
 pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none"),
@@ -224,7 +225,7 @@ pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none
 
 ```{r}
 if(snakemake@params['save']==TRUE){
-  figure_folder = "../reports/figures/paper_figures_052521/"
+  figure_folder = "reports/figures/paper_figures_052521/"
 combined_plot <- plot_grid(deg_scatter_plots, distr_plots, pcc_dens_comb, nrow = 3, rel_heights = c(0.3, 0.2, .3))
 ggsave(glue("{figure_folder}/fig2.png"),plot=combined_plot,width=10,height=12)
 }
