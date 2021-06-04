@@ -194,11 +194,11 @@ distr_plots
 # Figure2 G, F
 ```{r}
 pcc_eff_dens <-
-  plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness")
+  plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness (a.u.)")
 dens_lgn <- cowplot::get_legend(pcc_eff_dens + theme(legend.position = "right"))
 #  cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
 pcc_eff_dens <-
-  cowplot::ggdraw(plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness") + theme(legend.position = "none") +
+  cowplot::ggdraw(plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness (a.u.)") + theme(legend.position = "none") +
     coord_trans(x = "log10", xlim = c(NA, 10e-2)) +
     scale_x_continuous(
       breaks = scales::trans_breaks("log10", function(x) 10^x),

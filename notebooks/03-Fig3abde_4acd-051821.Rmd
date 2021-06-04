@@ -138,7 +138,7 @@ sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% mutate(go_group = fct_reo
       c("Hexose metabolic process", "Phenylalanine transport"), c("Tricarboxylic acid cycle", "Phenylalanine transport")#,
       #c("phenylalanine\ntransport", "protein folding")
     ),
-    annotation = c("**", "**"), y_position = c(0.007, 0.0075)#, 0.008)
+    annotation = c("*", "*"), y_position = c(0.007, 0.0075)#, 0.008)
   ) +
   xlab("") +
   ylab("Sensitivity (a.u.)") +
@@ -201,7 +201,7 @@ eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = 
   theme_bw() +
   geom_signif(
     comparisons = list(c("golgi", "chromosome"), c("golgi", "mito"), c("mito", "chromosome")),
-    annotation = c("**", "***", "ns"),
+    annotation = c("*", "***", "ns"),
     y_position = c(115, 120, 130)
   ) +
   theme(
