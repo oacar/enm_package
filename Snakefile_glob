@@ -1,0 +1,204 @@
+
+from signal import NSIG
+
+thresholds = [0.1,0.2,0.3,0.4]
+RAW_INPUT_PATH = "data/raw"
+N_SIM=10
+PICKLE_FILE_NAME = "data/interim_{thr}/pcc.pickle"
+SAVE_FIGURES = False
+#REPORT_FOLDER = f"reports/reports_{thr}"
+#rule clean:
+#    shell: "rm -rf data/interim/"
+
+rule all:
+    input: 
+        expand("reports/reports_{thr}/01-Fig1bcd_3c_4b_5df-052421.html", thr = thresholds),
+        expand("reports/reports_{thr}/02-Figure2-051321.html", thr = thresholds)
+#        expand("reports/reports_{thr}/03-Fig3abde_4acd-051821.html", thr=thresholds)
+
+
+rule read_costanzo_data:
+    input: 
+        f"{RAW_INPUT_PATH}/Data File S3. Genetic interaction profile similarity matrices/cc_ALL.txt",
+        f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    params: 
+        output_path = "data/interim_{thr}",
+        threshold = lambda wildcards: wildcards.thr
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        "data/interim_{thr}/costanzo_pcc_ALL" ,
+        "data/interim_{thr}/strain_ids.csv" ,
+        "data/interim_{thr}/go_background_list"
+    script: "scripts/read_costanzo_data.py"
+
+rule create_enm_object:
+    input:
+        network_file = "data/interim_{thr}/costanzo_pcc_ALL" ,
+        strain_ids_file = "data/interim_{thr}/strain_ids.csv"
+    params:
+        output_path = "data/interim_{thr}"
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        pickle_file= PICKLE_FILE_NAME,
+        df_filename= "data/interim_{thr}/pcc_df.csv"
+    script: "scripts/pcc.py"
+
+rule rewire_network:
+    input: PICKLE_FILE_NAME
+    params:
+        n_sim = N_SIM,
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        pcc_df_random = "data/interim_{thr}/pcc_df_random_{N_SIM}.csv"
+    script: "scripts/rewiring.py"
+
+rule sensor_in_to_out_ratio:
+    input: PICKLE_FILE_NAME
+    params:
+        output_path = "data/interim_{thr}"
+    conda:
+        "enm_snakemake.yml"
+    output: "data/interim_{thr}/sensor_connectivity_df.csv"
+    script: "scripts/connectivity.py"
+
+rule effector_sensor_go:
+    input:
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_{thr}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    output:
+        sensors_df_fname = "data/interim_{thr}/sensors_df.csv",
+        effectors_df_fname = "data/interim_{thr}/effectors_df.csv",
+        effector_sensor_combined_go_df = "data/interim_{thr}/effector_sensor_combined_go_df.csv"
+    script: "scripts/effector_sensor_go.py"
+
+rule prs_row_go:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_{thr}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        prs_row="data/interim_{thr}/prs_ranked_goa_rows.csv"
+    script: "scripts/prs_row_go.py"
+rule prs_col_go:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_{thr}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        prs_column="data/interim_{thr}/prs_ranked_goa_columns.csv"
+    script: "scripts/prs_row_go.py"
+rule rwr_row_go:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_{thr}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        rwr_row="data/interim_{thr}/rwr_ranked_goa_rows.csv"
+    script: "scripts/prs_row_go.py"
+rule rwr_col_go:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_{thr}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        rwr_column="data/interim_{thr}/rwr_ranked_goa_columns.csv",
+    script: "scripts/prs_row_go.py"
+rule prs_rwr_compare:
+    input: 
+        rwr_column="data/interim_{thr}/rwr_ranked_goa_columns.csv",
+        prs_column="data/interim_{thr}/prs_ranked_goa_columns.csv",
+        rwr_row="data/interim_{thr}/rwr_ranked_goa_rows.csv",
+        prs_row="data/interim_{thr}/prs_ranked_goa_rows.csv"
+    #output: 
+    #    plot = "data/interim_{thr}/figure5B.pdf"
+    #script: "scripts/figure5B.py"
+
+
+rule figure2:
+    input:
+        pcc_df="data/interim_{thr}/pcc_df.csv",
+        pcc_df_random = f"data/interim_{{thr}}/pcc_df_random_{N_SIM}.csv"
+    params:
+        save=SAVE_FIGURES
+    conda:
+        "r_env_2.yml"
+    output: "reports/reports_{thr}/02-Figure2-051321.html"
+    script:
+        "notebooks/02-Figure2-051321.Rmd"
+
+rule figure3_4:
+    input:
+        pcc_df="data/interim_{thr}/pcc_df.csv",
+        sensor_connectivity_df = "data/interim_{thr}/sensor_connectivity_df.csv",
+        sensors_pcc = "data/interim_{thr}/sensors_df.csv",
+        effector_pcc = "data/interim_{thr}/effectors_df.csv",
+    params:
+        save=SAVE_FIGURES
+    conda:
+        "r_env_2.yml"
+    output: "reports/reports_{thr}/03-Fig3abde_4acd-051821.html"
+    script:
+        "notebooks/03-Fig3abde_4acd-051821.Rmd"
+
+rule figure5:
+    input:
+        effector_pcc = "data/interim_{thr}/effectors_df.csv",
+        rwr_column="data/interim_{thr}/rwr_ranked_goa_columns.csv",
+        prs_column="data/interim_{thr}/prs_ranked_goa_columns.csv",
+        rwr_row="data/interim_{thr}/rwr_ranked_goa_rows.csv",
+        prs_row="data/interim_{thr}/prs_ranked_goa_rows.csv"
+    params:
+        save=SAVE_FIGURES
+    conda:
+        "r_env.yml"
+    output: "reports/reports_{thr}/04-Fig5b-052721.html"
+    script:
+        "notebooks/04-Fig5b-052721.Rmd"
+
+rule figure_networks:
+    input: 
+        pickle_file_name= PICKLE_FILE_NAME,
+        sensors_pcc = "data/interim_{thr}/sensors_df.csv",
+        effector_pcc = "data/interim_{thr}/effectors_df.csv"
+    params:
+        save=SAVE_FIGURES,
+        change_go_group_name = False,
+        plot_paths = False
+    log:
+        # optional path to the processed notebook
+        notebook="reports/reports_{thr}/01-Fig1bcd_3c_4b_5df-052421.ipynb"
+    conda:
+        "enm_snakemake.yml"
+    output:
+        notebook="reports/reports_{thr}/01-Fig1bcd_3c_4b_5df-052421.ipynb"
+    notebook: "notebooks/01-Fig1bcd_3c_4b_5df-052421.ipynb"
+
+rule figure_networks_html:
+    input: 
+        "reports/reports_{thr}/01-Fig1bcd_3c_4b_5df-052421.ipynb"
+    conda:
+        "enm_snakemake.yml"
+    output: "reports/reports_{thr}/01-Fig1bcd_3c_4b_5df-052421.html"
+    shell: "jupyter nbconvert {input} --to html"
