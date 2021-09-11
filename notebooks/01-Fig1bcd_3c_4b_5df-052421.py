@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -8,9 +9,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.5.2
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python (enm)
 #     language: python
-#     name: python3
+#     name: enm
 # ---
 
 # %% [markdown] toc=true
@@ -68,7 +69,7 @@ pos =e_pcc.graph_gc.nodes('pos')
 # ## Figure 1B, left
 
 # %%
-fig, ax =plt.subplots(figsize=(5,5))
+fig, ax =plt.subplots(figsize=(4,4))
 
 nx.draw_networkx_nodes(e_pcc.graph_gc,
                            node_size=0.2,
@@ -84,6 +85,15 @@ nx.draw_networkx_edges(e_pcc.graph_gc,
                            edge_color='k',
                            pos=pos,
                            label='PCC>0.2',ax=ax)
+legend_elements = [Line2D([0], [0], marker='o', color='black', label='Genes',
+                              markerfacecolor='black', markersize=12, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High\nfunctional\nsimilarity\n(PCC≥0.2)',
+                              markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5,lw=5)
+    ]
+
+lgd = ax.legend(handles=legend_elements, fontsize=12,loc='center left', bbox_to_anchor=(1, 0.5), frameon=False)
+
+ax.axis('off')
 if snakemake.params['save']:
     plt.savefig(f'{figure_folder}/fig1b_left.png',bbox_inches='tight',dpi=150)
 
@@ -148,28 +158,40 @@ pval_cc
 # %%
 import seaborn as sns
 color = {'cc': 'orange','other':'k','rc':'orangered'}
-fig, ax = plt.subplots(1,2,figsize=(8,4))
+fig, ax = plt.subplots(2,1,figsize=(3.5,2.8))
 
-sns.boxplot(data=df, x='rc',y='eff_norm',order=['rc','other'],palette=color,ax=ax[0])
-ax[0].set_xticklabels(['Distinct\nRow\nCluster', 'Other genes'])
-ax[0].set_xlabel('Row clusters')
-ax[0].set_ylabel('Effectiveness (a.u.)')
-ax[0].plot([0,0, 1,1], [0.006, 0.0065, 0.0065, 0.006], lw=1.5, c='k')
-ax[0].text(.5, 0.0065, "***", ha='center', va='bottom', color='k',fontsize='large')
-ax[0].set_ylim(-0.0001,0.007)
+sns.boxplot(data=df, x='eff_norm',y='rc',order=['rc','other'],palette=color,ax=ax[0],
+           fliersize=1,linewidth=0.5)
+ax[0].set_yticklabels(['Distinct\nPerturbed Gene\nCluster', 'Other genes'],fontsize=6)
+ax[0].set_ylabel('Perturbed genes\ndendrogram',fontsize=10)
+ax[0].set_xlabel('Effectiveness (a.u.)',fontsize=10)
+ax[0].plot([0.006, 0.0065, 0.0065, 0.006] , [0,0, 1,1] , lw=1.5, c='k')
+ax[0].text(0.007, .6,  "***", ha='center', va='bottom', color='k',fontsize=8, rotation =90)
+ax[0].set_xlim(-0.0001,0.007)
+ax[0].tick_params(axis='x', labelsize= 8)
+ax[0].tick_params(axis='y', labelsize= 8)
 
-sns.boxplot(data=df, x='cc',y='sens_norm',order=['cc','other'],palette=color,ax=ax[1])
-ax[1].set_xticklabels(['Distinct\nColumn\nCluster', 'Other genes'])
-ax[1].set_xlabel('Columns clusters')
-ax[1].set_ylabel('Sensitivity (a.u.)')
-ax[1].plot([0,0, 1,1], [0.007, 0.0075, 0.0075, 0.007], lw=1.5, c='k')
-ax[1].text(.5, 0.0075, "***", ha='center', va='bottom', color='k',fontsize='large')
-ax[1].set_ylim(-0.0001,0.0081)
+sns.boxplot(data=df, x='sens_norm',y='cc',order=['cc','other'],palette=color,ax=ax[1],
+           fliersize=1,linewidth=0.5)
+ax[1].set_yticklabels(['Distinct\nResponding Gene\nCluster', 'Other genes'],fontsize=6)
+ax[1].set_ylabel('Responding genes\ndendrogram',fontsize=10)
+ax[1].set_xlabel('Sensitivity (a.u.)',fontsize=10)
+ax[1].plot([0.007, 0.0075, 0.0075, 0.007],[0,0, 1,1],  lw=1.5, c='k')
+ax[1].text(0.008, .6,  "***", ha='center', va='bottom', color='k',fontsize=8, rotation=90)
+ax[1].set_xlim(-0.0001,0.0081)
+ax[1].tick_params(axis='x', labelsize= 8)
+ax[1].tick_params(axis='y', labelsize= 8)
 
+
+fig.align_ylabels()
 plt.tight_layout()
 
 if snakemake.params['save']:
     plt.savefig(f'{figure_folder}/fig1c.pdf',bbox_inches='tight')
+
+# %%
+import matplotlib
+print(matplotlib.matplotlib_fname())
 
 # %% [markdown]
 # # Figure 1D
@@ -193,7 +215,7 @@ nx.draw_networkx_nodes(e_pcc.graph_gc,
 
 ax.set_facecolor('white')
 legend_elements.extend(
-    [Line2D([0], [0], marker='d', color='black', label='Row cluster\ngenes',
+    [Line2D([0], [0], marker='d', color='black', label='Distinct perturbed\ngene cluster',
                               markerfacecolor='orangered', markersize=50, linestyle="None"),
      Line2D([0], [0], marker='o', color='black', label='Other Genes',
                               markerfacecolor='black', markersize=25, linestyle="None"),
@@ -205,15 +227,15 @@ legend_elements.extend(
                               markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5,lw=10)
     ]
 )
-lgd = ax.legend(handles=legend_elements, fontsize=40,loc='center left', bbox_to_anchor=(1.1, 0.5))
+lgd = ax.legend(handles=legend_elements, fontsize=30,loc='center left', bbox_to_anchor=(1.1, 0.5), frameon=False)
 
-
+ax.axis('off')
 #nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
 if snakemake.params['save']:
     plt.savefig(f'{figure_folder}/fig1d_up.png',bbox_inches='tight',dpi=150)
 
 # %%
-fig, ax = plt.subplots(figsize=(12,12))
+fig, ax = plt.subplots(figsize=(8,8))
 #axs = ax.ravel()
 legend_elements = [    ]
 
@@ -231,7 +253,7 @@ nx.draw_networkx_nodes(e_pcc.graph_gc,
 
 ax.set_facecolor('white')
 legend_elements.extend([
-    Line2D([0], [0], marker='D', color='black', label='Column cluster\ngenes',
+    Line2D([0], [0], marker='D', color='black', label='Distinct responding\ngene cluster',
                               markerfacecolor='orange', markersize=50, linestyle="None"),
     Line2D([0], [0], marker='o', color='black', label='Other Genes',
                               markerfacecolor='black', markersize=25, linestyle="None"),
@@ -239,8 +261,8 @@ legend_elements.extend([
                               markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5,lw=10),
     ]
 )
-lgd = ax.legend(handles=legend_elements, fontsize=40,loc='center left', bbox_to_anchor=(1.1, 0.5))
-
+lgd = ax.legend(handles=legend_elements, fontsize=30,loc='center left', bbox_to_anchor=(1.1, 0.5), frameon=False)
+ax.axis('off')
 
 #nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
 if snakemake.params['save']:
@@ -250,24 +272,30 @@ if snakemake.params['save']:
 # # Figure 3C
 
 # %%
-change_go_group_names = snakemake.params['change_go_group_name']
-sensor_go_rename = {
-  "cellular response to iron ion starvation":'Iron ion transport' ,
-"mitochondria-nucleus signaling pathway":  "Mitochondria-nucleus\nsignaling pathway\nand\nTricarboxylic acid cycle",
-"phenylalanine transport":  "Phenylalanine transport",
-"hexose metabolic process":  "Hexose metabolic process",
-"tricarboxylic acid cycle":  "Tricarboxylic acid cycle"
-}
+import seaborn as sns
+sensor_colors = [mpl.colors.to_hex(i) for i in sns.color_palette('Set3')]
+
+# %%
+# change_go_group_names = snakemake.params['change_go_group_name']
+# sensor_go_rename = {
+#   "cellular response to iron ion starvation":'Iron ion transport' ,
+# "mitochondria-nucleus signaling pathway":  "Mitochondria-nucleus\nsignaling pathway\nand\nTricarboxylic acid cycle",
+# "phenylalanine transport":  "Phenylalanine transport",
+# "hexose metabolic process":  "Hexose metabolic process",
+# "tricarboxylic acid cycle":  "Tricarboxylic acid cycle"
+# }
 
 # %%
 sensors_pcc = pd.read_csv(snakemake.input.sensors_pcc)
-sensor_colors = ["#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33"]
-if change_go_group_names:
-    sensors_pcc['go_group']=sensors_pcc['go_group'].map(sensor_go_rename,na_action='ignore')
-sensor_order = sensors_pcc.groupby('go_group').sens.median().sort_values().index.tolist()
+# sensor_colors = ["#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33"]
+# if change_go_group_names:
+#    sensors_pcc['go_group']=sensors_pcc['go_group'].map(sensor_go_rename,na_action='ignore')
+sensor_order = sensors_pcc.groupby('label').sens.median().sort_values().index.tolist()
 
 # %%
-fig, ax = plt.subplots(figsize=(9,9))
+
+# %%
+fig, ax = plt.subplots(figsize=(6,6))
 #axs = ax.ravel()
 legend_elements = [    ]
 
@@ -288,82 +316,150 @@ nx.draw_networkx_nodes(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.
                        node_color='black', alpha=1, node_shape='^')
 
 for itr, i in enumerate(sensor_order):
-    #print(i, effector_colors[itr])
+   # print(i, sensor_order[itr])
 
-    orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+    orf_names_to_plot = sensors_pcc.loc[sensors_pcc.label==i, 'orf_name'].tolist()
     nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
                           node_color=sensor_colors[itr],
                           node_shape='^',edgecolors='black',
                           linewidths=1)
     legend_elements.append(
         Line2D([0], [0], marker='^', color='black', label=f'{i}',
-                              markerfacecolor=sensor_colors[itr], markersize=30, linestyle="None")
+                              markerfacecolor=sensor_colors[itr], markersize=8, linestyle="None")
     )
 ax.set_facecolor('white')
 legend_elements.append(
         Line2D([0], [0], marker='^', color='black', label=f'No GO Enrichment',
-                              markerfacecolor='black', markersize=30, linestyle="None")
+                              markerfacecolor='black', markersize=8, linestyle="None")
     )
 legend_elements.extend(
     [Line2D([0], [0], marker='o', color='black', label='Other Genes',
-                              markerfacecolor='black', markersize=10, linestyle="None"),
+                              markerfacecolor='black', markersize=4, linestyle="None"),
 #                    Line2D([0], [0], marker='o', color='black', label='Effectors',
 #                               markerfacecolor='black', markersize=10, linestyle="None"),
 #                    Line2D([0], [0], marker='^', color='black', label='Sensors',
 #                               markerfacecolor='black', markersize=10, linestyle="None"),
                        Line2D([0], [0], marker='o', color='black', label= 'High functional similarity',
-                              markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5, lw=10),
+                              markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5, lw=4),
                    Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor edges',
-                              markerfacecolor='#018571', markersize=0, linestyle="-",lw=10)
+                              markerfacecolor='#018571', markersize=0, linestyle="-",lw=4)
                    #Line2D([0], [0], marker='o', color='blue', label= 'Effector-Effector edges',
     #                          markerfacecolor='#a6611a', markersize=0, linestyle="-")
     ]
 )
 #lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5),ncol=5)
-nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()),pos=pos, edge_color='red', alpha=0.5)
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()),pos=pos, edge_color='red', alpha=1)
+ax.axis('off')
 if snakemake.params['save']:
     plt.savefig(f'{figure_folder}/fig3c.png',bbox_inches='tight',dpi=150)
 
 # %%
+for i in sorted(sensors_pcc.dropna(subset=['sensor_cluster']).sensor_cluster.unique()):
+    sub_orfs = sensors_pcc.loc[sensors_pcc.sensor_cluster==i,'orf_name'].tolist()
+    sub_nw = get_subnetwork(e_pcc.graph_gc, sub_orfs, radius= 2)
+    pos_sub = nx.spring_layout(sub_nw)
+    fig,ax = plt.subplots(figsize=(6,6))
+    nx.draw_networkx_nodes(sub_nw,ax=ax, pos = pos_sub, node_color = ['red' if i in sub_orfs else 'k' for i in sub_nw.nodes ])
+    nx.draw_networkx_edges(sub_nw,ax=ax, pos = pos_sub)
+
+# %%
+help(fig.savefig)
+
+# %%
+smsize = 2
+lgsize = 8
+linesize = 1 
+legend_elements = []
+for itr, i in enumerate(sensor_order):
+   # print(i, sensor_order[itr])
+
+    #orf_names_to_plot = sensors_pcc.loc[sensors_pcc.label==i, 'orf_name'].tolist()
+#     nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+#                           node_color=sensor_colors[itr],
+#                           node_shape='^',edgecolors='black',
+#                           linewidths=1)
+    legend_elements.append(
+        Line2D([0], [0], marker='^', color='black', label=f'{i}',
+                              markerfacecolor=sensor_colors[itr], markersize=lgsize, linestyle="None")
+    )
+#ax.set_facecolor('white')
+legend_elements.append(
+        Line2D([0], [0], marker='^', color='black', label=f'No GO Enrichment',
+                              markerfacecolor='black', markersize=lgsize, linestyle="None")
+    )
+legend_elements.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Other Genes',
+                              markerfacecolor='black', markersize=smsize, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'High functional\nsimilarity',
+                              markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5, lw=linesize),
+                   Line2D([0], [0], marker='o', color='red', label= 'Sensor-Sensor\nedges',
+                              markerfacecolor='#018571', markersize=0, linestyle="-",lw=linesize)
+                   #Line2D([0], [0], marker='o', color='blue', label= 'Effector-Effector edges',
+    #                          markerfacecolor='#a6611a', markersize=0, linestyle="-")
+    ]
+)
 fig = plt.figure()
 figlegend = plt.figure(figsize=(3,1))
 ax = fig.add_subplot(111)
 #lines = ax.plot(range(10), plt.randn(10), range(10), plt.randn(10))
 ax.axis('off')
-lgd = ax.legend(handles=legend_elements, fontsize=40, loc='center',ncol=2)
+lgd = ax.legend(handles=legend_elements,
+                handletextpad=0.1, 
+                labelspacing=0.4, 
+                borderpad=0,
+                columnspacing=0.4,
+                fontsize=8, 
+                ncol=3,
+                frameon=False, 
+                loc = 'center',
+                bbox_to_anchor=(0., 0., 1, 1))
 if snakemake.params['save']:
-    fig.savefig(f'{figure_folder}/fig3c_legend.png',bbox_inches='tight')
+    fig.savefig(f'{figure_folder}/fig3c_legend.png', dpi=150, pad_inches=0)#, bbox_inches='tight')
 
 # %%
-# antenna_legend = [legend_elements[i] for i in [0,2,3,4,5]]
-# antenna_legend.extend(
-#     [Line2D([0], [0], marker='o', color='black', label='Sensor to network connection node',
-#                               markerfacecolor='black', markersize=30, linestyle="None"),
-# #                    Line2D([0], [0], marker='o', color='black', label='Effectors',
-# #                               markerfacecolor='black', markersize=10, linestyle="None"),
-# #                    Line2D([0], [0], marker='^', color='black', label='Sensors',
-# #                               markerfacecolor='black', markersize=10, linestyle="None"),
-#                        Line2D([0], [0], marker='o', color='black', label= 'Sensor - nonsensor edges',
-#                               markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5, lw=10),
-#     Line2D([0], [0], marker='o', color='red', label= 'Sensor - sensor edges',
-#                               markerfacecolor='#018571', markersize=0, linestyle="-",lw=10)]
-# )
-# fig = plt.figure()
-# figlegend = plt.figure(figsize=(3,1))
-# ax = fig.add_subplot(111)
-# #lines = ax.plot(range(10), plt.randn(10), range(10), plt.randn(10))
-# ax.axis('off')
-# lgd = ax.legend(handles=antenna_legend, fontsize=40, loc='center',ncol=2)
-# if snakemake.params['save']:
-#     fig.savefig(f'{figure_folder}/fig3f_legend.png',bbox_inches='tight')
+antenna_legend = [legend_elements[i] for i in [3,5,6,7,8,9]]
+antenna_legend.extend(
+    [Line2D([0], [0], marker='o', color='black', label='Sensor to network\nconnection node',
+                              markerfacecolor='black', markersize=lgsize, linestyle="None"),
+#                    Line2D([0], [0], marker='o', color='black', label='Effectors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+#                    Line2D([0], [0], marker='^', color='black', label='Sensors',
+#                               markerfacecolor='black', markersize=10, linestyle="None"),
+                       Line2D([0], [0], marker='o', color='black', label= 'Sensor - nonsensor edges',
+                              markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5, lw=linesize),
+    Line2D([0], [0], marker='o', color='red', label= 'Sensor - sensor edges',
+                              markerfacecolor='#018571', markersize=0, linestyle="-",lw=linesize)]
+)
+fig = plt.figure()
+figlegend = plt.figure(figsize=(3,1))
+ax = fig.add_subplot(111)
+ax.axis('off')
+lgd = ax.legend(handles=antenna_legend,
+                handletextpad=0.1, 
+                labelspacing=0.4, 
+                borderpad=0,
+                columnspacing=0.4,
+                fontsize=8, 
+                ncol=1,
+                frameon=False, 
+                loc = 'center',
+                bbox_to_anchor=(0., 0., 1, 1))
+if snakemake.params['save']:
+    fig.savefig(f'{figure_folder}/fig3f_legend.png',dpi=150, pad_inches=0)
 
 # %% [markdown]
 # # Figure 4B
 
 # %%
 effector_pcc = pd.read_csv(snakemake.input.effector_pcc)
-effector_colors = ["#A65628", "#F781BF", "#999999"]
+#effector_colors = ["#A65628", "#F781BF", "#999999"]
 effector_order_orig = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
+effector_colors = ["#A65628", "#F781BF", "#999999",'blue','yellow','red']
+
 
 # %%
 if change_go_group_names:

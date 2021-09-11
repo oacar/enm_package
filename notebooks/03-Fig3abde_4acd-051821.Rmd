@@ -38,7 +38,7 @@ if (!require('RColorBrewer')) {
    library(RColorBrewer)
 }
 col <- brewer.pal(n = 9, name = "Set1")
-sensor_colors <- col[2:6] # brewer.pal(n = 6, name = "Set1")
+sensor_colors <- brewer.pal(n = 12, name = "Set3")
 effector_colors <- col[7:9] # brewer.pal(n=3, name= "Set1_r")
 if(!require("FSA")){
   remotes::install_github('droglenc/FSA')
@@ -90,28 +90,71 @@ sensor_connectivity_plot <-
   xlab("% of between group edges\nto all edges") +
   theme_bw() +
   scale_color_discrete(labels = c("Random sampled set", "Sensors")) +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "right") +
   scale_y_continuous(expand = c(0, 0))
   sensor_connectivity_plot
 ```
 
 ## D
 ```{r}
-#sensors_pcc %>% drop_na()%>%kruskal.test(deg~go_group,data=.)
+# sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)%>%fct_recode(
+#   `Iron ion transport`  = "cellular response to iron ion starvation",
+#   `Mitochondria nucleus\nsignaling pathway\nand\nTricarboxylic acid cycle`="mitochondria-nucleus signaling pathway",
+#   `Phenylalanine transport`="phenylalanine transport",
+#   `Hexose metabolic process`="hexose metabolic process",
+#   `Tricarboxylic acid cycle`="tricarboxylic acid cycle"
+# )
 
-sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)
-sens_deg_comp <- ggplot(sensors_pcc %>% drop_na() %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Non-sensor genes")),go_group=fct_reorder(go_group, sens),go_group=fct_relevel(go_group,'Non-sensor genes',after=Inf)), aes(x = go_group, y = deg, fill = go_group)) +
+# sensors_sens_pval <- FSA::dunnTest(sens ~ go_group, sensors_pcc)
+# sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]
+```
+
+```{r}
+sensors_pcc<- sensors_pcc%>%
+    mutate(sensor_cluster=factor(replace_na(as.character(sensor_cluster),"Unclustered")),
+    sensor_cluster = fct_reorder(sensor_cluster, sens))%>%
+    group_by(sensor_cluster)%>%
+    mutate(gid = cur_group_id())%>%ungroup()%>%
+    mutate(cluster_or_go = ifelse(sensor_cluster=='Unclustered','Unclustered',
+                                  ifelse(is.na(as.character(go_group)), gid, as.character(go_group))))%>%
+    mutate(cluster_or_go = fct_recode(as.factor(cluster_or_go), `Iron ion\ntransport`  = "cellular response to iron ion starvation",
+`Mitochondria nucleus\nsignaling pathway`="mitochondria-nucleus signaling pathway",
+`Phenylalanine\ntransport`="phenylalanine transport",
+`Hexose metabolic\nprocess`="hexose metabolic process",
+`Tricarboxylic acid\ncycle`="tricarboxylic acid cycle"))%>%
+    mutate(label = as.factor(case_when(
+        cluster_or_go == 'Unclustered' ~ 'Unclustered',
+        is.na(as.numeric(as.character(cluster_or_go))) == FALSE ~ paste0('SC',(gid-1)),
+        TRUE ~ paste0('SC',gid-1,'\n(',cluster_or_go,')')
+    )))
+```
+
+```{r}
+sensors_sens_pval <- FSA::dunnTest(sens ~ as.factor(label), sensors_pcc)
+sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]
+```
+
+```{r}
+sensors_pcc %>% drop_na()%>%kruskal.test(deg~label,data=.)
+
+#sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)
+sens_deg_comp <- ggplot(sensors_pcc %>% right_join(pcc_df)%>% 
+                        mutate(label = factor(replace_na(as.character(label),"Non-sensor genes")),
+                               label=fct_reorder(label, sens),
+                               label=fct_relevel(label,'Non-sensor genes',after=Inf)), 
+                        aes(x = as.factor(label), y = deg, fill = as.factor(label))) +
   geom_boxplot(
     outlier.shape=NA) +
   xlab("") +
   ylab("Degree") +
-  scale_fill_manual(values = c(sensor_colors[1:5],'black')) +
-  #ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
+  scale_fill_manual(values = c(sensor_colors[1:10],'black')) +
+  ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
   theme_bw() +
   theme(
         axis.title.y=element_text(size=14),
         axis.text.y=element_text(size=10),
-    axis.text.x = element_blank(), legend.title = element_blank(),
+        axis.text.x = element_blank(), 
+        legend.title = element_blank(),
     legend.text = element_text(margin = margin(t = 10, b = 10))
   )+scale_y_log10()
 sens_deg_comp
@@ -120,19 +163,20 @@ sens_deg_comp
 
 ## E
 ```{r}
+comparisons[order(sapply(comparisons, function(x) x[1], simplify=TRUE), decreasing=TRUE)]
+```
 
+```{r}
+comparisons <- str_split(sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]$Comparison,' - ',2)
 
 if(nrow(sensors_pcc%>%drop_na(go_group))!=0){
-sens_sens_comp <- ggplot(sensors_pcc %>% drop_na() %>% #mutate(go_group = fct_reorder(go_group, sens)) %>%
-  mutate(sens_norm = sens / 5183), aes(x = go_group, y = sens_norm, fill = go_group)) +
+sens_sens_comp <- ggplot(sensors_pcc %>% mutate(label = fct_reorder(label, sens)) %>%
+  mutate(sens_norm = sens / 5183), aes(x = (label), y = sens_norm, fill =(label))) +
   geom_boxplot() +
-#   geom_signif(
-#     comparisons = list(
-#       c("Hexose metabolic process", "Phenylalanine transport"), c("Tricarboxylic acid cycle", "Phenylalanine transport")#,
-#       #c("phenylalanine\ntransport", "protein folding")
-#     ),
-#     annotation = c("*", "*"), y_position = c(0.007, 0.0075)#, 0.008)
-#   ) +
+  geom_signif(
+    comparisons = comparisons[order(sapply(comparisons, function(x) x[1], simplify=TRUE), decreasing=TRUE)],
+    annotation = c("***","*" , "*" ,  "***"), y_position = c(0.007, 0.005,0.0055, 0.0075)#, 0.008)
+  ) +
   xlab("") +
   ylab("Sensitivity (a.u.)") +
   scale_fill_manual(values = sensor_colors) +
@@ -178,7 +222,7 @@ effector_eff_pval$res[effector_eff_pval$res$P.adj < 0.1, ]
 effector_deg_pval <- FSA::dunnTest(deg ~ go_group, effector_pcc)
 effector_deg_pval$res[effector_deg_pval$res$P.adj < 0.1, ]
 
-effector_pcc %>% right_join(pcc_df)
+#effector_pcc %>% right_join(pcc_df)
 
 eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Others")),go_group=fct_relevel(go_group,'Others',after=Inf)), 
                        aes(x = go_group, y = deg, fill = go_group)) +
@@ -224,7 +268,7 @@ eff_eff_comp
 if(snakemake@params['save']==TRUE){
   figure_folder = "reports/figures/paper_figures_052521/"
 ggsave(glue("{figure_folder}/fig3a.png"),plot=sensor_neighbor_degree_plot,width=3,height=3)
-ggsave(glue("{figure_folder}/fig3b.png"),plot=sensor_connectivity_plot+theme(legend.position='none'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig3b.png"),plot=sensor_connectivity_plot,width=3.5,height=2.5)
 ggsave(glue("{figure_folder}/fig3d.png"),plot=sens_deg_comp+theme(legend.position='none'),width=3,height=3)
 ggsave(glue("{figure_folder}/fig3e.png"),plot=sens_sens_comp+theme(legend.position='none'),width=3,height=3)
 

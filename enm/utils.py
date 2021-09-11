@@ -12,7 +12,7 @@ from goatools.anno.gaf_reader import GafReader
 from goatools.goea.go_enrichment_ns import GOEnrichmentStudyNS
 
 
-from .Enm import *
+#from .Enm import *
 
 def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/ontology/go-basic.obo', background='../data/raw/ontology/sgd_costanzogenes', sgd_info_tab='../data/raw/ontology/SGD_features.tab',species='yeast',**kwargs):
     
@@ -167,14 +167,14 @@ def get_random_in_to_out_ratio(gnm_df, df , G):
         random_ratio_list.append(get_in_to_out_edge_ratio(G, rand_nodes))
     return random_ratio_list
 
-# def get_subnetwork(gc, subset):
-#     neighbors =[[n for n in nx.neighbors(gc, i)] for i in subset]
-#     flat_list = [item for sublist in neighbors for item in sublist]
-#     flat_list.extend(subset)
-#     sub_gc = nx.induced_subgraph(gc, flat_list).copy()
-#     for (n,d) in sub_gc.nodes(data=True):
-#         del d["pos"]
-#     return sub_gc
+def get_subnetwork(gc, subset, radius = 1):
+    neighbors =[[n for n in nx.ego_graph(gc, i, radius=radius).nodes] for i in subset]
+    flat_list = [item for sublist in neighbors for item in sublist]
+    flat_list.extend(subset)
+    sub_gc = nx.induced_subgraph(gc, flat_list).copy()
+    for (n,d) in sub_gc.nodes(data=True):
+        del d["pos"]
+    return sub_gc
 
 
 # def get_maximal_subsets(sets):
@@ -246,3 +246,28 @@ def get_path_positions(enm, sensors_sub, effectors_sub):
         if i in sensor_pos.keys():
             path_init_pos[i]=sensor_pos[i]
     return sensor_pos, effector_pos, path_init_pos,sub, l1, wmin
+
+def convert_rpy2_to_pandas(df):
+    import rpy2.robjects as ro
+    from rpy2.robjects import pandas2ri
+
+    with ro.conversion.localconverter(ro.default_converter + pandas2ri.converter):
+        pd_from_r_df = ro.conversion.rpy2py(df)
+
+    return pd_from_r_df
+
+def get_result_dfs(fname, thr_list, default_thr=None):
+    def read_csv(fname):
+        try:
+            df = pd.read_csv(fname)
+        except pd.errors.EmptyDataError:
+            print(f"{fname} is empty")
+            df = None
+        return df
+
+    dfs = {thr: read_csv(f"../data/interim_{thr}/{fname}.csv") for thr in thr_list if thr!=default_thr}
+    if default_thr is not None:
+        dfs[default_thr] = pd.read_csv(f"../data/interim/{fname}.csv")
+    if default_thr not in thr_list and default_thr is not None:
+        thr_list.insert(0, default_thr)                               
+    return dfs
