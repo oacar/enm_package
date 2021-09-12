@@ -1,0 +1,163 @@
+
+---
+title: "PRS dendrogram clusters"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(reticulate)
+#use_python("/home/oma21/miniconda3/envs/enm/bin/python")
+use_condaenv('enm')
+setwd('../')
+#source('enm/R/plot_density_prs.R')
+#source('enm/R/get.subclusters.dendrogram.R')
+library(RColorBrewer)
+col =brewer.pal(n=8,name='Set1')
+sensor_colors = col[1:4]
+effector_colors = col[5:8]
+```
+
+# Read data
+Read data in python, from pickle file saved earlier.
+```{python}
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import networkx as nx
+import numpy as np
+import pandas as pd
+import plotnine as p9
+import pickle 
+import os
+import re
+import itertools as itr
+from enm.Enm import Enm
+from enm.utils import *
+import scipy.cluster.hierarchy as sch
+print(os.getcwd())
+with open(f'../data/interim/pcc.pickle','rb') as f:
+    e_pcc = pickle.load(f)
+pcc_df = e_pcc.df
+pcc_gc = e_pcc.graph_gc
+pcc_gc_pos = (dict(pcc_gc.nodes(data='pos')))
+
+
+```
+
+Use scipy distance calculation and pass the square form of the distance matrix to R.
+This is done because R's `dist` function is significantly slower than scipy.
+
+```{python}
+prs_mat = e_pcc.prs_mat
+quantile_threshold =  0.95
+method = 'ward'
+metric = 'seuclidean'
+q99 = np.quantile(prs_mat, quantile_threshold)
+prs_mat_cl = copy.deepcopy(prs_mat)
+prs_mat_cl[prs_mat_cl > q99] = q99
+prs_mat_cl_orig = prs_mat_cl
+# , optimal_ordering=True)
+#row_linkage_cl = sch.linkage(sch.distance.pdist(prs_mat_cl), method=method)
+# ,optimal_ordering=True)
+#col_linkage_cl = sch.linkage(sch.distance.pdist(prs_mat_cl.T), method=method)
+
+row_dist_orig = sch.distance.pdist((prs_mat),metric = metric)
+col_dist_orig = sch.distance.pdist((prs_mat.T),metric = metric)
+row_dist_orig_sqr = sch.distance.squareform(row_dist_orig)
+col_dist_orig_sqr = sch.distance.squareform(col_dist_orig)
+
+row_dist = sch.distance.pdist(prs_mat_cl,metric = metric)
+col_dist = sch.distance.pdist(prs_mat_cl.T,metric = metric)
+
+row_dist_sqr = sch.distance.squareform(row_dist)
+col_dist_sqr = sch.distance.squareform(col_dist)
+
+```
+# Plot heatmap
+Using the clustering with `seuclidian` distance and `ward` linkage, plot the heatmap with row and column colors are the GO term annotations found from effector and sensor analysis
+
+```{r}
+library(tidyverse)
+library(ComplexHeatmap)
+cluster_method = 'ward.D2'
+dist_row = as.dist(py$row_dist_sqr)
+hclust_row = hclust(dist_row, cluster_method)
+dist_col = as.dist(py$col_dist_sqr)
+hclust_col = hclust(dist_col, cluster_method)
+row_dend = as.dendrogram(hclust_row)%>% dendextend::color_branches(k=2, col = c('black', '#f15a24'))
+col_dend = as.dendrogram(hclust_col)%>%  dendextend::color_branches(k=2, col = c('#f7931e', 'black'))
+#row_dend <- row_dend %>%
+
+# go_color_map = unlist(append(py$effector_colors_dict,py$sensor_colors_dict))
+# go_color_map['none'] = 'white'
+# clrs = go_color_map# map(py$eff_sens_go_list, ~ifelse(is.null(.x), 'none',.x))%>%unlist()
+
+# rowColors = rowAnnotation(rowColors=py$e_pcc$df%>%left_join(py$effector_pcc)%>%select(go_term)%>%pull%>%map(~ifelse(is.na(.x), 'none',.x))%>%unlist(),
+#                           col=list(rowColors = go_color_map ),
+#                           #width=unit(100,'mm'),
+#                           simple_anno_size=unit(3,'cm'),
+#                           show_annotation_name=FALSE,
+#                           show_legend=FALSE)
+# colColors = columnAnnotation(colColors=py$e_pcc$df%>%left_join(py$sensors_pcc)%>%select(go_term)%>%pull%>%map(~ifelse(is.null(.x), 'none',
+#                                                                                                                       ifelse(is.nan(.x),'none',.x)))%>%unlist(),
+#                           col=list(colColors = go_color_map ),
+#                           simple_anno_size=unit(3,'cm'),
+#                           #annotation_height=unit(20,'mm'),
+#                           show_annotation_name=FALSE,
+#                           show_legend=FALSE)
+rowAnnot = HeatmapAnnotation(Effectiveness=anno_lines(rowSums(py$prs_mat), border=FALSE,
+                            width = unit(0.2, 'in'),
+                            axis=FALSE),
+                            which='row',
+                            #name='', 
+                            gp = gpar(col='blue'),
+                            annotation_name_side = 'top',
+                            annotation_name_rot= 90,
+                            border=FALSE,
+                            #annotation_name_gp= gpar(fontsize = 0)
+                            show_annotation_name=FALSE,
+                          show_legend=FALSE
+)
+colAnnot = HeatmapAnnotation(Sensitivity=anno_lines(colSums(py$prs_mat), 
+                            axis = FALSE, border=FALSE,height = unit(0.2, 'in')), 
+                             which='col', 
+                            # name='',
+                            gp = gpar(col='blue'),
+                            #annotation_name_gp= gpar(fontsize = 0)
+                            annotation_name_side = 'left',
+                            annotation_name_rot=0,
+                            border=FALSE,
+                            show_annotation_name=FALSE,
+                          show_legend=FALSE
+)
+
+png('tmp_heatmap.png', width = 3, height=2.5, units='in', res=150 )
+hm<-Heatmap(py$prs_mat_cl, 
+        cluster_rows = row_dend,#as.dendrogram(hclust_row),
+        cluster_columns= col_dend,#as.dendrogram(hclust_col),
+        col=RColorBrewer::brewer.pal(9,'YlGnBu'),
+        row_dend_width = unit(0.2,'in'),
+        column_dend_height = unit(0.2,'in'),
+        right_annotation=rowAnnot,
+#        left_annotation = rowColors,
+        bottom_annotation=colAnnot,
+#        top_annotation=colColors,
+show_heatmap_legend = FALSE,
+)
+draw(hm ,padding = unit(c(0, 0.5, 0, 0), "in"))
+
+dev.off()
+
+png('tmp_heatmap_lgn.png', width = 3, height=2.5, units='in', res=150 )
+
+lgd = Legend(title = "", 
+            at = c(0, 1e-4,2e-4,3e-4,4e-4), col_fun = circlize::colorRamp2(c(0, 1e-4,2e-4,3e-4,4e-4), RColorBrewer::brewer.pal(5,'YlGnBu')) , labels_gp = gpar(font=6), title_position = 'leftcenter-rot', legend_width=unit(0.05, 'in'),labels_rot=45)
+#
+draw(lgd, x = unit(0.1, "npc"), y = unit(0.8, "npc"))
+
+dev.off()
+```
+
