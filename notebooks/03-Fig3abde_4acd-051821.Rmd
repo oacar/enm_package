@@ -123,9 +123,9 @@ sensors_pcc<- sensors_pcc%>%
 `Hexose metabolic\nprocess`="hexose metabolic process",
 `Tricarboxylic acid\ncycle`="tricarboxylic acid cycle"))%>%
     mutate(label = as.factor(case_when(
-        cluster_or_go == 'Unclustered' ~ 'Unclustered',
-        is.na(as.numeric(as.character(cluster_or_go))) == FALSE ~ paste0('SC',(gid-1)),
-        TRUE ~ paste0('SC',gid-1,'\n(',cluster_or_go,')')
+        cluster_or_go == 'Unclustered' ~ '\nUnclustered',
+       # is.na(as.numeric(as.character(cluster_or_go))) == FALSE ~ paste0('SC',(gid-1)),
+        TRUE ~ paste0('SC',gid-1)
     )))
 ```
 
@@ -139,21 +139,21 @@ sensors_pcc %>% drop_na()%>%kruskal.test(deg~label,data=.)
 
 #sensors_pcc$go_group <- as.factor(sensors_pcc$go_group)
 sens_deg_comp <- ggplot(sensors_pcc %>% right_join(pcc_df)%>% 
-                        mutate(label = factor(replace_na(as.character(label),"Non-sensor genes")),
+                        mutate(label = factor(replace_na(as.character(label),"\nNon-sensor\ngenes")),
                                label=fct_reorder(label, sens),
-                               label=fct_relevel(label,'Non-sensor genes',after=Inf)), 
+                               label=fct_relevel(label,'\nNon-sensor\ngenes',after=Inf)), 
                         aes(x = as.factor(label), y = deg, fill = as.factor(label))) +
   geom_boxplot(
     outlier.shape=NA) +
   xlab("") +
   ylab("Degree") +
   scale_fill_manual(values = c(sensor_colors[1:10],'black')) +
-  ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3) +
+  ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3, size=3, vjust = 1.5) +
   theme_bw() +
   theme(
         axis.title.y=element_text(size=14),
         axis.text.y=element_text(size=10),
-        axis.text.x = element_blank(), 
+        axis.text.x = element_text(size=7), 
         legend.title = element_blank(),
     legend.text = element_text(margin = margin(t = 10, b = 10))
   )+scale_y_log10()
@@ -175,7 +175,8 @@ sens_sens_comp <- ggplot(sensors_pcc %>% mutate(label = fct_reorder(label, sens)
   geom_boxplot() +
   geom_signif(
     comparisons = comparisons[order(sapply(comparisons, function(x) x[1], simplify=TRUE), decreasing=TRUE)],
-    annotation = c("***","*" , "*" ,  "***"), y_position = c(0.007, 0.005,0.0055, 0.0075)#, 0.008)
+    annotation = c("***","*" , "*" ,  "***"), y_position = c(0.007, 0.005,0.0058, 0.0078),
+                                           textsize = 3#, 0.008)
   ) +
   xlab("") +
   ylab("Sensitivity (a.u.)") +
@@ -184,7 +185,7 @@ sens_sens_comp <- ggplot(sensors_pcc %>% mutate(label = fct_reorder(label, sens)
   theme(
         axis.title.y=element_text(size=14),
         axis.text.y=element_text(size=10),
-        axis.text.x = element_blank(),
+        axis.text.x = element_text(size=7),
         legend.title = element_blank())+
         ylim(NA, 0.008)
 
@@ -266,11 +267,11 @@ eff_eff_comp
 
 ```{r}
 if(snakemake@params['save']==TRUE){
-  figure_folder = "reports/figures/paper_figures_052521/"
+  figure_folder = "../reports/figures/paper_figures_052521/"
 ggsave(glue("{figure_folder}/fig3a.png"),plot=sensor_neighbor_degree_plot,width=3,height=3)
 ggsave(glue("{figure_folder}/fig3b.png"),plot=sensor_connectivity_plot,width=3.5,height=2.5)
-ggsave(glue("{figure_folder}/fig3d.png"),plot=sens_deg_comp+theme(legend.position='none'),width=3,height=3)
-ggsave(glue("{figure_folder}/fig3e.png"),plot=sens_sens_comp+theme(legend.position='none'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig3d.png"),plot=sens_deg_comp+theme(legend.position='none'),width=3.9,height=2.1)
+ggsave(glue("{figure_folder}/fig3e.png"),plot=sens_sens_comp+theme(legend.position='none'),width=3.9,height=2.1)
 
 
 ggsave(glue("{figure_folder}/fig4a.png"),plot=eff_neighbor_degree_plot,width=3,height=3)
