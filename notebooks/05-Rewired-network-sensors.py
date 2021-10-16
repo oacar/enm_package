@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.5.2
+#       jupytext_version: 1.12.0
 #   kernelspec:
 #     display_name: Python (enm)
 #     language: python
@@ -21,10 +21,21 @@ import pandas as pd
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-
-# %%
+from matplotlib.lines import Line2D
 from enm.Enm import Enm, rewire_network
 from enm.utils import *
+import pickle
+import random
+random.seed(4812)        # or any integer
+np.random.seed(4813)
+
+# %%
+# with open('../data/interim/pcc.pickle', 'rb') as f:
+#     enm_ee = pickle.load(f)
+
+# %%
+strain_ids =pd.read_csv('../data/interim/strain_ids.csv')
+
 
 # %%
 e = Enm('rew')
@@ -34,34 +45,18 @@ e.read_network('../data/interim/costanzo_pcc_ALL',sep=',')
 
 # %%
 gc_rew = rewire_network(e.graph_gc)
-
-# %%
-gc_rew
-
-# %%
 e_rew = Enm('rewired')
-
-# %%
 e_rew.G=gc_rew
-
-# %%
 e_rew.giant_component()
-
-# %%
 e_rew.gnm_analysis()
-
-# %%
-strain_ids =pd.read_csv('../data/interim/strain_ids.csv')
 e_rew.df = pd.merge(e_rew.df,strain_ids, left_on='orf_name',right_on='gene1')
-
-# %%
 e_rew.get_sensor_effector(True)
 
 # %%
-goea, geneid2name = create_goea(gaf='../data/raw/ontology/sgd.gaf', obo='../data/raw/ontology/go-basic.obo',background='../data/interim/go_background_list',
+goea, geneid2name,a = create_goea(gaf='../data/raw/ontology/sgd.gaf', obo='../data/raw/ontology/go-basic.obo',background='../data/interim/go_background_list',
                                sdg_info_tab='../data/raw/ontology/SGD_features.tab')
 
-# %% jupyter={"outputs_hidden": true}
+# %% tags=[] jupyter={"outputs_hidden": true}
 e_rew.analyze_components_biology(goea, geneid2name,True)
 e_rew.analyze_components_biology(goea, geneid2name,False)
 
@@ -134,27 +129,139 @@ lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_
 nx.draw_networkx_edges(nx.induced_subgraph(e_rew.graph_gc, sensors_pcc.orf_name.tolist()),pos=pos, edge_color='red', alpha=0.5)
 plt.savefig(f'../reports/figures/paper_figures_supp/figs1.png',bbox_inches='tight',dpi=150)
 
-# %%
+# %% [markdown]
+# # Calculate number of clusters in rewired
+
+# %% tags=[]
 with open('../data/supp/pcc.pickle','rb') as f:
     e_pcc = pickle.load(f)
 
-# %% jupyter={"outputs_hidden": true}
-e_pcc.simulate_rewire(sim_num = 100)
+# %% tags=[] jupyter={"outputs_hidden": true}
+e_pcc.simulate_rewire(sim_num = 500)
 
-# %% jupyter={"outputs_hidden": true}
-goea, geneid2name = create_goea()
-
-# %% jupyter={"outputs_hidden": true}
+# %% tags=[]
 for i in e_pcc.e_list:
     i.df = pd.merge(i.df , strain_ids , left_on = 'orf_name', right_on='gene1')
     i.get_sensor_effector()
     i.analyze_components_biology(goea, geneid2name)
 
-# %%
-res = [i.sensors_df.dropna(subset=['sensor_cluster']).sensor_cluster.nunique() for i in e_pcc.e_list]
 
 # %%
-res2 = [i.sensors_df.dropna(subset=['go_group']).go_group.nunique() for i in e_pcc.e_list]
+def save_rewired_data(e_pcc, idx, path):
+    e = e_pcc.e_list[idx]
+    df_rew = e.df
+    sensors_df_rew = e.sensors_df
+    effectors_df_rew = e.effectors_df
+    g = e.graph_gc
+    MYDIR = (f"{path}/{idx}")
+    CHECK_FOLDER = os.path.isdir(MYDIR)
+
+    # If folder doesn't exist, then create it.
+    if not CHECK_FOLDER:
+        os.makedirs(MYDIR)
+        print("created folder : ", MYDIR)
+
+    else:
+        print(MYDIR, "folder already exists.")
+    df_rew.to_csv(f"{path}/{idx}/df_rew_{idx}.csv",index=False)
+    sensors_df_rew.to_csv(f"{path}/{idx}/sensors_df_rew_{idx}.csv",index=False)
+    effectors_df_rew.to_csv(f"{path}/{idx}/effectors_df_rew_{idx}.csv",index=False)
+    nx.write_edgelist(g, f"{path}/{idx}/g_rew_{idx}.edgelist.gz")
+
+
+# %% tags=[] jupyter={"outputs_hidden": true}
+[save_rewired_data(e_pcc,i,'../data/interim/rewired_data500') for i in range(500)]
+
+# %%
+import glob
+
+sensors_fls = glob.glob('../data/interim/rewired_data500/sensors_df_rew*')
+
+# %%
+sensors_fls
+
+# %%
+sensors_df_rew = pd.concat([pd.read_csv(f'../data/interim/rewired_data500/{idx}/sensors_df_rew_{idx}.csv') for idx in range(500)],keys=range(500)).reset_index(level=0)
+
+# %%
+res = sensors_df_rew.groupby('level_0')['sensor_cluster'].nunique()
+res2 = sensors_df_rew.groupby('level_0')['go_group'].nunique()
+
+# %%
+#res = [i.sensors_df.dropna(subset=['sensor_cluster']).sensor_cluster.nunique() for i in e_pcc.e_list]
+#res2 = [i.sensors_df.dropna(subset=['go_group']).go_group.nunique() for i in e_pcc.e_list]
+
+# %%
+idxx = np.argwhere(np.array(res)>0).reshape(1,-1)[0]
+idxx2 = np.argwhere(np.array(res2)>0).reshape(1,-1)[0]
+
+# %%
+len(idxx)
+
+# %%
+len(idxx)/len(res)
+
+# %%
+len(idxx2)/len(res2)
+
+# %%
+len(idxx2)/len(idxx)
+
+
+# %%
+def plot_sensors(e_pcc,idx):
+    e =e_pcc.e_list[idx]
+    sub_orfs =  e.sensors_df.dropna(subset=['sensor_cluster']).orf_name.tolist()
+    g = e.graph_gc
+    induced_g = nx.induced_subgraph(g,sub_orfs)
+    sub_nw = get_subnetwork(g, sub_orfs, radius= 1)
+    pos_sub = nx.spring_layout(sub_nw)
+    fig, ax_ = plt.subplots() 
+    nx.draw_networkx_nodes(sub_nw,ax=ax_, pos = pos_sub, node_color = ['none' if i in sub_orfs else 'k' for i in sub_nw.nodes])
+    nx.draw_networkx_nodes(nx.induced_subgraph(sub_nw, sub_orfs), pos=pos_sub, node_shape='^', node_color='black')
+    nx.draw_networkx_edges(sub_nw,ax=ax_, pos = pos_sub)
+    nx.draw_networkx_edges(nx.induced_subgraph(sub_nw, sub_orfs), pos=pos_sub, edge_color='red')
+    plt.show()
+    #nx.draw_networkx(sub_nw)
+
+
+# %% tags=[] jupyter={"outputs_hidden": true}
+for i in idxx:
+    print(i)
+    plot_sensors(e_pcc,i)
+
+# %%
+fig, ax =plt.subplots(figsize=(5,5))
+ax.hist(res,3,color='navajowhite')
+ax.set_xlabel('Number of sensor clusters')
+ax.set_ylabel('Count')
+ax.set_title('Number of sensor clusters\nat 500 rewired networks\ncompared to real network')
+ax.axvline(9,c='darkblue',linestyle='-.')
+plt.legend(handles = [
+    Line2D([0],[0],color='navajowhite',linewidth=10,label='Rewired'),
+    Line2D([0],[0],color='darkblue',linestyle='-.', label='Real')
+], loc='upper center')
+
+fig.savefig('../reports/figures/paper_figures_supp/rewired_sensor_count.png', bbox_inches='tight',dpi=150)
+
+
+# %%
+fig, ax =plt.subplots(figsize=(5,5))
+ax.hist(sensors_df_rew.groupby('level_0')['go_group'].nunique(),3,color='navajowhite')
+ax.set_xlabel('Number of GO enriched sensor clusters')
+ax.set_ylabel('Count')
+ax.set_title('Number of GO enriched\nsensor clusters\nat 500 rewired networks\ncompared to real network')
+ax.axvline(5,c='darkblue',linestyle='-.')
+plt.legend(handles = [
+    Line2D([0],[0],color='navajowhite',linewidth=10,label='Rewired'),
+    Line2D([0],[0],color='darkblue',linestyle='-.', label='Real')
+], loc='upper center')
+
+fig.savefig('../reports/figures/paper_figures_supp/rewired_go_sensor_count.png', bbox_inches='tight',dpi=150)
+
+
+# %%
+res
 
 # %%
 fig, ax =plt.subplots(figsize=(5,5))

@@ -163,7 +163,7 @@ sens_deg_comp
 
 ## E
 ```{r}
-comparisons[order(sapply(comparisons, function(x) x[1], simplify=TRUE), decreasing=TRUE)]
+#comparisons[order(sapply(comparisons, function(x) x[1], simplify=TRUE), decreasing=TRUE)]
 ```
 
 ```{r}
@@ -215,7 +215,7 @@ eff_neighbor_degree_plot
 #   mito = "mitochondrial cytochrome c oxidase assembly",
 #   chromosome = "replication fork protection"
 # )
-effector_pcc  <- effector_pcc#%>%mutate(go_group=fct_reorder(go_group, eff))
+effector_pcc  <- effector_pcc%>%mutate(go_group=fct_reorder(go_group, eff))
 # res.aov <- kruskal.test(deg~go_group, data= effector_pcc)
 # res.aov
 effector_eff_pval <- FSA::dunnTest(eff ~ go_group, effector_pcc)
@@ -223,23 +223,26 @@ effector_eff_pval$res[effector_eff_pval$res$P.adj < 0.1, ]
 effector_deg_pval <- FSA::dunnTest(deg ~ go_group, effector_pcc)
 effector_deg_pval$res[effector_deg_pval$res$P.adj < 0.1, ]
 
-#effector_pcc %>% right_join(pcc_df)
+comparisons_effectors <- str_split(effector_deg_pval$res$Comparison,' - ',2)
 
-eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% mutate(go_group = factor(replace_na(as.character(go_group),"Others")),go_group=fct_relevel(go_group,'Others',after=Inf)), 
+eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>% 
+                       mutate(go_group = factor(replace_na(as.character(go_group),"Others")),
+                              go_group=fct_reorder(go_group, eff),
+                              go_group= fct_relevel(go_group,'Others',after=Inf)), 
                        aes(x = go_group, y = deg, fill = go_group)) +
   geom_boxplot(outlier.shape = NA) +
-#   scale_fill_manual(
-#     values = c(effector_colors,'black'),
-#     labels = c("Chromosome\nSegregation", "Golgi vesicle\nTransport", "Respiratory complex\nassembly",'Non-effector genes')
-#   ) +
+   scale_fill_manual(
+     values = c(effector_colors,'black'),
+     labels = c("EC1 (Chromosome\nSegregation)", "EC2 (Golgi vesicle\nTransport)", "EC3 (Respiratory complex\nassembly)",'Non-effector genes')
+   ) +
   xlab("") +
   ylab("Degree") +
   theme_bw() +
-#   geom_signif(
-#     comparisons = list(c("golgi", "chromosome"), c("golgi", "mito"), c("mito", "chromosome")),
-#     annotation = c("*", "***", "ns"),
-#     y_position = c(115, 120, 130)
-#   ) +
+   geom_signif(
+     comparisons = comparisons_effectors[order(sapply(comparisons_effectors, function(x) x[1], simplify=TRUE), decreasing=TRUE)], #list(c("golgi", "chromosome"), c("golgi", "mito"), c("mito", "chromosome")),
+     annotation = c("*", "***", "ns"),
+     y_position = c(115, 120, 130)
+   ) +
   theme(
        axis.text.y=element_text(size=10),
         axis.title.y=element_text(size=14),legend.title = element_blank(),  axis.text.x = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
@@ -253,9 +256,9 @@ eff_eff_comp <- ggplot(effector_pcc %>% #mutate(go_group = fct_reorder(go_group,
   mutate(eff_norm = eff / 5183), aes(x = go_group, y = eff_norm, fill = go_group)) +
   geom_boxplot() +
   xlab("") +
-  #ggpubr::stat_compare_means(method = "kruskal.test") +
-#   scale_fill_manual(values = effector_colors,
-#   labels = c("Chromosome\nSegregation", "Golgi vesicle\nTransport", "Respiratory complex\nassembly")) +
+  ggpubr::stat_compare_means(method = "kruskal.test") +
+   scale_fill_manual(values = effector_colors,
+   labels = c("EC1 (Chromosome\nSegregation)", "EC2 (Golgi vesicle\nTransport)", "EC3 (Respiratory complex\nassembly)")) +
   ylab("Effectiveness (a.u.)") +
   theme_bw() +
   theme(
@@ -275,7 +278,7 @@ ggsave(glue("{figure_folder}/fig3e.png"),plot=sens_sens_comp+theme(legend.positi
 
 
 ggsave(glue("{figure_folder}/fig4a.png"),plot=eff_neighbor_degree_plot,width=3,height=3)
-ggsave(glue("{figure_folder}/fig4c.png"),plot=eff_deg_comp+theme(legend.position='none'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig4c.png"),plot=eff_deg_comp+theme(legend.position='right'),width=3,height=3)
 ggsave(glue("{figure_folder}/fig4d.png"),plot=eff_eff_comp+theme(legend.position='none'),width=3,height=3)
 
 

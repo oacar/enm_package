@@ -11,14 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(reticulate)
 #use_python("/home/oma21/miniconda3/envs/enm/bin/python")
-use_condaenv('enm')
-setwd('../')
-#source('enm/R/plot_density_prs.R')
-#source('enm/R/get.subclusters.dendrogram.R')
+#use_condaenv('enm')
+#setwd('../')
 library(RColorBrewer)
-col =brewer.pal(n=8,name='Set1')
-sensor_colors = col[1:4]
-effector_colors = col[5:8]
 ```
 
 # Read data
@@ -29,16 +24,11 @@ import matplotlib as mpl
 import networkx as nx
 import numpy as np
 import pandas as pd
-import plotnine as p9
-import pickle 
 import os
-import re
-import itertools as itr
 from enm.Enm import Enm
 from enm.utils import *
 import scipy.cluster.hierarchy as sch
-print(os.getcwd())
-with open(f'../data/interim/pcc.pickle','rb') as f:
+with open(f'data/interim/pcc.pickle','rb') as f:
     e_pcc = pickle.load(f)
 pcc_df = e_pcc.df
 pcc_gc = e_pcc.graph_gc
@@ -59,11 +49,6 @@ q99 = np.quantile(prs_mat, quantile_threshold)
 prs_mat_cl = copy.deepcopy(prs_mat)
 prs_mat_cl[prs_mat_cl > q99] = q99
 prs_mat_cl_orig = prs_mat_cl
-# , optimal_ordering=True)
-#row_linkage_cl = sch.linkage(sch.distance.pdist(prs_mat_cl), method=method)
-# ,optimal_ordering=True)
-#col_linkage_cl = sch.linkage(sch.distance.pdist(prs_mat_cl.T), method=method)
-
 row_dist_orig = sch.distance.pdist((prs_mat),metric = metric)
 col_dist_orig = sch.distance.pdist((prs_mat.T),metric = metric)
 row_dist_orig_sqr = sch.distance.squareform(row_dist_orig)
