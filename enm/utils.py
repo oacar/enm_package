@@ -14,11 +14,11 @@ from goatools.goea.go_enrichment_ns import GOEnrichmentStudyNS
 
 #from .Enm import *
 
-def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/ontology/go-basic.obo', background='../data/raw/ontology/sgd_costanzogenes', sgd_info_tab='../data/raw/ontology/SGD_features.tab',species='yeast',**kwargs):
+def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/ontology/go-basic.obo', background='../data/raw/ontology/sgd_costanzogenes', sgd_info_tab='../data/raw/ontology/SGD_features.tab',species='yeast',goset= ['BP'] , methods =['fdr'] , **kwargs):
     
     #background='../data/raw/ontology/sgd_costanzogenes'
     obodag = GODag(obo_fname,optional_attrs={'relationship'})
-    objanno = GafReader(gaf,namespaces=set(['BP']))
+    objanno = GafReader(gaf,namespaces=set(goset))
 #    ns2assoc = objanno.get_ns2assc()
 
     ns2assoc_excl = objanno.get_ns2assc( ev_exclude = {'HGI' , 'IGI'})
@@ -36,9 +36,9 @@ def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/o
         propagate_counts=True,
         relationships=True,
         alpha=0.1,  # default significance cut-off
-        methods=['fdr'], prt=None)
+        methods=methods, prt=None)
 
-    return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl
+    return goeaobj, geneid2name , obodag #, objanno, ns2assoc, ns2assoc_excl
 
 def goea_to_pandas(goea_results_sig, geneid2name):
     """ Converts goea object from goatools GO enrichment test to a Pandas dataframe
