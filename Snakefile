@@ -15,7 +15,9 @@ rule all:
         "reports/01-Fig1bcd_3c_4b_5df-052421.html",
         "reports/02-Figure2-051321.html",
         "reports/03-Fig3abde_4acd-051821.html",
-        "reports/04-Fig5b-052721.html"
+        "reports/04-Signaling-related-effector-sensors.ipynb",
+        "reports/05-Figs2.ipynb",
+        "reports/08-Fig5abc_figs5.ipynb"
 
 
 rule read_costanzo_data:

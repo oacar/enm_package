@@ -14,8 +14,8 @@ rule all:
     input: 
         expand("data/interim_{thr}/sensors_df.csv", thr = thresholds),
         "reports/06-Figs3s4.ipynb",
-        expand(f"data/interim_{{thr}}/pcc_df_random_{N_SIM}.csv", thr = thresholds)
-
+        expand(f"data/interim_{{thr}}/pcc_df_random_{N_SIM}.csv", thr = thresholds),
+        "reports/07-Figs1.html" 
 rule read_costanzo_data:
     input: 
         f"{RAW_INPUT_PATH}/Data File S3. Genetic interaction profile similarity matrices/cc_ALL.txt",
@@ -89,7 +89,8 @@ rule figs3s4:
 
 rule figs1:
     input:
-        expand("data/interim_{thr}/pcc_df.csv", thr = [0.1,0.2,0.3,0.4])
+        expand("data/interim_{thr}/pcc_df.csv", thr = [0.1,0.2,0.3,0.4]),
+        expand(f"data/interim_{{thr}}/pcc_df_random_{N_SIM}.csv", thr=[0.1,0.2,0.3,0.4])
     output:
         notebook="reports/07-Figs1.html"
     params:
