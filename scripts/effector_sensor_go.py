@@ -16,7 +16,7 @@ with open(pickle_file,'rb') as f:
 enm.get_sensor_effector(use_threshold=True)
 
 print('go analysis')
-goea, geneid2name = create_goea(gaf = gaf, obo_fname=obo, 
+goea, geneid2name,obodag = create_goea(gaf = gaf, obo_fname=obo, 
                                 background=background_file, sgd_info_tab = sgd_info)
 enm.analyze_components_biology(goea, geneid2name, True)
 enm.analyze_components_biology(goea, geneid2name, False)

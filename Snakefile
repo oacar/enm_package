@@ -77,63 +77,6 @@ rule effector_sensor_go:
         effector_sensor_combined_go_df = f"{OUTPUT_PATH}/effector_sensor_combined_go_df.csv"
     script: "scripts/effector_sensor_go.py"
 
-rule prs_row_go:
-    input: 
-        pickle_file_name= PICKLE_FILE_NAME,
-        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
-        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = f"{OUTPUT_PATH}/go_background_list",
-        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
-    conda:
-        "enm_snakemake.yml"
-    output: 
-        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
-    script: "scripts/prs_row_go.py"
-rule prs_col_go:
-    input: 
-        pickle_file_name= PICKLE_FILE_NAME,
-        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
-        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = f"{OUTPUT_PATH}/go_background_list",
-        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
-    conda:
-        "enm_snakemake.yml"
-    output: 
-        prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv"
-    script: "scripts/prs_row_go.py"
-rule rwr_row_go:
-    input: 
-        pickle_file_name= PICKLE_FILE_NAME,
-        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
-        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = f"{OUTPUT_PATH}/go_background_list",
-        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
-    conda:
-        "enm_snakemake.yml"
-    output: 
-        rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv"
-    script: "scripts/prs_row_go.py"
-rule rwr_col_go:
-    input: 
-        pickle_file_name= PICKLE_FILE_NAME,
-        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
-        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
-        background_file = f"{OUTPUT_PATH}/go_background_list",
-        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
-    conda:
-        "enm_snakemake.yml"
-    output: 
-        rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
-    script: "scripts/prs_row_go.py"
-rule prs_rwr_compare:
-    input: 
-        rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
-        prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv",
-        rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",
-        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
-    #output: 
-    #    plot = f"{OUTPUT_PATH}/figure5B.pdf"
-    #script: "scripts/figure5B.py"
 
 
 rule figure2:
@@ -162,20 +105,6 @@ rule figure3_4:
     script:
         "notebooks/03-Fig3abde_4acd-051821.Rmd"
 
-rule figure5:
-    input:
-        effector_pcc = f"{OUTPUT_PATH}/effectors_df.csv",
-        rwr_column=f"{OUTPUT_PATH}/rwr_ranked_goa_columns.csv",
-        prs_column=f"{OUTPUT_PATH}/prs_ranked_goa_columns.csv",
-        rwr_row=f"{OUTPUT_PATH}/rwr_ranked_goa_rows.csv",
-        prs_row=f"{OUTPUT_PATH}/prs_ranked_goa_rows.csv"
-    params:
-        save=SAVE_FIGURES
-    conda:
-        "r_env.yml"
-    output: "reports/04-Fig5b-052721.html"
-    script:
-        "notebooks/04-Fig5b-052721.Rmd"
 
 rule figure_networks:
     input: 
@@ -200,3 +129,23 @@ rule figure_networks_html:
         "enm_snakemake.yml"
     output: "reports/01-Fig1bcd_3c_4b_5df-052421.html"
     shell: "jupyter nbconvert {input} --to html"
+
+
+rule figs2:
+    input: 
+        strain_ids = 'data/interim/strain_ids.csv',
+        pcc_all = 'data/interim/costanzo_pcc_ALL',
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = f"{OUTPUT_PATH}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    output: 
+        rewired_data_folder = 'data/interim/rewired_data10test',
+        notebook="reports/05-Figs2.ipynb"
+    conda:
+        "enm_snakemake.yml"
+    params:
+        save=SAVE_FIGURES,
+        sim_num =10
+    notebook: "notebooks/05-Figs2.ipynb"

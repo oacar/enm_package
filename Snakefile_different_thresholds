@@ -1,0 +1,103 @@
+
+from signal import NSIG
+
+thresholds = [0.05,0.1,0.2,0.25,0.3,0.35,0.4]
+RAW_INPUT_PATH = "data/raw"
+N_SIM=10
+PICKLE_FILE_NAME = "data/interim_{thr}/pcc.pickle"
+SAVE_FIGURES = True
+#REPORT_FOLDER = f"reports/reports_{thr}"
+#rule clean:
+#    shell: "rm -rf data/interim/"
+
+rule all:
+    input: 
+        #expand("data/interim_{thr}/sensors_df.csv", thr = thresholds)
+        "reports/06-Figs3s4.ipynb"
+
+rule read_costanzo_data:
+    input: 
+        f"{RAW_INPUT_PATH}/Data File S3. Genetic interaction profile similarity matrices/cc_ALL.txt",
+        f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    params: 
+        output_path = "data/interim_{thr}",
+        threshold = lambda wildcards: wildcards.thr
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        "data/interim_{thr}/costanzo_pcc_ALL" ,
+        "data/interim_{thr}/strain_ids.csv" ,
+        "data/interim_{thr}/go_background_list"
+    script: "scripts/read_costanzo_data.py"
+
+rule create_enm_object:
+    input:
+        network_file = "data/interim_{thr}/costanzo_pcc_ALL" ,
+        strain_ids_file = "data/interim_{thr}/strain_ids.csv"
+    params:
+        output_path = "data/interim_{thr}"
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        pickle_file= PICKLE_FILE_NAME,
+        df_filename= "data/interim_{thr}/pcc_df.csv"
+    script: "scripts/pcc.py"
+
+
+rule effector_sensor_go:
+    input:
+        pickle_file_name= PICKLE_FILE_NAME,
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = "data/interim_{thr}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    params:
+        thr = "{thr}"
+    output:
+        sensors_df_fname = "data/interim_{thr}/sensors_df.csv",
+        effectors_df_fname = "data/interim_{thr}/effectors_df.csv",
+        effector_sensor_combined_go_df = "data/interim_{thr}/effector_sensor_combined_go_df.csv"
+    script: "scripts/effector_sensor_go.py"
+
+rule figs3s4:
+    input:
+        inp = [f"data/interim_{thr}/sensors_df.csv" for thr in thresholds]
+    params:
+        thr_list = thresholds,
+        folder_prefix = 'data/interim'
+    conda:
+        "enm_snakemake.yml"
+    log:
+        notebook="reports/06-Figs3s4.ipynb"
+    output:
+        notebook="reports/06-Figs3s4.ipynb"
+    notebook:
+        "notebooks/06-Figs3s4.ipynb"
+    
+
+
+# rule figs1:
+#     input:
+#         expand("data/interim_{thr}/sensors_df.csv", thr = thresholds)
+#     output:
+#         notebook="reports/06-Figs3s4.ipynb"
+#     params:
+#         thr_list = thresholds,
+#         folder_prefix = 'data/interim'
+#     conda:
+#         "enm_snakemake.yml"
+#     notebook:
+#         "notebooks/06-Figs3s4.ipynb"
+
+# rule figs2:
+#     input:
+#         expand("data/interim_{thr}/sensors_df.csv", thr = thresholds)
+#     output:
+#         notebook="reports/06-Figs3s4.ipynb"
+#     params:
+#         thr_list = thresholds,
+#         folder_prefix = 'data/interim'
+#     conda:
+#         "enm_snakemake.yml"
+#     notebook:
+#         "notebooks/06-Figs3s4.ipynb"

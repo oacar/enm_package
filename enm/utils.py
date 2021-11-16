@@ -54,6 +54,8 @@ def goea_to_pandas(goea_results_sig, geneid2name):
     for i in go_df_n.study_items:
         orf_names.append([geneid2name[_id] for _id in i])
     go_df_n.study_items = orf_names
+    if 'p_fdr' in go_df_n.columns:
+        go_df_n['p_fdr_fix'] = (go_df_n['p_fdr']*500+1)/501
     return go_df_n 
 
 
@@ -71,7 +73,7 @@ def query_goatools(query, goea,geneid2name):
     """
     query_gene_ids = [key for key,value in geneid2name.items() if value in query.loc[:,'Systematic gene name'].unique()]
     goea_res_all = goea.run_study(query_gene_ids)
-    goea_res_sig = [r for r in goea_res_all if r.p_fdr<0.1]
+    goea_res_sig = [r for r in goea_res_all if r.p_fdr<0.098]
     go_df_sensor = goea_to_pandas(goea_res_sig, geneid2name)
     return go_df_sensor
 
@@ -173,7 +175,8 @@ def get_subnetwork(gc, subset, radius = 1):
     flat_list.extend(subset)
     sub_gc = nx.induced_subgraph(gc, flat_list).copy()
     for (n,d) in sub_gc.nodes(data=True):
-        del d["pos"]
+        if 'pos' in d.keys():
+            del d["pos"]
     return sub_gc
 
 
@@ -256,7 +259,7 @@ def convert_rpy2_to_pandas(df):
 
     return pd_from_r_df
 
-def get_result_dfs(fname, thr_list, default_thr=None):
+def get_result_dfs(fname, thr_list, default_thr=None, folder_prefix= '../data/interim'):
     def read_csv(fname):
         try:
             df = pd.read_csv(fname)
@@ -265,9 +268,9 @@ def get_result_dfs(fname, thr_list, default_thr=None):
             df = None
         return df
 
-    dfs = {thr: read_csv(f"../data/interim_{thr}/{fname}.csv") for thr in thr_list if thr!=default_thr}
+    dfs = {thr: read_csv(f"{folder_prefix}_{thr}/{fname}.csv") for thr in thr_list if thr!=default_thr}
     if default_thr is not None:
-        dfs[default_thr] = pd.read_csv(f"../data/interim/{fname}.csv")
+        dfs[default_thr] = pd.read_csv(f"{folder_prefix}/{fname}.csv")
     if default_thr not in thr_list and default_thr is not None:
         thr_list.insert(0, default_thr)                               
     return dfs
