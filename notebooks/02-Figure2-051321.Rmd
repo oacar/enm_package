@@ -12,6 +12,8 @@ Sys.setenv(TAR = "/bin/tar")
 
 # Load packages
 ```{r message=FALSE, warning=FALSE}
+if (!require('remotes')){
+install.packages('remotes', repos='http://cran.us.r-project.org')}
 if (!require('tidyverse')) {
    remotes::install_version("tidyverse", version = "1.3.0", repos = "http://cran.us.r-project.org")
    library(tidyverse)

@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.5.2
+#       jupytext_version: 1.12.0
 #   kernelspec:
 #     display_name: Python (enm)
 #     language: python
@@ -45,7 +45,7 @@ figure_folder = "reports/figures/paper_figures_052521"
 # # Read Enm pickle object
 
 # %%
-with open(snakemake.input.pickle_file_name,'rb') as f:
+with open('../data/interim/pcc.pickle','rb') as f:
     e_pcc = pickle.load(f)
 
 
@@ -102,7 +102,7 @@ if snakemake.params['save']:
 
 # %%
 e_pcc.figure_path=figure_folder
-e_pcc.heatmap_annotated( save_figure=snakemake.params['save'] , figure_name = 'fig1b_right')
+e_pcc.heatmap_annotated( save_figure=False , figure_name = 'fig1b_right')
 
 # %% [markdown]
 # # Figure 1C
@@ -154,6 +154,12 @@ estimates = np.fromiter(map(lambda x: run_permutation_test(pooled,z.size,y.size,
 diffCount = len(np.where(estimates >= delta)[0])
 pval_cc = ((float(diffCount)+1)/(float(numSamples)+1))
 pval_cc
+
+# %%
+delta
+
+# %%
+estimates
 
 # %%
 import seaborn as sns
@@ -276,7 +282,7 @@ import seaborn as sns
 sensor_colors = [mpl.colors.to_hex(i) for i in sns.color_palette('Set3')]
 
 # %%
-# change_go_group_names = snakemake.params['change_go_group_name']
+change_go_group_names = True#snakemake.params['change_go_group_name']
 # sensor_go_rename = {
 #   "cellular response to iron ion starvation":'Iron ion transport' ,
 # "mitochondria-nucleus signaling pathway":  "Mitochondria-nucleus\nsignaling pathway\nand\nTricarboxylic acid cycle",
@@ -286,13 +292,11 @@ sensor_colors = [mpl.colors.to_hex(i) for i in sns.color_palette('Set3')]
 # }
 
 # %%
-sensors_pcc = pd.read_csv(snakemake.input.sensors_pcc)
+sensors_pcc = pd.read_csv('../data/interim/sensors_df.csv')
 # sensor_colors = ["#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33"]
 # if change_go_group_names:
 #    sensors_pcc['go_group']=sensors_pcc['go_group'].map(sensor_go_rename,na_action='ignore')
 sensor_order = sensors_pcc.groupby('label').sens.median().sort_values().index.tolist()
-
-# %%
 
 # %%
 fig, ax = plt.subplots(figsize=(6,6))
@@ -328,10 +332,10 @@ for itr, i in enumerate(sensor_order):
                               markerfacecolor=sensor_colors[itr], markersize=8, linestyle="None")
     )
 ax.set_facecolor('white')
-legend_elements.append(
-        Line2D([0], [0], marker='^', color='black', label=f'No GO Enrichment',
-                              markerfacecolor='black', markersize=8, linestyle="None")
-    )
+#legend_elements.append(
+#        Line2D([0], [0], marker='^', color='black', label=f'No GO Enrichment',
+#                              markerfacecolor='black', markersize=8, linestyle="None")
+#    )
 legend_elements.extend(
     [Line2D([0], [0], marker='o', color='black', label='Other Genes',
                               markerfacecolor='black', markersize=4, linestyle="None"),
@@ -350,8 +354,8 @@ legend_elements.extend(
 #lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5),ncol=5)
 nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, sensors_pcc.orf_name.tolist()),pos=pos, edge_color='red', alpha=1)
 ax.axis('off')
-if snakemake.params['save']:
-    plt.savefig(f'{figure_folder}/fig3c.png',bbox_inches='tight',dpi=150)
+# if snakemake.params['save']:
+#     plt.savefig(f'{figure_folder}/fig3c.png',bbox_inches='tight',dpi=150)
 
 # %%
 for i in sorted(sensors_pcc.dropna(subset=['sensor_cluster']).sensor_cluster.unique()):
@@ -361,9 +365,6 @@ for i in sorted(sensors_pcc.dropna(subset=['sensor_cluster']).sensor_cluster.uni
     fig,ax = plt.subplots(figsize=(6,6))
     nx.draw_networkx_nodes(sub_nw,ax=ax, pos = pos_sub, node_color = ['red' if i in sub_orfs else 'k' for i in sub_nw.nodes ])
     nx.draw_networkx_edges(sub_nw,ax=ax, pos = pos_sub)
-
-# %%
-help(fig.savefig)
 
 # %%
 smsize = 2
@@ -383,10 +384,6 @@ for itr, i in enumerate(sensor_order):
                               markerfacecolor=sensor_colors[itr], markersize=lgsize, linestyle="None")
     )
 #ax.set_facecolor('white')
-legend_elements.append(
-        Line2D([0], [0], marker='^', color='black', label=f'No GO Enrichment',
-                              markerfacecolor='black', markersize=lgsize, linestyle="None")
-    )
 legend_elements.extend(
     [Line2D([0], [0], marker='o', color='black', label='Other Genes',
                               markerfacecolor='black', markersize=smsize, linestyle="None"),
@@ -417,11 +414,11 @@ lgd = ax.legend(handles=legend_elements,
                 frameon=False, 
                 loc = 'center',
                 bbox_to_anchor=(0., 0., 1, 1))
-if snakemake.params['save']:
-    fig.savefig(f'{figure_folder}/fig3c_legend.png', dpi=150, pad_inches=0)#, bbox_inches='tight')
+# if snakemake.params['save']:
+#     fig.savefig(f'{figure_folder}/fig3c_legend.png', dpi=150, pad_inches=0)#, bbox_inches='tight')
 
 # %%
-antenna_legend = [legend_elements[i] for i in [3,5,6,7,8,9]]
+antenna_legend = []
 antenna_legend.extend(
     [Line2D([0], [0], marker='o', color='black', label='Sensor to network\nconnection node',
                               markerfacecolor='black', markersize=lgsize, linestyle="None"),
@@ -432,10 +429,12 @@ antenna_legend.extend(
                        Line2D([0], [0], marker='o', color='black', label= 'Sensor - nonsensor edges',
                               markerfacecolor='black', markersize=0, linestyle="-", alpha=0.5, lw=linesize),
     Line2D([0], [0], marker='o', color='red', label= 'Sensor - sensor edges',
-                              markerfacecolor='#018571', markersize=0, linestyle="-",lw=linesize)]
+                              markerfacecolor='#018571', markersize=0, linestyle="-",lw=linesize),
+       Line2D([0], [0], marker=(6, 2), color='black', label='Sensor clusters with antenna motifs',
+                              markerfacecolor='black', markersize=lgsize, linestyle="None")]
 )
 fig = plt.figure()
-figlegend = plt.figure(figsize=(3,1))
+figlegend = plt.figure(figsize=(14,2))
 ax = fig.add_subplot(111)
 ax.axis('off')
 lgd = ax.legend(handles=antenna_legend,
@@ -443,30 +442,30 @@ lgd = ax.legend(handles=antenna_legend,
                 labelspacing=0.4, 
                 borderpad=0,
                 columnspacing=0.4,
-                fontsize=8, 
-                ncol=1,
+                fontsize=10, 
+                ncol=4,
                 frameon=False, 
                 loc = 'center',
                 bbox_to_anchor=(0., 0., 1, 1))
-if snakemake.params['save']:
-    fig.savefig(f'{figure_folder}/fig3f_legend.png',dpi=150, pad_inches=0)
+# if snakemake.params['save']:
+fig.savefig(f'../reports/figures/paper_figures_052521//fig3f_legend.png',dpi=150,bbox_inches='tight')
 
 # %% [markdown]
 # # Figure 4B
 
 # %%
-effector_pcc = pd.read_csv(snakemake.input.effector_pcc)
+effector_pcc = pd.read_csv('../data/interim/effectors_df.csv')
 #effector_colors = ["#A65628", "#F781BF", "#999999"]
 effector_order_orig = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
 effector_colors = ["#A65628", "#F781BF", "#999999",'blue','yellow','red']
 
 
 # %%
-if change_go_group_names:
+if True:
     effector_go_group_map = {
-        effector_order_orig[0]:"Chromosome segregation",
-        effector_order_orig[1]:"Golgi vesicle transport",
-        effector_order_orig[2]:"Respiratory complex assembly"
+        effector_order_orig[0]:"EC1 (Chromosome segregation)",
+        effector_order_orig[1]:"EC2 (Golgi vesicle transport)",
+        effector_order_orig[2]:"EC3 (Respiratory complex assembly)"
     }
     effector_pcc['go_group'] = effector_pcc['go_group'].map(effector_go_group_map)
 effector_order = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
@@ -516,12 +515,13 @@ legend_elements.extend(
                              markerfacecolor='#a6611a', markersize=0, linestyle="-",lw=10)
     ]
 )
-lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(1.1, 0.5))
+lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center', bbox_to_anchor=(0.5, -0.1), frameon=False, ncol=2)
 
 
 nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
-if snakemake.params['save']:
-    plt.savefig(f'{figure_folder}/fig4b.png',bbox_inches='tight',dpi=150)
+ax.axis('off')
+# if snakemake.params['save']:
+plt.savefig(f'../{figure_folder}/fig4b.png',bbox_inches='tight',dpi=150)
 
 # %% [markdown]
 # # Figure 5D/F
@@ -531,7 +531,7 @@ if snakemake.params['save']:
 plot_paths = snakemake.params['plot_paths']
 if plot_paths:
     eff_group = 'Chromosome segregation'
-    sens_group = "Mitochondria-nucleus\nsignaling pathway\nand\nTricarboxylic acid cycle"
+    sens_group = "SC6\nMitochondria nucleus\nsignaling pathway"
     sub_list = []
     #select source and target gene from respective clusters
     source = 'ctf4'
@@ -542,7 +542,7 @@ if plot_paths:
     sub = nx.induced_subgraph(e_pcc.graph_gc, l1)
     node_sub=nx.induced_subgraph(sub,[i for i in l1 if i !=target])
 
-    fig, ax = plt.subplots(figsize=(10,10))
+    fig, ax = plt.subplots(figsize=(7,7))
     legend_elements = [    ]
     nx.draw_networkx_nodes(e_pcc.graph_gc, pos=pos, node_size=1, ax=ax, node_color='black')
 
@@ -552,8 +552,9 @@ if plot_paths:
 
     nx.draw_networkx_edges(sub,pos=pos)
     for itr, i in enumerate(sensor_order):
-        if i ==sens_group:
-            orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+        if i == sens_group:
+            orf_names_to_plot = sensors_pcc.loc[sensors_pcc.label==i, 'orf_name'].tolist()
+            print(orf_names_to_plot)
             sub_list.extend(orf_names_to_plot)
 
             nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
@@ -578,15 +579,16 @@ if plot_paths:
                                 linewidths=1)
             nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
     ax.set_facecolor('white')
+    ax.axis('off')
     if snakemake.params['save']:
         plt.savefig(f'{figure_folder}/fig5d.png',bbox_inches='tight',dpi=150)
-        
+    
     nx.write_edgelist(nx.induced_subgraph(e_pcc.graph_gc,sub_list),f'{figure_folder}/path1.csv', delimiter=',',data=False)
 
 # %%
 if plot_paths:
     eff_group = 'Respiratory complex assembly'
-    sens_group = 'Iron ion transport'
+    sens_group = 'SC5\nIron ion\ntransport'
     sub_list  = [ ]
     source = 'coa1'
     target = 'fet3'
@@ -595,18 +597,18 @@ if plot_paths:
     sub = nx.induced_subgraph(e_pcc.graph_gc, l1)
     node_sub=nx.induced_subgraph(sub,[i for i in l1 if i !=target])
     #print(l1)
-    fig, ax = plt.subplots(figsize=(10,10))
+    fig, ax = plt.subplots(figsize=(7,7))
     legend_elements = [    ]
     nx.draw_networkx_nodes(e_pcc.graph_gc, pos=pos, node_size=1, ax=ax, node_color='black')
     nx.draw_networkx_nodes(node_sub,pos=pos,alpha=1,
                         #  node_size = [prs_mat_df.loc[source,:].to_dict()[i]*10000 for i in sub.nodes],
                         # node_shape = ['^' if i == target else 'o' for i in sub.nodes],
-        node_color = [sensor_colors[2]  if i in ['sit1','ftr1'] else 'black' for i in node_sub.nodes])
+        node_color = [sensor_colors[5]  if i in ['sit1','ftr1'] else 'black' for i in node_sub.nodes])
     nx.draw_networkx_edges(sub,pos=pos)
     for itr, i in enumerate(sensor_order):
         #print(i, effector_colors[itr])
         if i ==sens_group:
-            orf_names_to_plot = sensors_pcc.loc[sensors_pcc.go_group==i, 'orf_name'].tolist()
+            orf_names_to_plot = sensors_pcc.loc[sensors_pcc.label==i, 'orf_name'].tolist()
             sub_list.extend(orf_names_to_plot)
             nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
                                 node_color=sensor_colors[itr],
@@ -630,9 +632,10 @@ if plot_paths:
             nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
 
     ax.set_facecolor('white')
+    ax.axis('off')
+
     if snakemake.params['save']:
         plt.savefig(f'{figure_folder}/fig5f.png',bbox_inches='tight',dpi=150)
-        
     nx.write_edgelist(nx.induced_subgraph(e_pcc.graph_gc,sub_list),f'{figure_folder}/path2.csv', delimiter=',',data=False)
 
 # %%

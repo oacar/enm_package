@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.5.2
+#       jupytext_version: 1.12.0
 #   kernelspec:
 #     display_name: Python (enm)
 #     language: python
@@ -20,68 +20,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 from enm.utils import *
 
-# %% [markdown]
-# # Giant component size change
-
 # %%
-cpcc = pd.read_csv('../data/interim/costanzo_pcc_ALL')
-
-
-# %%
-def get_giant_component(G):
-    Gc = max([G.subgraph(c).copy() for c in nx.connected_components(G)], key=len)
-    return Gc
-
-
-# %%
-ne_ratio_list = []
-nv_ratio_list = []
-
-# %%
-thr_list =  [0.05,0.1,0.2,0.25,0.3,0.35,0.4]
-
-# %%
-for i in np.arange(0.2,0.75,0.05):
-    df = cpcc.loc[cpcc.pcc>=i]
-    nw = nx.from_pandas_edgelist(df,source='gene1',target='gene2')
-    nw_g = get_giant_component(nw)
-    n_e = len(nw_g.edges)
-    ne_ratio_list.append(n_e/len(nw.edges))
-    n_v = len(nw_g.nodes)
-    nv_ratio_list.append(n_v/len(nw.nodes))
-
-    print(f"{i} : ne = {n_e}, ne_ratio: {n_e/len(nw.edges)}, nv = {n_v}, nv_ratio = {n_v/len(nw.nodes)}")
-
-# %%
-xlab = "Pearson's Correlation Coefficient threshold"
-
-# %%
-fig, ax = plt.subplots(1,1,figsize=(8,8))
-ax.plot(np.arange(0.2,0.75,0.05),nv_ratio_list,'o-')
-ax.set_ylabel('Giant component size to network size')
-ax.set_xlabel(xlab)
-
-# %% [markdown]
-# # Effector and sensor clusters with GO enrichments
+thr_list = snakemake.params['thr_list']#[0.05,0.1,0.2,0.25,0.3,0.35,0.4]
 
 # %%
 sensor_df_names = [ ]
 
 # %%
-effector_dfs = get_result_dfs('effectors_df', thr_list)
+effector_dfs = get_result_dfs('effectors_df', thr_list, folder_prefix = snakemake.params['folder_prefix'])
 
 # %%
-sensor_dfs =  get_result_dfs('sensors_df', thr_list)
+sensor_dfs =  get_result_dfs('sensors_df', thr_list, folder_prefix = snakemake.params['folder_prefix'])
 
 # %%
-effector_sensor_go_dfs = get_result_dfs('effector_sensor_combined_go_df',thr_list)
-
-# %%
-sensor_dfs[0.2].dropna(subset=['sensor_cluster']).loc[:,'sensor_cluster'].nunique()
+effector_sensor_go_dfs = get_result_dfs('effector_sensor_combined_go_df',thr_list, folder_prefix = snakemake.params['folder_prefix'])
 
 
 # %%
-def plot_go_thr_comparison(dfs, col, yaxis,plotname, xlab='PCC Threshold'):
+def plot_go_thr_comparison(dfs, col, yaxis,plotname, xlab='PCC Threshold', save=False):
     n_goterms = []
     rat_goterms = []
     n_clusters = []
@@ -103,7 +59,8 @@ def plot_go_thr_comparison(dfs, col, yaxis,plotname, xlab='PCC Threshold'):
     axs[1].set_xlabel(xlab, fontsize=12)
     
     plt.tight_layout()
-    fig.savefig(f'../reports/figures/paper_figures_supp/{plotname}.png', bbox_inches='tight', dpi=150)
+    if save:
+        fig.savefig(f'reports/figures/paper_figures_supp/{plotname}.png', bbox_inches='tight', dpi=150)
     # axs[2].plot(thr_list, [i/j if i!=0 else 0 for i,j in zip(n_go_clusters,n_clusters) ], 'o-')
     # axs[2].set_ylabel(f'% of go enriched {yaxis} clusters')
     # axs[2].set_xlabel(xlab)
@@ -117,9 +74,12 @@ plot_go_thr_comparison(effector_dfs,'effector_cluster', 'effector',plotname='thr
 
 # %%
 #effector_sensor_go_dfs
-go_overlap = pd.DataFrame({thr : [len(np.intersect1d(effector_sensor_go_dfs[thr].loc[effector_sensor_go_dfs[thr].cluster_type=='effector','GO'], effector_sensor_go_dfs[i].loc[effector_sensor_go_dfs[i].cluster_type=='effector','GO'])) for i in thr_list] for thr in sorted(thr_list)})
+go_overlap = pd.DataFrame({thr : 
+              [len(np.intersect1d(effector_sensor_go_dfs[thr].loc[effector_sensor_go_dfs[thr].cluster_type=='effector','GO'], effector_sensor_go_dfs[i].loc[effector_sensor_go_dfs[i].cluster_type=='effector','GO'])) 
+               if effector_sensor_go_dfs[i] is not None else 0 for i in thr_list]
+              if effector_sensor_go_dfs[thr] is not None else 0 for thr in sorted(thr_list)})
 go_overlap.index = thr_list
-def plot_heatmap_overlap(df, filename, title , cmap='YlGnBu' , figsize = (10,6)):
+def plot_heatmap_overlap(df, filename, title , cmap='YlGnBu' , figsize = (10,6), save=False):
     import seaborn as sns
     mask = np.zeros_like(df)
     mask[np.tril_indices_from(mask, k=-1)] = True
@@ -132,7 +92,8 @@ def plot_heatmap_overlap(df, filename, title , cmap='YlGnBu' , figsize = (10,6))
             t.set_text(t.get_text() + "%")
             t.set_size(9)
         ax.set_xlabel(ax.get_xlabel(),fontsize=16)
-    plt.savefig(f'../reports/figures/paper_figures_supp/{filename}.png', bbox_inches='tight',dpi=150)    
+    if save:
+        plt.savefig(f'reports/figures/paper_figures_supp/{filename}.png', bbox_inches='tight',dpi=150)    
 
 plot_heatmap_overlap(go_overlap, 'go_overlap_test', 'GO term overlap for effectors\nin different thresholds', figsize=(5,5))
 
@@ -150,5 +111,3 @@ plot_heatmap_overlap(sensor_overlap, 'sensor_overlap', 'Sensor overlap for diffe
 
 # %%
 plot_heatmap_overlap(effector_overlap, 'effector_overlap', 'Effector overlap for different thresholds', figsize=(5,5))
-
-# %%
