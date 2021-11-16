@@ -175,3 +175,21 @@ rule figure_5_s5:
         combined_data_for_colors = 'data/interim/eff_sens_combined_for_coloring.csv'
 
     notebook: "notebooks/08-Fig5abc_figs5.ipynb"
+
+rule eff_sens_signaling:
+    input: 
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = f"{OUTPUT_PATH}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab",
+        sensors_pcc = f"{OUTPUT_PATH}/sensors_df.csv",
+        effector_pcc = f"{OUTPUT_PATH}/effectors_df.csv"
+    log:
+        # optional path to the processed notebook
+        notebook="reports/04-Signaling-related-effector-sensors.ipynb"
+    conda:
+        "enm_snakemake.yml"
+    output:
+        notebook="reports/04-Signaling-related-effector-sensors.ipynb",
+        sensors_signaling_df = 'data/interim/signaling_related_sensors.csv'
+    notebook: "notebooks/04-Signaling-related-effector-sensors.ipynb"
