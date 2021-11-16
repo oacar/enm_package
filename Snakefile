@@ -149,3 +149,29 @@ rule figs2:
         save=SAVE_FIGURES,
         sim_num =10
     notebook: "notebooks/05-Figs2.ipynb"
+
+
+rule figure_5_s5:
+    input: 
+        gaf= f"{RAW_INPUT_PATH}/ontology/sgd.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = f"{OUTPUT_PATH}/go_background_list",
+        sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab",
+        pickle_file_name= PICKLE_FILE_NAME,
+        sensors_pcc = f"{OUTPUT_PATH}/sensors_df.csv",
+        effector_pcc = f"{OUTPUT_PATH}/effectors_df.csv"
+    params:
+        save=SAVE_FIGURES
+    log:
+        # optional path to the processed notebook
+        notebook="reports/08-Fig5abc_figs5.ipynb"
+    conda:
+        "enm_snakemake.yml"
+    output:
+        notebook="reports/08-Fig5abc_figs5.ipynb",
+        ec1 = 'data/interim/eff_sens_path1.csv',
+        ec2 = 'data/interim/eff_sens_path2.csv',
+        ec3 = 'data/interim/eff_sens_path3.csv',
+        combined_data_for_colors = 'data/interim/eff_sens_combined_for_coloring.csv'
+
+    notebook: "notebooks/08-Fig5abc_figs5.ipynb"
