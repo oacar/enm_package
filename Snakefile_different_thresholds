@@ -12,8 +12,9 @@ SAVE_FIGURES = True
 
 rule all:
     input: 
-        #expand("data/interim_{thr}/sensors_df.csv", thr = thresholds)
-        "reports/06-Figs3s4.ipynb"
+        expand("data/interim_{thr}/sensors_df.csv", thr = thresholds),
+        "reports/06-Figs3s4.ipynb",
+        expand(f"data/interim_{{thr}}/pcc_df_random_{N_SIM}.csv", thr = thresholds)
 
 rule read_costanzo_data:
     input: 
@@ -39,7 +40,7 @@ rule create_enm_object:
     conda:
         "enm_snakemake.yml"
     output: 
-        pickle_file= PICKLE_FILE_NAME,
+        pickle_file= "data/interim_{thr}/pcc.pickle",
         df_filename= "data/interim_{thr}/pcc_df.csv"
     script: "scripts/pcc.py"
 
@@ -58,13 +59,23 @@ rule effector_sensor_go:
         effectors_df_fname = "data/interim_{thr}/effectors_df.csv",
         effector_sensor_combined_go_df = "data/interim_{thr}/effector_sensor_combined_go_df.csv"
     script: "scripts/effector_sensor_go.py"
+rule rewire_network:
+    input: PICKLE_FILE_NAME
+    params:
+        n_sim = N_SIM,
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        pcc_df_random = "data/interim_{thr}/pcc_df_random_{N_SIM}.csv"
+    script: "scripts/rewiring.py"
 
 rule figs3s4:
     input:
         inp = [f"data/interim_{thr}/sensors_df.csv" for thr in thresholds]
     params:
         thr_list = thresholds,
-        folder_prefix = 'data/interim'
+        folder_prefix = 'data/interim',
+        save = SAVE_FIGURES
     conda:
         "enm_snakemake.yml"
     log:
@@ -76,18 +87,20 @@ rule figs3s4:
     
 
 
-# rule figs1:
-#     input:
-#         expand("data/interim_{thr}/sensors_df.csv", thr = thresholds)
-#     output:
-#         notebook="reports/06-Figs3s4.ipynb"
-#     params:
-#         thr_list = thresholds,
-#         folder_prefix = 'data/interim'
-#     conda:
-#         "enm_snakemake.yml"
-#     notebook:
-#         "notebooks/06-Figs3s4.ipynb"
+rule figs1:
+    input:
+        expand("data/interim_{thr}/pcc_df.csv", thr = [0.1,0.2,0.3,0.4])
+    output:
+        notebook="reports/07-Figs1.html"
+    params:
+        thr_list = [0.1,0.2,0.3,0.4],
+        folder_prefix = 'data/interim',
+        save = SAVE_FIGURES
+    conda:
+        "r_env.yml"
+    script:
+        "notebooks/07-Figs1.Rmd"
+        
 
 # rule figs2:
 #     input:
