@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -56,7 +57,7 @@ e_rew.get_sensor_effector(True)
 goea, geneid2name,a = create_goea(gaf='../data/raw/ontology/sgd.gaf', obo='../data/raw/ontology/go-basic.obo',background='../data/interim/go_background_list',
                                sdg_info_tab='../data/raw/ontology/SGD_features.tab')
 
-# %% tags=[] jupyter={"outputs_hidden": true}
+# %% tags=[]
 e_rew.analyze_components_biology(goea, geneid2name,True)
 e_rew.analyze_components_biology(goea, geneid2name,False)
 
@@ -125,8 +126,12 @@ legend_elements.extend(
     #                          markerfacecolor='#a6611a', markersize=0, linestyle="-")
     ]
 )
-lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center left', bbox_to_anchor=(-0.5, -0.1),ncol=5)
+lgd = ax.legend(handles=legend_elements, fontsize=22,
+                loc='center right', bbox_to_anchor=(1.8, 0.5),ncol=1,
+               frameon=False)
 nx.draw_networkx_edges(nx.induced_subgraph(e_rew.graph_gc, sensors_pcc.orf_name.tolist()),pos=pos, edge_color='red', alpha=0.5)
+ax.axis('off')
+
 plt.savefig(f'../reports/figures/paper_figures_supp/figs1.png',bbox_inches='tight',dpi=150)
 
 # %% [markdown]
@@ -195,11 +200,20 @@ res2 = sensors_df_rew.groupby('level_0')['go_group'].nunique()
 idxx = np.argwhere(np.array(res)>0).reshape(1,-1)[0]
 idxx2 = np.argwhere(np.array(res2)>0).reshape(1,-1)[0]
 
+# %% [markdown]
+# There are 68 rewired networks (out of 500) with a sensor cluster
+
 # %%
 len(idxx)
 
+# %% [markdown]
+# This corresponds to 13.6% of rewired networks
+
 # %%
 len(idxx)/len(res)
+
+# %% [markdown]
+# While 25% of these are GO enriched, that corresponds to only 3.4% of 500 cases
 
 # %%
 len(idxx2)/len(res2)
@@ -207,12 +221,15 @@ len(idxx2)/len(res2)
 # %%
 len(idxx2)/len(idxx)
 
+# %%
+rewired_nw_list = [nx.read_edgelist(f'../data/interim/rewired_data500/{idx}/g_rew_{idx}.edgelist.gz') for idx in range(500)]
+
 
 # %%
-def plot_sensors(e_pcc,idx):
-    e =e_pcc.e_list[idx]
-    sub_orfs =  e.sensors_df.dropna(subset=['sensor_cluster']).orf_name.tolist()
-    g = e.graph_gc
+def plot_sensors(rew_list,idx ,sensors_df_list):
+    g =rew_list[idx]
+    sub_orfs =  sensors_df_list.loc[sensors_df_list.level_0==idx].dropna(subset=['sensor_cluster']).orf_name.tolist()
+    #g = e.graph_gc
     induced_g = nx.induced_subgraph(g,sub_orfs)
     sub_nw = get_subnetwork(g, sub_orfs, radius= 1)
     pos_sub = nx.spring_layout(sub_nw)
@@ -225,10 +242,29 @@ def plot_sensors(e_pcc,idx):
     #nx.draw_networkx(sub_nw)
 
 
+# %%
+def find_antenna_sensors(rew_list,idx ,sensors_df_list):
+    g =rew_list[idx]
+    sub_orfs =  sensors_df_list.loc[sensors_df_list.level_0==idx].dropna(subset=['sensor_cluster']).orf_name.tolist()
+    #g = e.graph_gc
+    induced_g = nx.induced_subgraph(g,sub_orfs)
+    sub_nw = get_subnetwork(g, sub_orfs, radius= 1)
+    all_nodes = sub_nw.nodes
+    sensor_nodes = sub_orfs
+    num_nonsensor = len(np.setdiff1d(all_nodes, sensor_nodes)) / len(list(nx.connected_components(sub_nw)))
+    #print(num_nonsensor)
+    return num_nonsensor==1, len(np.setdiff1d(all_nodes, sensor_nodes))
+
+
 # %% tags=[] jupyter={"outputs_hidden": true}
 for i in idxx:
     print(i)
-    plot_sensors(e_pcc,i)
+    plot_sensors(rewired_nw_list,i,sensors_df_rew)
+
+# %% [markdown]
+# %96 of rewired networks with a sensor cluster have that sensor cluster as antenna
+
+# %% tags=[]
 
 # %%
 fig, ax =plt.subplots(figsize=(5,5))
@@ -260,10 +296,7 @@ plt.legend(handles = [
 fig.savefig('../reports/figures/paper_figures_supp/rewired_go_sensor_count.png', bbox_inches='tight',dpi=150)
 
 
-# %%
-res
-
-# %%
+# %% jupyter={"source_hidden": true, "outputs_hidden": true} tags=[]
 fig, ax =plt.subplots(figsize=(5,5))
 ax.hist(res,3,color='navajowhite')
 ax.set_xlabel('Number of sensor clusters')
@@ -279,3 +312,20 @@ fig.savefig('../reports/figures/paper_figures_supp/rewired_sensor_count.png', bb
 
 
 # %%
+sum([find_antenna_sensors(rewired_nw_list,i,sensors_df_rew) for i in idxx]) / len(idxx)
+
+# %%
+rew_antenna = [find_antenna_sensors(rewired_nw_list,i,sensors_df_rew) for i in idxx]
+
+# %%
+fig, ax =plt.subplots(figsize=(5,5))
+ax.hist([j for i,j in rew_antenna if i==True],3,color='navajowhite')
+ax.axvline(6,c='darkblue',linestyle='-.')
+ax.set_xlabel('Number of antenna motifs')
+ax.set_ylabel('Count')
+ax.set_title('Number of antenna motifs\nat 68 rewired networks with sensor clusters\ncompared to real network')
+plt.legend(handles = [
+    Line2D([0],[0],color='navajowhite',linewidth=10,label='Rewired'),
+    Line2D([0],[0],color='darkblue',linestyle='-.', label='Real')
+], loc='upper center')
+fig.savefig('../reports/figures/paper_figures_supp/rewired_antenna_sensor_count.png', bbox_inches='tight',dpi=150)

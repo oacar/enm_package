@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE,message=FALSE,warning=FALSE)
 ```
 
 # Load packages
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, tags=c()}
 #library(tidyverse)
 if (!require('tidyverse')) {
    remotes::install_version("tidyverse", version = "1.3.0", repos = "http://cran.us.r-project.org")
@@ -93,6 +93,10 @@ sensor_connectivity_plot <-
   theme(legend.position = "right") +
   scale_y_continuous(expand = c(0, 0))
   sensor_connectivity_plot
+```
+
+```{r}
+(1/10001)<0.0001
 ```
 
 ## D
@@ -235,6 +239,7 @@ eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>%
      values = c(effector_colors,'black'),
      labels = c("EC1 (Chromosome\nSegregation)", "EC2 (Golgi vesicle\nTransport)", "EC3 (Respiratory complex\nassembly)",'Non-effector genes')
    ) +
+    scale_x_discrete(labels=c('EC1','EC2','EC3','Non-effector\ngenes'))+
   xlab("") +
   ylab("Degree") +
   theme_bw() +
@@ -245,7 +250,7 @@ eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>%
    ) +
   theme(
        axis.text.y=element_text(size=10),
-        axis.title.y=element_text(size=14),legend.title = element_blank(),  axis.text.x = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
+        axis.title.y=element_text(size=14),legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
 eff_deg_comp
 ```
 
@@ -260,16 +265,18 @@ eff_eff_comp <- ggplot(effector_pcc %>% #mutate(go_group = fct_reorder(go_group,
    scale_fill_manual(values = effector_colors,
    labels = c("EC1 (Chromosome\nSegregation)", "EC2 (Golgi vesicle\nTransport)", "EC3 (Respiratory complex\nassembly)")) +
   ylab("Effectiveness (a.u.)") +
+    scale_x_discrete(labels=c('EC1','EC2','EC3','Non-effector\ngenes'))+
+
   theme_bw() +
   theme(
         axis.text.y=element_text(size=10),
-        axis.title.y=element_text(size=14),axis.text.x = element_blank(), legend.title = element_blank())
+        axis.title.y=element_text(size=14), legend.title = element_blank())
 eff_eff_comp
 ```
 
 
 ```{r}
-if(snakemake@params['save']==TRUE){
+#if(snakemake@params['save']==TRUE){
   figure_folder = "../reports/figures/paper_figures_052521/"
 ggsave(glue("{figure_folder}/fig3a.png"),plot=sensor_neighbor_degree_plot,width=3,height=3)
 ggsave(glue("{figure_folder}/fig3b.png"),plot=sensor_connectivity_plot,width=3.5,height=2.5)
@@ -278,7 +285,7 @@ ggsave(glue("{figure_folder}/fig3e.png"),plot=sens_sens_comp+theme(legend.positi
 
 
 ggsave(glue("{figure_folder}/fig4a.png"),plot=eff_neighbor_degree_plot,width=3,height=3)
-ggsave(glue("{figure_folder}/fig4c.png"),plot=eff_deg_comp+theme(legend.position='right'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig4c.png"),plot=eff_deg_comp+theme(legend.position='none'),width=3,height=3)
 ggsave(glue("{figure_folder}/fig4d.png"),plot=eff_eff_comp+theme(legend.position='none'),width=3,height=3)
 
 
@@ -290,5 +297,9 @@ legend.key.height = unit(2, 'cm')))
         #guides(fill = guide_legend(override.aes = list(size = 5))))
 legend_plot <- ggdraw(legend)
 ggsave(glue("{figure_folder}/fig3d_legend.pdf"),plot=legend_plot, width=10, height=2)
-}
+#}
+```
+
+```{r}
+
 ```
