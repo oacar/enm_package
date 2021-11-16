@@ -210,6 +210,8 @@ def heatmap_annotated(prs_mat, prs_mat_cl_orig, figure_path, row_linkage, col_li
     
     cbar.ax.get_yaxis().set_ticks_position('left')
     cbar.ax.get_yaxis().set_label_position('left')
+    cbar.ax.tick_params(labelsize=20)
+    
     # plt.show()
     outname = f"{figure_path}/{kwargs.pop('figure_name','prs_heatmap')}.{kwargs.pop('figure_extension','png')}"
     if save_figure:

@@ -1,0 +1,154 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.12.0
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+---
+
+```{r tags=c()}
+Sys.setenv(TAR = "/bin/tar")
+
+# Load packages
+if (!require('remotes')){
+install.packages('remotes', repos='http://cran.us.r-project.org')}
+if (!require('tidyverse')) {
+   remotes::install_version("tidyverse", version = "1.3.0", repos = "http://cran.us.r-project.org")
+   library(tidyverse)
+}
+if (!require('glue')) {
+   remotes::install_version("glue", version = "1.4.1", repos = "http://cran.us.r-project.org")
+   library(glue)
+}
+if (!require('cowplot')) {
+   remotes::install_version("cowplot", version = "1.0.0", repos = "http://cran.us.r-project.org")
+   library(cowplot)
+}
+if (!require('ggpubr')) {
+   remotes::install_version('foreign',version="0.8-72", repos = "http://cran.us.r-project.org")
+   remotes::install_version("ggpubr", version = "0.4.0", repos = "http://cran.us.r-project.org")
+   library(ggpubr)
+}
+if (!require('ggsignif')) {
+   remotes::install_version("ggsignif", version = "0.6.0", repos = "http://cran.us.r-project.org")
+   library(ggsignif)
+}
+if (!require('RColorBrewer')) {
+   remotes::install_version("RColorBrewer", version = "0.6.0", repos = "http://cran.us.r-project.org")
+   library(RColorBrewer)
+}
+
+plot_density_prs <-
+    function
+(
+    df , x , xlab= 'Effectiveness (a.u.)', ylab='Density', coord_trans='log10', linesize = 1
+)
+{
+    color_pal <- c('#00BFC4','#F8766D')
+dens_plot <- 
+    ggplot()+
+    #facet_grid(rows=vars(data))+
+#    geom_density()+
+    geom_line(data= df%>%filter(group=='real'),
+               aes(x={{x}} ,y=..scaled.., color=group),
+               stat = 'density')+#, binwidth = 0.1) + 
+    geom_line(data= df%>%filter(group=='random'),
+               aes(x={{x}} ,y=..scaled..,fill=random_id, color=group),linetype='dashed',
+               stat = 'density' ,show.legend=F)+#, binwidth = 0.1) + 
+    geom_vline(data= df%>%filter(group=='real')%>%mutate(g = T),aes(xintercept = mean({{x}}), linetype='Real'),color=color_pal[1],size=linesize, show.legend=NA)+
+    geom_vline(data= df%>%filter(group=='random')%>%mutate(g = F),aes(xintercept = mean({{x}}),linetype='Random', group=random_id),color=color_pal[2], size=linesize,show.legend=NA)+
+    scale_linetype_manual(name = "Limits", labels = c("real", "random"), values = c("Real" = 3, "Random" = 3)) +
+    guides(colour=guide_legend(override.aes = list(linetype=1)),
+           linetype=guide_legend(override.aes=list(colour=color_pal)))+
+    theme_bw()+
+    ylab(ylab)+
+    xlab(xlab)+
+    coord_trans(x = coord_trans)+
+scale_x_continuous(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10", scales::math_format(10^.x))
+ ) +
+    scale_color_discrete(labels=c('Rewired\nnetworks','PSN'))+
+theme(legend.text = element_text(margin = margin(b = 10)), panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())
+dens_plot
+}
+```
+
+```{r}
+# smake<-setClass("smake",slots=list(input="list"))
+# snakemake <- new("smake",input=list("sensor_connectivity_df"="../data/interim/sensor_connectivity_df.csv", "pcc_df"='../data/interim/pcc_df.csv',"sensors_pcc"="../data/interim/sensors_df.csv",'effector_pcc'='../data/interim/effectors_df.csv',
+# "rwr_row"="../data/interim/rwr_ranked_goa_rows.csv","prs_row"="../data/interim/prs_ranked_goa_rows.csv",
+# "rwr_column"="../data/interim/rwr_ranked_goa_columns.csv","prs_column"="../data/interim/prs_ranked_goa_columns.csv"))
+```
+
+```{r, tags=c()}
+pcc_df_list <- list()
+
+for(i in snakemake@params[['thr_list']]){
+    pcc_df <- read_csv(paste0(snakemake@params[['folder_prefix']],'_',i,'/pcc_df.csv'))
+    pcc_df_random <- read_csv(paste0(snakemake@params[['folder_prefix']],'_',i,'/pcc_df_random_10.csv'))%>%mutate(random_id=factor(random_id))
+    pcc_df <- pcc_df %>%
+      mutate(data = "pcc") %>%
+      mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real") %>%
+      bind_rows(
+        pcc_df_random %>% mutate(data = "pcc") %>% mutate(sens_norm = sens / nrow(pcc_df), eff_norm = eff / nrow(pcc_df), group = "random")
+      ) %>%
+      mutate(group = fct_relevel(group, c("real", "random")))
+    pcc_df_list[[as.character(i)]] <- pcc_df
+}
+```
+
+```{r}
+text_size = 15
+label_size = 17
+```
+
+```{r}
+pcc_eff_dens <-
+  plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness (a.u.)")
+dens_lgn <- cowplot::get_legend(pcc_eff_dens + theme(legend.position = "right"))
+#  cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+pcc_eff_dens_list <- list()
+pcc_sens_dens_list <- list()
+for(i in as.character( snakemake@params[['thr_list']])){
+   pcc_eff_dens <-
+  cowplot::ggdraw(plot_density_prs(pcc_df_list[[i]], eff_norm, xlab = "Effectiveness (a.u.)") + theme(plot.title = element_text(size = 20),legend.position = "none",axis.text=element_text(size=text_size),axis.title = element_text(size=label_size)) +
+    ggtitle(paste0('PCC≥',i))+coord_trans(x = "log10", xlim = c(NA, NA)) +
+    scale_x_continuous(
+      breaks = scales::trans_breaks("log10", function(x) 10^x),
+      labels = scales::trans_format("log10", scales::math_format(10^.x))
+    )) #+
+
+    pcc_sensitivity_dens <-
+      cowplot::ggdraw(plot_density_prs(pcc_df_list[[i]], sens_norm, xlab = "Sensitivity (a.u.)") +ggtitle(paste0('PCC≥',i))+ theme(plot.title = element_text(size = 20),legend.position = "none",axis.text=element_text(size=text_size),axis.title = element_text(size=label_size))) #+
+    pcc_eff_dens_list[[i]]<- pcc_eff_dens + theme(legend.position='none') 
+    pcc_sens_dens_list[[i]]<- pcc_sensitivity_dens + theme(legend.position='none')
+}
+
+```
+
+```{r}
+eff_group <- plot_grid(plotlist=pcc_eff_dens_list)
+
+```
+
+```{r}
+sens_group <- plot_grid(plotlist=pcc_sens_dens_list)
+
+```
+
+```{r, fig.height=12, fig.width=8}
+options(repr.plot.width  = 8,
+        repr.plot.height = 12)
+plot_grid(eff_group, sens_group, ncol=1,labels = c('A','B'), label_size=20)
+if(snakemake@params[['save']]==TRUE){
+    
+    ggsave('reports/figures/paper_figures_supp/figures1_comb.png',width= 8, height=12)
+    }
+```

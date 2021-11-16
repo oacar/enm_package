@@ -143,7 +143,7 @@ rule figure2:
     params:
         save=SAVE_FIGURES
     conda:
-        "r_env.yml"
+        "r_env_2.yml"
     output: "reports/02-Figure2-051321.html"
     script:
         "notebooks/02-Figure2-051321.Rmd"
@@ -159,7 +159,7 @@ rule figure3_4:
     container:
         "docker://rocker/tidyverse"
     conda:
-        "r_env.yml"
+        "r_env_2.yml"
     output: "reports/03-Fig3abde_4acd-051821.html"
     script:
         "notebooks/03-Fig3abde_4acd-051821.Rmd"
@@ -174,7 +174,7 @@ rule figure5:
     params:
         save=SAVE_FIGURES
     conda:
-        "r_env.yml"
+        "r_env_2.yml"
     output: "reports/04-Fig5b-052721.html"
     script:
         "notebooks/04-Fig5b-052721.Rmd"

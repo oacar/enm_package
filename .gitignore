@@ -101,3 +101,11 @@ reports/figures/*
 
 .snakemake
 GO-TermFinder-0.86
+
+.virtual_documents
+*tmp*
+*RData
+*Rplots*
+./*png
+./*py
+scripts/analyze.pl

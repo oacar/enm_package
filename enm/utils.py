@@ -12,13 +12,13 @@ from goatools.anno.gaf_reader import GafReader
 from goatools.goea.go_enrichment_ns import GOEnrichmentStudyNS
 
 
-from .Enm import *
+#from .Enm import *
 
-def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/ontology/go-basic.obo', background='../data/raw/ontology/sgd_costanzogenes', sgd_info_tab='../data/raw/ontology/SGD_features.tab',species='yeast',**kwargs):
+def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/ontology/go-basic.obo', background='../data/raw/ontology/sgd_costanzogenes', sgd_info_tab='../data/raw/ontology/SGD_features.tab',species='yeast',goset= ['BP'] , methods =['fdr'] , **kwargs):
     
     #background='../data/raw/ontology/sgd_costanzogenes'
     obodag = GODag(obo_fname,optional_attrs={'relationship'})
-    objanno = GafReader(gaf,namespaces=set(['BP']))
+    objanno = GafReader(gaf,namespaces=set(goset))
 #    ns2assoc = objanno.get_ns2assc()
 
     ns2assoc_excl = objanno.get_ns2assc( ev_exclude = {'HGI' , 'IGI'})
@@ -36,9 +36,9 @@ def create_goea(gaf = '../data/raw/ontology/sgd.gaf', obo_fname = '../data/raw/o
         propagate_counts=True,
         relationships=True,
         alpha=0.1,  # default significance cut-off
-        methods=['fdr'], prt=None)
+        methods=methods, prt=None)
 
-    return goeaobj, geneid2name#, objanno, ns2assoc, ns2assoc_excl
+    return goeaobj, geneid2name , obodag #, objanno, ns2assoc, ns2assoc_excl
 
 def goea_to_pandas(goea_results_sig, geneid2name):
     """ Converts goea object from goatools GO enrichment test to a Pandas dataframe
@@ -54,6 +54,8 @@ def goea_to_pandas(goea_results_sig, geneid2name):
     for i in go_df_n.study_items:
         orf_names.append([geneid2name[_id] for _id in i])
     go_df_n.study_items = orf_names
+    if 'p_fdr' in go_df_n.columns:
+        go_df_n['p_fdr_fix'] = (go_df_n['p_fdr']*500+1)/501
     return go_df_n 
 
 
@@ -71,7 +73,7 @@ def query_goatools(query, goea,geneid2name):
     """
     query_gene_ids = [key for key,value in geneid2name.items() if value in query.loc[:,'Systematic gene name'].unique()]
     goea_res_all = goea.run_study(query_gene_ids)
-    goea_res_sig = [r for r in goea_res_all if r.p_fdr<0.1]
+    goea_res_sig = [r for r in goea_res_all if r.p_fdr<0.098]
     go_df_sensor = goea_to_pandas(goea_res_sig, geneid2name)
     return go_df_sensor
 
@@ -167,14 +169,15 @@ def get_random_in_to_out_ratio(gnm_df, df , G):
         random_ratio_list.append(get_in_to_out_edge_ratio(G, rand_nodes))
     return random_ratio_list
 
-# def get_subnetwork(gc, subset):
-#     neighbors =[[n for n in nx.neighbors(gc, i)] for i in subset]
-#     flat_list = [item for sublist in neighbors for item in sublist]
-#     flat_list.extend(subset)
-#     sub_gc = nx.induced_subgraph(gc, flat_list).copy()
-#     for (n,d) in sub_gc.nodes(data=True):
-#         del d["pos"]
-#     return sub_gc
+def get_subnetwork(gc, subset, radius = 1):
+    neighbors =[[n for n in nx.ego_graph(gc, i, radius=radius).nodes] for i in subset]
+    flat_list = [item for sublist in neighbors for item in sublist]
+    flat_list.extend(subset)
+    sub_gc = nx.induced_subgraph(gc, flat_list).copy()
+    for (n,d) in sub_gc.nodes(data=True):
+        if 'pos' in d.keys():
+            del d["pos"]
+    return sub_gc
 
 
 # def get_maximal_subsets(sets):
@@ -246,3 +249,28 @@ def get_path_positions(enm, sensors_sub, effectors_sub):
         if i in sensor_pos.keys():
             path_init_pos[i]=sensor_pos[i]
     return sensor_pos, effector_pos, path_init_pos,sub, l1, wmin
+
+def convert_rpy2_to_pandas(df):
+    import rpy2.robjects as ro
+    from rpy2.robjects import pandas2ri
+
+    with ro.conversion.localconverter(ro.default_converter + pandas2ri.converter):
+        pd_from_r_df = ro.conversion.rpy2py(df)
+
+    return pd_from_r_df
+
+def get_result_dfs(fname, thr_list, default_thr=None, folder_prefix= '../data/interim'):
+    def read_csv(fname):
+        try:
+            df = pd.read_csv(fname)
+        except pd.errors.EmptyDataError:
+            print(f"{fname} is empty")
+            df = None
+        return df
+
+    dfs = {thr: read_csv(f"{folder_prefix}_{thr}/{fname}.csv") for thr in thr_list if thr!=default_thr}
+    if default_thr is not None:
+        dfs[default_thr] = pd.read_csv(f"{folder_prefix}/{fname}.csv")
+    if default_thr not in thr_list and default_thr is not None:
+        thr_list.insert(0, default_thr)                               
+    return dfs

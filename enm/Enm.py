@@ -86,7 +86,7 @@ class Enm():
         self.G = G
         self.giant_component()
 
-    def giant_component(self):
+    def giant_component(self, **kwargs):
         """From the graph variable create giant component and assing nodes and degree to Enm object
         """
 
@@ -97,6 +97,7 @@ class Enm():
         self.nodes = nodes
         degree = [deg for id, deg in list(self.graph_gc.degree)]
         self.degree = degree
+        self.laplacian_matrix(**kwargs)
 
     def laplacian_matrix(self, normalized=False,**kwargs):
         """get Laplacian matrix of the giant component. Wrapper around networkx.laplacian_matrix
