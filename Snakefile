@@ -87,8 +87,6 @@ rule figure2:
         pcc_df_random = f"{OUTPUT_PATH}/pcc_df_random_{N_SIM}.csv"
     params:
         save=SAVE_FIGURES
-    conda:
-        "r_env.yml"
     output: "reports/02-Figure2-051321.html"
     script:
         "notebooks/02-Figure2-051321.Rmd"
@@ -101,8 +99,6 @@ rule figure3_4:
         effector_pcc = f"{OUTPUT_PATH}/effectors_df.csv",
     params:
         save=SAVE_FIGURES
-    conda:
-        "r_env.yml"
     output: "reports/03-Fig3abde_4acd-051821.html"
     script:
         "notebooks/03-Fig3abde_4acd-051821.Rmd"

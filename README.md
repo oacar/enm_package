@@ -9,32 +9,31 @@ Project Organization
 ------------
 
     ├── LICENSE
-    ├── Snakefile          <- Snakemake with rules to create intermediate data and figures from raw data 
-    ├── Snakefile_with_supp<- Snakemake with rules to create figures from intermediate data
-    ├── README.md          <- The top-level README for people using this project.
+    ├── Snakefile                      <- Snakemake with rules to create intermediate data and figures from raw data 
+    ├── Snakefile_different_thresholds <- Snakemake with rules to create intermediate data and figures from raw data 
+    ├── README.md                      <- The top-level README for people using this project.
     ├── data
-    │   ├── supp           <- Intermediate data that has been transformed and used for figure generation.
-    │   └── raw            <- The original, immutable data dump.
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
+    │   ├── intermediate                       <- Intermediate data that has been transformed and used for figure generation.
+    │   └── raw                        <- The original, immutable data should be placed here.
+    ├── docs                           <- A default Sphinx project; see sphinx-doc.org for details
     │
-    ├── notebooks          <- Jupyter and/or Rmarkdown notebooks for figure generation.
+    ├── notebooks                      <- Jupyter and/or Rmarkdown notebooks for figure generation.
     │
-    ├── reports            <- Folder to re-generate notebooks as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Figures used in the paper 
-    ├── reports_done       <- Generated notebooks as HTML, PDF, LaTeX, etc.
+    ├── reports                        <- Folder to re-generate notebooks as HTML, PDF, LaTeX, etc.
+    │   └── figures                    <- Figures used in the paper 
+    ├── reports_done                   <- Generated notebooks as HTML, PDF, LaTeX, etc.
     │
-    ├── enm_snakemake.yml  <- The environment file for reproducing the analysis conda environment. Used for python scripts in Snakemake
-    ├── r_env.yml          <- The environment file for reproducing the analysis conda environment. Used for R scripts in Snakemake
+    ├── enm_snakemake.yml              <- The environment file for reproducing the analysis conda environment. Used for python scripts in Snakemake
     │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so enm can be imported
-    ├── enm                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes enm a Python module
-    │   ├── Enm.py         <- Contains Enm class and related functions 
-    │   ├── visualize.py   <- Makes enm a Python module
-    │   ├── utils.py       <- Contains functions that have been used in this project 
+    ├── setup.py                       <- makes project pip installable (pip install -e .) so enm can be imported
+    ├── enm                            <- Source code for use in this project.
+    │   ├── __init__.py                <- Makes enm a Python module
+    │   ├── Enm.py                     <- Contains Enm class and related functions 
+    │   ├── visualize.py               <- Makes enm a Python module
+    │   ├── utils.py                   <- Contains functions that have been used in this project 
     │
-    ├── scripts            <- Contains scripts to generate intermediate data/results. All scripts could be run with Snakemake 
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+    ├── scripts                        <- Contains scripts to generate intermediate data/results. All scripts could be run with Snakemake 
+    └── tox.ini                        <- tox file with settings for running tox; see tox.readthedocs.io
 
 
 --------
@@ -76,18 +75,11 @@ snakemake -j10 --use-conda --conda-frontend conda all
 This will run rules based on the following DAG:
 ![Snakemake DAG](dag.png)
 
-`--use-conda --conda-frontend` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter and r/rmarkdown files. Figure 2 and Figure 5 dependencies will take longer to run, depending on cpu and number of cores. I don't suggest running them blindly. 
+`--use-conda --conda-frontend` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter files. Figure 2 and Figure 5 dependencies will take longer to run, depending on cpu and number of cores. I don't suggest running them blindly. 
 
-Alternatively, it is also possible to use interim data generated in the project to regenerate figures. `Snakefile_with_supp` will use data available in `data/supp` folder to regenerate Figure2 to Figure 5, except network figures.
+Conda environment and R do not always play nicely. Rmarkdown files will install the dependencies when snakemake is run. Depending on the system this might cause errors but when the prerequisites are installed, there won't be any more issues. 
 
-```bash
-snakemake -s Snakefile_with_supp -j10 --use-conda --conda-frontend conda 
-```
+Additionally `Snakefile_different_thresholds` file can be used to create supplementary figures and related data for Supplementary Figures S1, S3 and S4. 
 
-Finally, one can also create a conda environment with following, change the input file names in scripts and notebooks manually and run them manually. This is not suggested.
-
-```bash
-conda env create -n enm_package_env -f enm_snakemake.yml
-```
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. Though many edits were applied. #cookiecutterdatascience</small></p>
