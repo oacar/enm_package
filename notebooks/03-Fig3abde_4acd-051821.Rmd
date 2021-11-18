@@ -279,7 +279,7 @@ eff_eff_comp
 
 ```{r}
 #if(snakemake@params['save']==TRUE){
-  figure_folder = "../reports/figures/paper_figures_052521/"
+  figure_folder = "reports/figures/paper_figures_052521/"
 ggsave(glue("{figure_folder}/fig3a.png"),plot=sensor_neighbor_degree_plot,width=3,height=3)
 ggsave(glue("{figure_folder}/fig3b.png"),plot=sensor_connectivity_plot,width=3.5,height=2.5)
 ggsave(glue("{figure_folder}/fig3d.png"),plot=sens_deg_comp+theme(legend.position='none'),width=3.9,height=2.1)

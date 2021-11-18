@@ -45,7 +45,7 @@ figure_folder = "reports/figures/paper_figures_052521"
 # # Read Enm pickle object
 
 # %%
-with open('../data/interim/pcc.pickle','rb') as f:
+with open(snakemake.input.pickle_file_name,'rb') as f:
     e_pcc = pickle.load(f)
 
 
@@ -292,7 +292,7 @@ change_go_group_names = True#snakemake.params['change_go_group_name']
 # }
 
 # %%
-sensors_pcc = pd.read_csv('../data/interim/sensors_df.csv')
+sensors_pcc = pd.read_csv(snakemake.input.sensors_pcc)
 # sensor_colors = ["#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33"]
 # if change_go_group_names:
 #    sensors_pcc['go_group']=sensors_pcc['go_group'].map(sensor_go_rename,na_action='ignore')
@@ -448,13 +448,13 @@ lgd = ax.legend(handles=antenna_legend,
                 loc = 'center',
                 bbox_to_anchor=(0., 0., 1, 1))
 # if snakemake.params['save']:
-fig.savefig(f'../reports/figures/paper_figures_052521//fig3f_legend.png',dpi=150,bbox_inches='tight')
+fig.savefig(f'{figure_folder}/fig3f_legend.png',dpi=150,bbox_inches='tight')
 
 # %% [markdown]
 # # Figure 4B
 
 # %%
-effector_pcc = pd.read_csv('../data/interim/effectors_df.csv')
+effector_pcc = pd.read_csv(snakemake.input.effector_pcc)
 #effector_colors = ["#A65628", "#F781BF", "#999999"]
 effector_order_orig = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
 effector_colors = ["#A65628", "#F781BF", "#999999",'blue','yellow','red']
@@ -521,121 +521,65 @@ lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center', bbox_to_ancho
 nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
 ax.axis('off')
 # if snakemake.params['save']:
-plt.savefig(f'../{figure_folder}/fig4b.png',bbox_inches='tight',dpi=150)
+plt.savefig(f'{figure_folder}/fig4b.png',bbox_inches='tight',dpi=150)
 
 # %% [markdown]
 # # Figure 5D/F
 
 # %%
 #define source and target effector/sensor clusters
-plot_paths = snakemake.params['plot_paths']
-if plot_paths:
-    eff_group = 'Chromosome segregation'
-    sens_group = "SC6\nMitochondria nucleus\nsignaling pathway"
-    sub_list = []
-    #select source and target gene from respective clusters
-    source = 'ctf4'
-    target = 'rtg1'
-    #calculate source and tartget
-    l1 = e_pcc.get_prs_weighted_path(source,target)[1]
-    sub_list.extend(l1)
-    sub = nx.induced_subgraph(e_pcc.graph_gc, l1)
-    node_sub=nx.induced_subgraph(sub,[i for i in l1 if i !=target])
 
-    fig, ax = plt.subplots(figsize=(7,7))
-    legend_elements = [    ]
-    nx.draw_networkx_nodes(e_pcc.graph_gc, pos=pos, node_size=1, ax=ax, node_color='black')
+eff_group = 'Chromosome segregation'
+sens_group = "SC6\nMitochondria nucleus\nsignaling pathway"
+sub_list = []
+#select source and target gene from respective clusters
+source = 'ctf4'
+target = 'rtg1'
+#calculate source and tartget
+l1 = e_pcc.get_prs_weighted_path(source,target)[1]
+sub_list.extend(l1)
+sub = nx.induced_subgraph(e_pcc.graph_gc, l1)
+node_sub=nx.induced_subgraph(sub,[i for i in l1 if i !=target])
 
-    nx.draw_networkx_nodes(node_sub,pos=pos,alpha=0.8,
-                        #  node_size = [prs_mat_df.loc[source,:].to_dict()[i]*10000 for i in sub.nodes],
-        node_color = 'black')
+fig, ax = plt.subplots(figsize=(7,7))
+legend_elements = [    ]
+nx.draw_networkx_nodes(e_pcc.graph_gc, pos=pos, node_size=1, ax=ax, node_color='black')
 
-    nx.draw_networkx_edges(sub,pos=pos)
-    for itr, i in enumerate(sensor_order):
-        if i == sens_group:
-            orf_names_to_plot = sensors_pcc.loc[sensors_pcc.label==i, 'orf_name'].tolist()
-            print(orf_names_to_plot)
-            sub_list.extend(orf_names_to_plot)
+nx.draw_networkx_nodes(node_sub,pos=pos,alpha=0.8,
+                    #  node_size = [prs_mat_df.loc[source,:].to_dict()[i]*10000 for i in sub.nodes],
+    node_color = 'black')
 
-            nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
-                                node_color=sensor_colors[itr],
-                                node_shape='^',edgecolors='black',
-                                linewidths=1)
-            nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='red',alpha=0.5)
+nx.draw_networkx_edges(sub,pos=pos)
+for itr, i in enumerate(sensor_order):
+    if i == sens_group:
+        orf_names_to_plot = sensors_pcc.loc[sensors_pcc.label==i, 'orf_name'].tolist()
+        print(orf_names_to_plot)
+        sub_list.extend(orf_names_to_plot)
 
-            legend_elements.append(
-                Line2D([0], [0], marker='^', color='black', label=f'Sensors ({i})',
-                                    markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
-            )
+        nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                            node_color=sensor_colors[itr],
+                            node_shape='^',edgecolors='black',
+                            linewidths=1)
+        nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='red',alpha=0.5)
 
-    for itr, i in enumerate(effector_order):
-        if i == eff_group:
-            orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
-            sub_list.extend(orf_names_to_plot)
+        legend_elements.append(
+            Line2D([0], [0], marker='^', color='black', label=f'Sensors ({i})',
+                                markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
+        )
 
-            nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
-                                node_color=effector_colors[itr],
-                                node_shape='s',edgecolors='black',
-                                linewidths=1)
-            nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
-    ax.set_facecolor('white')
-    ax.axis('off')
-    if snakemake.params['save']:
-        plt.savefig(f'{figure_folder}/fig5d.png',bbox_inches='tight',dpi=150)
-    
-    nx.write_edgelist(nx.induced_subgraph(e_pcc.graph_gc,sub_list),f'{figure_folder}/path1.csv', delimiter=',',data=False)
+for itr, i in enumerate(effector_order):
+    if i == eff_group:
+        orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
+        sub_list.extend(orf_names_to_plot)
 
-# %%
-if plot_paths:
-    eff_group = 'Respiratory complex assembly'
-    sens_group = 'SC5\nIron ion\ntransport'
-    sub_list  = [ ]
-    source = 'coa1'
-    target = 'fet3'
-    l1 = e_pcc.get_prs_weighted_path(source,target)[1]
-    sub_list.extend(l1)
-    sub = nx.induced_subgraph(e_pcc.graph_gc, l1)
-    node_sub=nx.induced_subgraph(sub,[i for i in l1 if i !=target])
-    #print(l1)
-    fig, ax = plt.subplots(figsize=(7,7))
-    legend_elements = [    ]
-    nx.draw_networkx_nodes(e_pcc.graph_gc, pos=pos, node_size=1, ax=ax, node_color='black')
-    nx.draw_networkx_nodes(node_sub,pos=pos,alpha=1,
-                        #  node_size = [prs_mat_df.loc[source,:].to_dict()[i]*10000 for i in sub.nodes],
-                        # node_shape = ['^' if i == target else 'o' for i in sub.nodes],
-        node_color = [sensor_colors[5]  if i in ['sit1','ftr1'] else 'black' for i in node_sub.nodes])
-    nx.draw_networkx_edges(sub,pos=pos)
-    for itr, i in enumerate(sensor_order):
-        #print(i, effector_colors[itr])
-        if i ==sens_group:
-            orf_names_to_plot = sensors_pcc.loc[sensors_pcc.label==i, 'orf_name'].tolist()
-            sub_list.extend(orf_names_to_plot)
-            nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
-                                node_color=sensor_colors[itr],
-                                node_shape='^',edgecolors='black',
-                                linewidths=1)
-            nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='red',alpha=0.5)
+        nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                            node_color=effector_colors[itr],
+                            node_shape='s',edgecolors='black',
+                            linewidths=1)
+        nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
+ax.set_facecolor('white')
+ax.axis('off')
+if snakemake.params['save']:
+    plt.savefig(f'{figure_folder}/fig5d.png',bbox_inches='tight',dpi=150)
 
-            legend_elements.append(
-                Line2D([0], [0], marker='^', color='black', label=f'Sensors ({i})',
-                                    markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
-            )
-
-    for itr, i in enumerate(effector_order):
-        if i == eff_group:
-            orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
-            sub_list.extend(orf_names_to_plot)
-            nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
-                                node_color=effector_colors[itr],
-                                node_shape='s',edgecolors='black',
-                                linewidths=1)
-            nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
-
-    ax.set_facecolor('white')
-    ax.axis('off')
-
-    if snakemake.params['save']:
-        plt.savefig(f'{figure_folder}/fig5f.png',bbox_inches='tight',dpi=150)
-    nx.write_edgelist(nx.induced_subgraph(e_pcc.graph_gc,sub_list),f'{figure_folder}/path2.csv', delimiter=',',data=False)
-
-# %%
+nx.write_edgelist(nx.induced_subgraph(e_pcc.graph_gc,sub_list),f'{figure_folder}/path1.csv', delimiter=',',data=False)

@@ -63,7 +63,7 @@ To re-create the figures/reports starting from raw data, first create a conda en
 ```bash
 conda create -n enm_package_env
 conda activate enm_package_env
-conda install snakemake
+conda install snakemake pandoc
 ```
 
 Then run snakemake:
