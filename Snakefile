@@ -16,7 +16,7 @@ rule all:
         "reports/02-Figure2-051321.html",
         "reports/03-Fig3abde_4acd-051821.html",
         "reports/04-Signaling-related-effector-sensors.ipynb",
-        "reports/05-Figs2.ipynb",
+        #"reports/05-Figs2.ipynb",
         "reports/08-Fig5abc_figs5.ipynb"
 
 
@@ -26,6 +26,7 @@ rule read_costanzo_data:
         f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     params: 
         output_path = OUTPUT_PATH
+
     conda:
         "enm_snakemake.yml"
     output: 
@@ -39,7 +40,8 @@ rule create_enm_object:
         network_file = f"{OUTPUT_PATH}/costanzo_pcc_ALL" ,
         strain_ids_file = f"{OUTPUT_PATH}/strain_ids.csv"
     params:
-        output_path = OUTPUT_PATH
+        output_path = OUTPUT_PATH,
+        cluster_matrix = True
     conda:
         "enm_snakemake.yml"
     output: 
@@ -73,6 +75,8 @@ rule effector_sensor_go:
         obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
         background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
     output:
         sensors_df_fname = f"{OUTPUT_PATH}/sensors_df.csv",
         effectors_df_fname = f"{OUTPUT_PATH}/effectors_df.csv",
@@ -139,13 +143,16 @@ rule figs2:
         background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     output: 
-        rewired_data_folder = 'data/interim/rewired_data10test',
+        rewired_data_folder = 'data/interim/rewired_data',
+        notebook="reports/05-Figs2.ipynb"
+    logs:
         notebook="reports/05-Figs2.ipynb"
     conda:
         "enm_snakemake.yml"
     params:
         save=SAVE_FIGURES,
-        sim_num =10
+        sim_num =10,
+        figure_folder = 'reports/figures/paper_figures_supp/'
     notebook: "notebooks/05-Figs2.ipynb"
 
 

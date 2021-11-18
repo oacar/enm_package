@@ -15,7 +15,8 @@ print("calculating node positions")
 enm.spring_pos(seed=12)
 strain_ids = pd.read_csv(snakemake.input['strain_ids_file'])
 print("clustering prs matrix")
-enm.cluster_matrix(enm.prs_mat)
+if snakemake.params['cluster_matrix']:
+    enm.cluster_matrix(enm.prs_mat)
 neighbor_degree = []
 for i in enm.graph_gc.nodes:
     neighbor_degree.append(np.average([enm.df.loc[enm.df.orf_name==a,'deg'].values for a in nx.neighbors(enm.graph_gc,i)]))

@@ -526,7 +526,7 @@ plt.savefig(f'{figure_folder}/fig4b.png',bbox_inches='tight',dpi=150)
 # %% [markdown]
 # # Figure 5D/F
 
-# %%
+# %% jupyter={"outputs_hidden": true} tags=[]
 #define source and target effector/sensor clusters
 
 eff_group = 'Chromosome segregation'
@@ -567,19 +567,20 @@ for itr, i in enumerate(sensor_order):
                                 markerfacecolor=sensor_colors[itr], markersize=12, linestyle="None")
         )
 
-for itr, i in enumerate(effector_order):
-    if i == eff_group:
-        orf_names_to_plot = effector_pcc.loc[effector_pcc.go_group==i,'orf_name'].tolist()
-        sub_list.extend(orf_names_to_plot)
 
-        nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
-                            node_color=effector_colors[itr],
-                            node_shape='s',edgecolors='black',
-                            linewidths=1)
-        nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
+orf_names_to_plot = effector_pcc.loc[effector_pcc.effector_cluster==0,'orf_name'].tolist()
+sub_list.extend(orf_names_to_plot)
+
+nx.draw_networkx_nodes(e_pcc.graph_gc, nodelist=orf_names_to_plot, node_size=200, pos=pos,
+                    node_color=effector_colors[0],
+                    node_shape='s',edgecolors='black',
+                    linewidths=1)
+nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, orf_names_to_plot), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
 ax.set_facecolor('white')
 ax.axis('off')
 if snakemake.params['save']:
     plt.savefig(f'{figure_folder}/fig5d.png',bbox_inches='tight',dpi=150)
 
 nx.write_edgelist(nx.induced_subgraph(e_pcc.graph_gc,sub_list),f'{figure_folder}/path1.csv', delimiter=',',data=False)
+
+# %%

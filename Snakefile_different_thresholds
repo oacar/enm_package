@@ -36,7 +36,8 @@ rule create_enm_object:
         network_file = "data/interim_{thr}/costanzo_pcc_ALL" ,
         strain_ids_file = "data/interim_{thr}/strain_ids.csv"
     params:
-        output_path = "data/interim_{thr}"
+        output_path = "data/interim_{thr}",
+        cluster_matrix = False
     conda:
         "enm_snakemake.yml"
     output: 
@@ -54,6 +55,8 @@ rule effector_sensor_go:
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     params:
         thr = "{thr}"
+    conda:
+        "enm_snakemake.yml"
     output:
         sensors_df_fname = "data/interim_{thr}/sensors_df.csv",
         effectors_df_fname = "data/interim_{thr}/effectors_df.csv",
@@ -97,8 +100,6 @@ rule figs1:
         thr_list = [0.1,0.2,0.3,0.4],
         folder_prefix = 'data/interim',
         save = SAVE_FIGURES
-    conda:
-        "r_env.yml"
     script:
         "notebooks/07-Figs1.Rmd"
         

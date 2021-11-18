@@ -75,7 +75,7 @@ snakemake -j10 --use-conda --conda-frontend conda all
 This will run rules based on the following DAG:
 ![Snakemake DAG](dag.png)
 
-`--use-conda --conda-frontend` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter files. Figure 2 and Figure 5 dependencies will take longer to run, depending on cpu and number of cores. I don't suggest running them blindly. 
+`--use-conda --conda-frontend` directive will download and install necessary packages and run the scripts in a conda environment for both python/jupyter files. Figure 2 and Supplementary Figures will take longer to generate, depending on cpu and number of cores. I don't suggest running them blindly. 
 
 Conda environment and R do not always play nicely. Rmarkdown files will install the dependencies when snakemake is run. Depending on the system this might cause errors but when the prerequisites are installed, there won't be any more issues. 
 

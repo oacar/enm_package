@@ -68,17 +68,20 @@ effector_pcc <- read_csv(snakemake@input[['effector_pcc']])#'../data/interim/eff
 # Figure3
 ## A
 ```{r}
-sensor_neighbor_degree_plot <- pcc_df %>%
+#sensor_neighbor_degree_plot <- 
+pcc_df %>%
   mutate(is_sensor = factor(ifelse(sens > quantile(sens, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
-  ggplot(aes(x = is_sensor, y = log(neighbor_degree))) +
-  geom_boxplot() +
-  theme_bw() +
-  ylab("Log(Average neighbor degree)") +
-  xlab("") +
-  stat_compare_means() +
-  scale_x_discrete(labels = c("Sensor", "Not Sensor"))
-  sensor_neighbor_degree_plot
+  group_by(is_sensor)%>%
+    summarise(mean = mean(neighbor_degree), median = median(neighbor_degree))
 
+```
+
+```{r}
+25.18/3.38
+```
+
+```{r}
+20.7/3
 ```
 
 ## B
