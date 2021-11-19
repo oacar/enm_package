@@ -15,7 +15,7 @@ rule all:
         "reports/01-Fig1bcd_3c_4b_5df-052421.html",
         "reports/02-Figure2-051321.html",
         "reports/03-Fig3abde_4acd-051821.html",
-        "reports/04-Signaling-related-effector-sensors.ipynb",
+        "reports/04-Signaling-related-effector-sensors.html",
         #"reports/05-Figs2.ipynb",
         "reports/08-Fig5abc_figs5.ipynb"
 
@@ -198,3 +198,12 @@ rule eff_sens_signaling:
         notebook="reports/04-Signaling-related-effector-sensors.ipynb",
         sensors_signaling_df = 'data/interim/signaling_related_sensors.csv'
     notebook: "notebooks/04-Signaling-related-effector-sensors.ipynb"
+
+
+rule signaling_related_sensors_html:
+    input: 
+        "reports/04-Signaling-related-effector-sensors.ipynb"
+    conda:
+        "enm_snakemake.yml"
+    output: "reports/04-Signaling-related-effector-sensors.html"
+    shell: "jupyter nbconvert {input} --to html"

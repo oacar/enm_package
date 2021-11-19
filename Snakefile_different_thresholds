@@ -13,8 +13,8 @@ SAVE_FIGURES = True
 rule all:
     input: 
         expand("data/interim_{thr}/sensors_df.csv", thr = thresholds),
-        "reports/06-Figs3s4.ipynb",
-        expand(f"data/interim_{{thr}}/pcc_df_random_{N_SIM}.csv", thr = thresholds),
+        "reports/06-Figs3s4.html",
+        expand(f"data/interim_{{thr}}/pcc_df_random_{N_SIM}.csv", thr = [0.1,0.2,0.3,0.4]),
         "reports/07-Figs1.html" 
 rule read_costanzo_data:
     input: 
@@ -88,7 +88,13 @@ rule figs3s4:
     notebook:
         "notebooks/06-Figs3s4.ipynb"
     
-
+rule figures3s4_html:
+    input: 
+        "reports/06-Figs3s4.ipynb"
+    conda:
+        "enm_snakemake.yml"
+    output: "reports/06-Figs3s4.html"
+    shell: "jupyter nbconvert {input} --to html"
 
 rule figs1:
     input:

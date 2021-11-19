@@ -46,7 +46,7 @@ def plot_go_thr_comparison(dfs, col, yaxis,plotname, xlab='PCC Threshold', save=
         df = dfs[i]
         n_goterms.append(df.dropna(subset=['go_group']).shape[0])
         rat_goterms.append(n_goterms[-1]/df.shape[0])
-        n_clusters.append(df.dropna(subset=[col]).loc[:,col].nunique())
+        n_clusters.append(df.dropna(subset=[col]).loc[df[col]!='Unclustered',col].nunique())
         n_go_clusters.append(df.dropna(subset=[col]).loc[:,'go_group'].nunique())
         
     fig, axs = plt.subplots(1,2,figsize=(5,2.5))
