@@ -25,8 +25,8 @@ rule read_costanzo_data:
         f"{RAW_INPUT_PATH}/Data File S3. Genetic interaction profile similarity matrices/cc_ALL.txt",
         f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     params: 
-        output_path = OUTPUT_PATH
-
+        output_path = OUTPUT_PATH,
+        threshold = 0.2
     conda:
         "enm_snakemake.yml"
     output: 
@@ -143,12 +143,12 @@ rule figs2:
         background_file = f"{OUTPUT_PATH}/go_background_list",
         sgd_info = f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     output: 
-        rewired_data_folder = 'data/interim/rewired_data',
-        notebook="reports/05-Figs2.ipynb"
-    logs:
+        rewired_data_folder = directory('data/interim/rewired_data10test'),
         notebook="reports/05-Figs2.ipynb"
     conda:
         "enm_snakemake.yml"
+    log:
+        notebook="reports/05-Figs2.ipynb"
     params:
         save=SAVE_FIGURES,
         sim_num =10,
