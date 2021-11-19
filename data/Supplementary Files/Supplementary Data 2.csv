@@ -1,0 +1,40 @@
+,orf_name,Systematic gene name,go_group,label,Description
+0,fet3,YMR058W,cellular response to iron ion starvation,"SC5
+Iron ion
+transport","Ferro-O2-oxidoreductase; multicopper oxidase that oxidizes ferrous (Fe2+) to ferric iron (Fe3+) for subsequent cellular uptake by transmembrane permease Ftr1p; required for high-affinity iron uptake and involved in mediating resistance to copper ion toxicity, belongs to class of integral membrane multicopper oxidases; protein abundance increases in response to DNA replication stress"
+1,aft1,YGL071W,cellular response to iron ion starvation,"SC5
+Iron ion
+transport","Transcription factor involved in iron utilization and homeostasis; binds consensus site PyPuCACCCPu and activates transcription in response to changes in iron availability; in iron-replete conditions localization is regulated by Grx3p, Grx4p, and Fra2p, and promoter binding is negatively regulated via Grx3p-Grx4p binding; AFT1 has a paralog, AFT2, that arose from the whole genome duplication; relative distribution to the nucleus increases upon DNA replication stress"
+2,dal81,YIR023W,phenylalanine transport,"SC9
+Phenylalanine
+transport",Positive regulator of genes in multiple nitrogen degradation pathways; contains DNA binding domain but does not appear to bind the dodecanucleotide sequence present in the promoter region of many genes involved in allantoin catabolism
+3,agp1,YCL025C,phenylalanine transport,"SC9
+Phenylalanine
+transport","Low-affinity amino acid permease with broad substrate range; involved in uptake of asparagine, glutamine, and other amino acids; expression regulated by SPS plasma membrane amino acid sensor system (Ssy1p-Ptr3p-Ssy5p); AGP1 has a paralog, GNP1, that arose from the whole genome duplication"
+4,inm1,YHR046C,,SC8,Inositol monophosphatase; involved in biosynthesis of inositol and in phosphoinositide second messenger signaling; INM1 expression increases in the presence of inositol and decreases upon exposure to antibipolar drugs lithium and valproate
+5,stp1,YDR463W,phenylalanine transport,"SC9
+Phenylalanine
+transport","Transcription factor; contains a N-terminal regulatory motif (RI) that acts as a cytoplasmic retention determinant and as an Asi dependent degron in the nucleus; undergoes proteolytic processing by SPS (Ssy1p-Ptr3p-Ssy5p)-sensor component Ssy5p in response to extracellular amino acids; activates transcription of amino acid permease genes and may have a role in tRNA processing; STP1 has a paralog, STP2, that arose from the whole genome duplication"
+6,bap2,YBR068C,phenylalanine transport,"SC9
+Phenylalanine
+transport","High-affinity leucine permease; functions as a branched-chain amino acid permease involved in uptake of leucine, isoleucine and valine; contains 12 predicted transmembrane domains; BAP2 has a paralog, BAP3, that arose from the whole genome duplication"
+7,mks1-supp1,YNL076W,mitochondria-nucleus signaling pathway,"SC6
+Mitochondria nucleus
+signaling pathway",Pleiotropic negative transcriptional regulator; involved in Ras-CAMP and lysine biosynthetic pathways and nitrogen regulation; involved in retrograde (RTG) mitochondria-to-nucleus signaling
+8,rtg1,YOL067C,mitochondria-nucleus signaling pathway,"SC6
+Mitochondria nucleus
+signaling pathway","Transcription factor (bHLH) involved in interorganelle communication; contributes to communication between mitochondria, peroxisomes, and nucleus; target of Hog1p; activated in stochastic pulses of nuclear localization"
+9,rtg2,YGL252C,mitochondria-nucleus signaling pathway,"SC6
+Mitochondria nucleus
+signaling pathway","Sensor of mitochondrial dysfunction; regulates the subcellular location of Rtg1p and Rtg3p, transcriptional activators of the retrograde (RTG) and TOR pathways; Rtg2p is inhibited by the phosphorylated form of Mks1p"
+10,rtg3,YBL103C,mitochondria-nucleus signaling pathway,"SC6
+Mitochondria nucleus
+signaling pathway","bHLH/Zip transcription factor for retrograde (RTG) and TOR pathways; forms a complex with another bHLH/Zip protein, Rtg1p, to activate the pathways; target of Hog1p"
+11,sps18,YNL204C,,SC7,"Protein of unknown function, contains a putative zinc-binding domain; expressed during sporulation; SPS18 has a paralog, GCS1, that arose from the whole genome duplication"
+12,pch2,YBR186W,,SC7,"Hexameric ring ATPase that remodels chromosome axis protein Hop1p; nucleolar component of the pachytene checkpoint, which prevents chromosome segregation when recombination and chromosome synapsis are defective; also represses meiotic interhomolog recombination in rDNA; required for meiotic double-stranded break formation"
+13,stp2,YHR006W,phenylalanine transport,"SC9
+Phenylalanine
+transport","Transcription factor; activated by proteolytic processing in response to signals from the SPS sensor system for external amino acids; activates transcription of amino acid permease genes; STP2 has a paralog, STP1, that arose from the whole genome duplication"
+14,sip4,YJL089W,hexose metabolic process,"SC4
+Hexose metabolic
+process",C6 zinc cluster transcriptional activator; binds to the carbon source-responsive element (CSRE) of gluconeogenic genes; involved in the positive regulation of gluconeogenesis; regulated by Snf1p protein kinase; localized to the nucleus
