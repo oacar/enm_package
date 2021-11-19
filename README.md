@@ -1,9 +1,9 @@
 Elastic Network Modeling of Cellular Networks Unveils Sensor and Effector Genes that Control Information Flow
 ==============================
 
-doi: this will be updated
+doi: https://doi.org/10.1101/2021.06.04.446730
 
-`Supplementary Data 1` can be found under `data/supp/`
+`Supplementary Data 1` and `Supplementary Data 2` can be found under `data/Supplementary Files`
 
 Project Organization
 ------------
@@ -13,7 +13,6 @@ Project Organization
     ├── Snakefile_different_thresholds <- Snakemake with rules to create intermediate data and figures from raw data 
     ├── README.md                      <- The top-level README for people using this project.
     ├── data
-    │   ├── intermediate                       <- Intermediate data that has been transformed and used for figure generation.
     │   └── raw                        <- The original, immutable data should be placed here.
     ├── docs                           <- A default Sphinx project; see sphinx-doc.org for details
     │
@@ -21,7 +20,7 @@ Project Organization
     │
     ├── reports                        <- Folder to re-generate notebooks as HTML, PDF, LaTeX, etc.
     │   └── figures                    <- Figures used in the paper 
-    ├── reports_done                   <- Generated notebooks as HTML, PDF, LaTeX, etc.
+    ├── processed_notebooks_figures    <- Generated notebooks as HTML files and figures.
     │
     ├── enm_snakemake.yml              <- The environment file for reproducing the analysis conda environment. Used for python scripts in Snakemake
     │
@@ -56,7 +55,7 @@ http://purl.obolibrary.org/obo/go/go-basic.obo
 http://current.geneontology.org/annotations/sgd.gaf.gz
 ```
 
-The Rmarkdown and Jupyter notebooks under `notebooks` directory can be used to create the figures in the paper. The html files for those notebooks are shared under `reports_done` folder. A rerun of snakemake pipeline will create `html` files to `reports` folder.
+The Rmarkdown and Jupyter notebooks under `notebooks` directory can be used to create the figures in the paper. The html files for those notebooks are shared under `processed_notebooks_figures` folder. A rerun of snakemake pipeline will create `html` and `ipynb` files to `reports` folder.
 
 To re-create the figures/reports starting from raw data, first create a conda environment and install snakemake:
 

@@ -1,9 +1,0 @@
-channels:
- - r
- - bioconda
- - defaults
- - conda-forge
-dependencies:
- - r-base=3.6.1
- - r-rmarkdown=2.3
- - r-remotes
