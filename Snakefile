@@ -82,7 +82,8 @@ rule effector_sensor_go:
         sensors_df_fname = f"{OUTPUT_PATH}/sensors_df.csv",
         effectors_df_fname = f"{OUTPUT_PATH}/effectors_df.csv",
         effector_sensor_combined_go_df = f"{OUTPUT_PATH}/effector_sensor_combined_go_df.csv"
-    script: "scripts/effector_sensor_go.py"
+    shell:
+        "python3 scripts/effector_sensor_go.py --pickle_file {input.pickle_file_name} --gaf {input.gaf} --obo {input.obo} --background_file {input.background_file} --sgd_info {input.sgd_info} --output_path {params.output_path} --sensors_df_fname {output.sensors_df_fname} --effectors_df_fname {output.effectors_df_fname} --effector_sensor_combined_go_df {output.effector_sensor_combined_go_df}"
 
 
 

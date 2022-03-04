@@ -303,4 +303,5 @@ dependencies:
     - xlrd==1.2.0
     - "--editable=git+git://github.com/oacar/enm_package#egg=enm"
     - "--editable=git+git://github.com/oacar/networkx@node_weight#egg=networkx"
+    -- "--editable=git+git://github.com/oacar/utils_python#egg=utils_python"
 #prefix: /home/oma21/miniconda3/envs/enm_snakemake

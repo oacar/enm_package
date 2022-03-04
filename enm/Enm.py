@@ -9,7 +9,7 @@ import copy
 from tqdm import tqdm
 
 from .visualize import plot_network_spring,heatmap_annotated
-from .utils import query_goatools
+from utils_python.utils_python import query_goatools
 
 
 class Enm():
@@ -214,7 +214,7 @@ class Enm():
         self.sensors_df = sensors_df
         self.effectors_df = effectors_df
 
-    def analyze_components_biology(self, goea, geneid2name, sensors=True):
+    def analyze_components_biology(self, goea, geneid2name, sensors=True, systematic_gene_name_column = 'Systematic gene name', fdr_method='fdr'):
         """Use sets of sensors or effectors to find connected components among them and calculate GO term enrichments 
 
         :param goea: GOAtools object for GO enrichment analysis
@@ -244,7 +244,7 @@ class Enm():
         df.loc[:,col_name] = df['orf_name'].map(dd)
         go_terms = {}
         for i in df.loc[pd.isna(df[col_name])==False,col_name].unique():
-            go_terms[i] = query_goatools(df.loc[df[col_name]==i,:], goea, geneid2name)
+            go_terms[i] = query_goatools(df.loc[df[col_name]==i,:], goea, geneid2name,systematic_gene_name_column=systematic_gene_name_column, fdr_method=fdr_method)
         df['go_group'] = None
         if sensors:
             self.go_groups['sensors_go_groups'] = go_terms
