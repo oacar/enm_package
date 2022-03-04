@@ -47,7 +47,7 @@ rule create_enm_object:
     output: 
         pickle_file= PICKLE_FILE_NAME,
         df_filename= f"{OUTPUT_PATH}/pcc_df.csv"
-    script: "scripts/pcc.py"
+    shell: "python3 scripts/run_prs.py --network_file {input.network_file} --strain_ids_file {input.strain_ids_file} --output_path {params.output_path} --cluster_matrix {params.cluster_matrix} --output_pickle {output.pickle_file} --output_df {output.df_filename}"
 
 rule rewire_network:
     input: PICKLE_FILE_NAME
@@ -57,6 +57,7 @@ rule rewire_network:
         "enm_snakemake.yml"
     output: 
         pcc_df_random = f"{OUTPUT_PATH}/pcc_df_random_{N_SIM}.csv"
+    shell: "python3 scripts/rewire_network.py --input_pickle {input[0]} --random_output_file {output.pcc_df_random} --n_sim {params.n_sim}"
     script: "scripts/rewiring.py"
 
 rule sensor_in_to_out_ratio:
