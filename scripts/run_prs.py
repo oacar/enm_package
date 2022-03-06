@@ -5,6 +5,7 @@ import pickle
 import argparse
 from enm.Enm import *
 from enm.utils import *
+import os
 
 #figure_path = 'reports/figures/pcc_0603'
 
@@ -24,7 +25,7 @@ def run_prs(network_file, output_path, output_df, output_pickle, cluster_matrix=
 
     #enm.df['neighbor_btw'] = neigbor_btw
     enm.df['neighbor_degree'] = neighbor_degree
-    if strain_ids_file is not None:
+    if strain_ids_file is not None and os.path.isfile(strain_ids_file):
         strain_ids = pd.read_csv(strain_ids_file)#snakemake.input['strain_ids_file'])
         enm.df = pd.merge(enm.df , strain_ids, left_on = 'orf_name', right_on='gene1')
     #enm.figure_path=figure_path
