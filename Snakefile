@@ -3,7 +3,7 @@ from signal import NSIG
 
 
 OUTPUT_PATH= "data/interim"
-NW_TYPE = ['costanzo','y2h']
+NW_TYPE = ['costanzo','y2h', 'yeast_coex', 'coessentiality']
 RAW_INPUT_PATH = "data/raw"
 N_SIM=10
 #PICKLE_FILE_NAME = f"{OUTPUT_PATH}/pcc.pickle"
@@ -36,6 +36,54 @@ rule create_raw_y2h:
         f"{RAW_INPUT_PATH}/y2h/y2h_raw.txt"
     shell:
         "mkdir -p data/raw/y2h && cp '{input}' '{output}'"
+rule clean_pombe_gi_data:
+    input: 
+        f"{RAW_INPUT_PATH}/{{nw_type}}/raw_data/Dataset_S1.txt",
+    params: 
+        output_path = OUTPUT_PATH,
+        threshold = 0.2,
+        
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_edgelist.csv" ,
+        f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_go_background_list"
+    shell:
+        "python3 scripts/clean_network_data.py --input_type {wildcards.nw_type} -i {input[0]} -n {output[0]} -b {output[1]} -t {params.threshold}"
+
+rule clean_coex_network_data:
+    input: 
+        f"{RAW_INPUT_PATH}/{{nw_type}}/yeast_HC_AggNet.hdf5",
+        f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    params: 
+        output_path = OUTPUT_PATH,
+        threshold = 0.8,
+        strain_ids_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_strain_ids.csv" ,
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_edgelist.csv" ,
+        f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_go_background_list"
+    shell:
+        "python3 scripts/clean_network_data.py --input_type {wildcards.nw_type} -i {input[0]} -s {input[1]} -n {output[0]} -st {params.strain_ids_file} -b {output[1]} -t {params.threshold}"
+
+
+rule clean_coessentiality_network_data:
+    input: 
+        f"{RAW_INPUT_PATH}/{{nw_type}}/{{nw_type}}_raw.txt",
+        f"{RAW_INPUT_PATH}/ontology/coessentiality_bg_uniprot_mapping"
+    params: 
+        output_path = OUTPUT_PATH,
+        threshold = 0.2,
+        strain_ids_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_strain_ids.csv" ,
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_edgelist_human.csv" ,
+        f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_go_background_list_human"
+    shell:
+        "python3 scripts/clean_network_data.py --input_type {wildcards.nw_type} -i {input[0]} -s {input[1]} -n {output[0]} -st {params.strain_ids_file} -b {output[1]} -t {params.threshold}"
+
 rule clean_network_data:
     input: 
         f"{RAW_INPUT_PATH}/{{nw_type}}/{{nw_type}}_raw.txt",
@@ -81,14 +129,26 @@ rule clean_network_data:
 #         f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_go_background_list"
 #     shell:
 #         "python3 scripts/clean_network_data.py --input_type {nw_type} -i {input[0]} -s {input[1]} -n {output[0]} -st {output[1]} -b {output[2]} -t {params.threshold}"
-
+rule create_enm_object_human:
+    input:
+        network_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_edgelist_{{species}}.csv",
+    params:
+        strain_ids_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_strain_ids.csv",
+        output_path = f"{OUTPUT_PATH}/{{nw_type}}",
+        cluster_matrix = False
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        pickle_file= f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_enm_object_{{species}}.pickle",
+        df_filename= f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_df_{{species}}.csv"
+    shell: "python3 scripts/run_prs.py --network_file {input.network_file} --strain_ids_file {params.strain_ids_file} --output_path {params.output_path} --cluster_matrix {params.cluster_matrix} --output_pickle {output.pickle_file} --output_df {output.df_filename}"
 rule create_enm_object:
     input:
         network_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_edgelist.csv",
     params:
         strain_ids_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_strain_ids.csv",
         output_path = f"{OUTPUT_PATH}/{{nw_type}}",
-        cluster_matrix = True
+        cluster_matrix = False
     conda:
         "enm_snakemake.yml"
     output: 
@@ -104,7 +164,7 @@ rule rewire_network:
         "enm_snakemake.yml"
     output: 
         pcc_df_random = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_df_random_{N_SIM}.csv"
-    shell: "python3 scripts/rewire_network.py --input_pickle {input[0]} --random_output_file {output.pcc_df_random} --n_sim {params.n_sim}"
+    shell: "python3 scripts/rewiring.py --pickle_file {input[0]} --random_output_file {output.pcc_df_random} --n_sim {params.n_sim}"
 
 # rule sensor_in_to_out_ratio:
 #     input: PICKLE_FILE_NAME
@@ -114,6 +174,39 @@ rule rewire_network:
 #         "enm_snakemake.yml"
 #     output: f"{OUTPUT_PATH}/sensor_connectivity_df.csv"
 #     script: "scripts/connectivity.py"
+
+rule effector_sensor_go_human:
+    input:
+        pickle_file_name= f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_enm_object_{{species}}.pickle",
+        gaf= f"{RAW_INPUT_PATH}/ontology/goa_{{species}}.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_go_background_list_{{species}}"
+    params:
+        mapping = f"{RAW_INPUT_PATH}/ontology/{{species}}_name_id_map"
+    conda:
+        "enm_snakemake.yml"
+    output:
+        sensors_df_fname = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_sensors_df_{{species}}.csv",
+        effectors_df_fname = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effectors_df_{{species}}.csv",
+        effector_sensor_combined_go_df = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effector_sensor_combined_go_df_{{species}}.csv"
+    shell:
+        "python3 scripts/effector_sensor_go.py --pickle_file {input.pickle_file_name} --gaf {input.gaf} --obo {input.obo} --background_file {input.background_file} --name_id_map {params.mapping} --sensors_df_fname {output.sensors_df_fname} --effectors_df_fname {output.effectors_df_fname} --effector_sensor_go_df_fname {output.effector_sensor_combined_go_df} --map_column_iloc 1 --id_column_iloc 0"
+
+rule effector_sensor_go_pombe:
+    input:
+        pickle_file_name= f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_enm_object.pickle",
+        gaf= f"{RAW_INPUT_PATH}/ontology/pombase.gaf",
+        obo= f"{RAW_INPUT_PATH}/ontology/go-basic.obo",
+        background_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_go_background_list"
+        #sgd_info = None#f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
+    conda:
+        "enm_snakemake.yml"
+    output:
+        sensors_df_fname = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_sensors_df_pombe.csv",
+        effectors_df_fname = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effectors_df_pombe.csv",
+        effector_sensor_combined_go_df = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effector_sensor_combined_go_df_pombe.csv"
+    shell:
+        "python3 scripts/effector_sensor_go.py --pickle_file {input.pickle_file_name} --gaf {input.gaf} --obo {input.obo} --background_file {input.background_file}  --sensors_df_fname {output.sensors_df_fname} --effectors_df_fname {output.effectors_df_fname} --effector_sensor_go_df_fname {output.effector_sensor_combined_go_df}"
 
 rule effector_sensor_go:
     input:
@@ -129,7 +222,7 @@ rule effector_sensor_go:
         effectors_df_fname = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effectors_df.csv",
         effector_sensor_combined_go_df = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effector_sensor_combined_go_df.csv"
     shell:
-        "python3 scripts/effector_sensor_go.py --pickle_file {input.pickle_file_name} --gaf {input.gaf} --obo {input.obo} --background_file {input.background_file} --sgd_info {input.sgd_info}  --sensors_df_fname {output.sensors_df_fname} --effectors_df_fname {output.effectors_df_fname} --effector_sensor_go_df_fname {output.effector_sensor_combined_go_df}"
+        "python3 scripts/effector_sensor_go.py --pickle_file {input.pickle_file_name} --gaf {input.gaf} --obo {input.obo} --background_file {input.background_file} --name_id_map {input.sgd_info}  --sensors_df_fname {output.sensors_df_fname} --effectors_df_fname {output.effectors_df_fname} --effector_sensor_go_df_fname {output.effector_sensor_combined_go_df}"
 
 
 

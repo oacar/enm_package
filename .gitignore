@@ -109,3 +109,5 @@ GO-TermFinder-0.86
 ./*png
 ./*py
 scripts/analyze.pl
+reports/reports*
+bak/
