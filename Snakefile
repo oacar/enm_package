@@ -3,7 +3,7 @@ from signal import NSIG
 
 
 OUTPUT_PATH= "data/interim"
-NW_TYPE = ['costanzo','y2h', 'yeast_coex', 'coessentiality']
+NW_TYPE = ['costanzo','y2h']
 RAW_INPUT_PATH = "data/raw"
 N_SIM=10
 #PICKLE_FILE_NAME = f"{OUTPUT_PATH}/pcc.pickle"
@@ -13,7 +13,14 @@ SAVE_FIGURES = False
 
 rule all:
     input:
-        expand(f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effector_sensor_combined_go_df.csv", nw_type=NW_TYPE)
+        expand(f"{OUTPUT_PATH}/{{NW_TYPE}}/{{NW_TYPE}}_effector_sensor_combined_go_df.csv", NW_TYPE=NW_TYPE),
+        f"{OUTPUT_PATH}/coessentiality/coessentiality_effector_sensor_combined_go_df_human.csv",
+        f"{OUTPUT_PATH}/roguev/roguev_effector_sensor_combined_go_df_pombe.csv",
+        expand(f"{OUTPUT_PATH}/{{NW_TYPE}}/{{NW_TYPE}}_df_random_10.csv", NW_TYPE=NW_TYPE),
+        f"{OUTPUT_PATH}/coessentiality/coessentiality_df_random_10_human.csv",
+        f"{OUTPUT_PATH}/roguev/roguev_df_random_10.csv",
+        
+
 # rule all:
 #     input: 
 #         "reports/01-Fig1bcd_3c_4b_5df-052421.html",
@@ -26,16 +33,24 @@ rule create_raw_costanzo:
     input:
         f"{RAW_INPUT_PATH}/Data File S3. Genetic interaction profile similarity matrices/cc_ALL.txt",
     output:
-        f"{RAW_INPUT_PATH}/costanzo/costanzo_raw.txt"
+        f"{RAW_INPUT_PATH}/costanzo/costanzo_raw"
     shell:
         "mkdir -v -p data/raw/costanzo && cp '{input}' '{output}'"
 rule create_raw_y2h:
     input:
         f"{RAW_INPUT_PATH}/yuri/Y2H_union.txt"
     output:
-        f"{RAW_INPUT_PATH}/y2h/y2h_raw.txt"
+        f"{RAW_INPUT_PATH}/y2h/y2h_raw"
+    shell:"mkdir -p data/raw/y2h && cp '{input}' '{output}'"
+
+rule create_raw_yeast_coex:
+    input:
+        f"{RAW_INPUT_PATH}/yeast_coex/yeast_AggNet.hdf5"
+    output:
+        f"{RAW_INPUT_PATH}/yeast_coex/yeast_coex_raw"
     shell:
-        "mkdir -p data/raw/y2h && cp '{input}' '{output}'"
+        "mkdir -p data/raw/yeast_coex && cp '{input}' '{output}'"       
+
 rule clean_pombe_gi_data:
     input: 
         f"{RAW_INPUT_PATH}/{{nw_type}}/raw_data/Dataset_S1.txt",
@@ -50,23 +65,6 @@ rule clean_pombe_gi_data:
         f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_go_background_list"
     shell:
         "python3 scripts/clean_network_data.py --input_type {wildcards.nw_type} -i {input[0]} -n {output[0]} -b {output[1]} -t {params.threshold}"
-
-rule clean_coex_network_data:
-    input: 
-        f"{RAW_INPUT_PATH}/{{nw_type}}/yeast_HC_AggNet.hdf5",
-        f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
-    params: 
-        output_path = OUTPUT_PATH,
-        threshold = 0.8,
-        strain_ids_file = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_strain_ids.csv" ,
-    conda:
-        "enm_snakemake.yml"
-    output: 
-        f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_edgelist.csv" ,
-        f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_go_background_list"
-    shell:
-        "python3 scripts/clean_network_data.py --input_type {wildcards.nw_type} -i {input[0]} -s {input[1]} -n {output[0]} -st {params.strain_ids_file} -b {output[1]} -t {params.threshold}"
-
 
 rule clean_coessentiality_network_data:
     input: 
@@ -86,7 +84,7 @@ rule clean_coessentiality_network_data:
 
 rule clean_network_data:
     input: 
-        f"{RAW_INPUT_PATH}/{{nw_type}}/{{nw_type}}_raw.txt",
+        f"{RAW_INPUT_PATH}/{{nw_type}}/{{nw_type}}_raw",
         f"{RAW_INPUT_PATH}/ontology/SGD_features.tab"
     params: 
         output_path = OUTPUT_PATH,
@@ -156,6 +154,15 @@ rule create_enm_object:
         df_filename= f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_df.csv"
     shell: "python3 scripts/run_prs.py --network_file {input.network_file} --strain_ids_file {params.strain_ids_file} --output_path {params.output_path} --cluster_matrix {params.cluster_matrix} --output_pickle {output.pickle_file} --output_df {output.df_filename}"
 
+rule rewire_network_human:
+    input: f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_enm_object_human.pickle"
+    params:
+        n_sim = N_SIM,
+    conda:
+        "enm_snakemake.yml"
+    output: 
+        pcc_df_random = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_df_random_{N_SIM}_human.csv"
+    shell: "python3 scripts/rewiring.py --pickle_file {input[0]} --random_output_file {output.pcc_df_random} --n_sim {params.n_sim}"
 rule rewire_network:
     input: f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_enm_object.pickle"
     params:

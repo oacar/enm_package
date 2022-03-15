@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 import networkx as nx
 import pickle
+import random
 from enm.Enm import *
 from enm.utils import *
 from utils_python.utils_python import create_goea
@@ -14,19 +15,25 @@ from utils_python.utils_python import create_goea
 # pickle_file = snakemake.input['pickle_file_name']
 # output_file=snakemake.output['effector_sensor_go_df']
 
-def run_effector_sensor_go(pickle_file, gaf,obo,background_file,sgd_info, sensors_df_fname, effectors_df_fname, effector_sensor_go_df_fname):
+def run_effector_sensor_go(pickle_file, gaf,obo,background_file,sgd_info, sensors_df_fname, effectors_df_fname, effector_sensor_go_df_fname, systematic_gene_name, **kwargs):
+    np.random.seed(0)
+    random.seed(0)
     with open(pickle_file,'rb') as f:
         enm = pickle.load(f)
-
-    enm.get_sensor_effector(use_threshold=True, quantile_threshold=0.95)
-
+    if len(enm.graph_gc.nodes) <3000:
+        enm.get_sensor_effector(use_threshold=True, quantile_threshold=0.95)
+    else:
+        enm.get_sensor_effector(use_threshold=True, quantile_threshold=0.99)
     print('go analysis')
     goea, geneid2name,obodag = create_goea(gaf = gaf, obo_fname=obo, 
                                     background=background_file, sgd_info_tab = sgd_info,
+                                    goset=['BP'],
                                     ev_exclude={'ND','IGI','HGI'},
-                                    methods = ['fdr'])
-    enm.analyze_components_biology(goea, geneid2name, True, 'orf_name')
-    enm.analyze_components_biology(goea, geneid2name, False, 'orf_name')
+                                    methods = ['fdr'], **kwargs)
+
+    print('get effector sensor go')         
+    enm.analyze_components_biology(goea, geneid2name, True, systematic_gene_name)
+    enm.analyze_components_biology(goea, geneid2name, False, systematic_gene_name)
 
     sensors_df = enm.sensors_df.reset_index(drop=True)
     sensors_df['sensor_cluster'] = sensors_df.fillna(value={'sensor_cluster':'Unclustered'}).sensor_cluster.astype("category")
@@ -70,10 +77,19 @@ if __name__ == "__main__":
     parser.add_argument('--gaf', type=str, help='gaf file')
     parser.add_argument('--obo', type=str, help='obo file')
     parser.add_argument('--background_file', type=str, help='background file')
-    parser.add_argument('--sgd_info', type=str, help='sgd info file')
+    parser.add_argument('--name_id_map', type=str, help='sgd info file', required=False, default=None)
     parser.add_argument('--sensors_df_fname', type=str, help='sensors df fname')
     parser.add_argument('--effectors_df_fname', type=str, help='effectors df fname')
     parser.add_argument('--effector_sensor_go_df_fname', type=str, help='effector sensor go df fname')
+    parser.add_argument("--map_column_iloc", type=int, help="map column id", required=False, default=None)
+    parser.add_argument("--id_column_iloc", type=int, help="id column id", required=False, default=None)
     args = parser.parse_args()
+    kwargs ={}
+    if args.map_column_iloc is not None and args.id_column_iloc is not None:
+        kwargs = {'map_column_iloc':args.map_column_iloc, 'id_column_iloc':args.id_column_iloc}
 
-    run_effector_sensor_go(args.pickle_file, args.gaf, args.obo, args.background_file, args.sgd_info, args.sensors_df_fname, args.effectors_df_fname, args.effector_sensor_go_df_fname)
+    if 'costanzo' in args.pickle_file:
+        systematic_gene_name ='Systematic gene name'
+    else:
+        systematic_gene_name ='orf_name'
+    run_effector_sensor_go(args.pickle_file, args.gaf, args.obo, args.background_file, args.name_id_map, args.sensors_df_fname, args.effectors_df_fname, args.effector_sensor_go_df_fname, systematic_gene_name, **kwargs)

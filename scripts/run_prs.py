@@ -6,6 +6,8 @@ import argparse
 from enm.Enm import *
 from enm.utils import *
 import os
+import sys
+sys.setrecursionlimit(10000)
 
 #figure_path = 'reports/figures/pcc_0603'
 
