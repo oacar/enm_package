@@ -243,17 +243,41 @@ rule effector_sensor_go:
 #     script:
 #         "notebooks/02-Figure2-051321.Rmd"
 
-# rule figure3_4:
-#     input:
-#         pcc_df=f"{OUTPUT_PATH}/pcc_df.csv",
-#         sensor_connectivity_df = f"{OUTPUT_PATH}/sensor_connectivity_df.csv",
-#         sensors_pcc = f"{OUTPUT_PATH}/sensors_df.csv",
-#         effector_pcc = f"{OUTPUT_PATH}/effectors_df.csv",
-#     params:
-#         save=SAVE_FIGURES
-#     output: "reports/03-Fig3abde_4acd-051821.html"
-#     script:
-#         "notebooks/03-Fig3abde_4acd-051821.Rmd"
+rule figure3_4_human:
+    input:
+        pcc_df=f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_df_human.csv",
+#        sensor_connectivity_df = f"{OUTPUT_PATH}/sensor_connectivity_df.csv",
+        sensors_pcc = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_sensors_df_human.csv",
+        effector_pcc = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effectors_df_human.csv",
+    params:
+        save=False
+    output: "reports/03-Fig3abde_4acd-{nw_type}_human.html"
+    script:
+        "notebooks/03-Fig3abde_4acd-051821.Rmd"
+rule figure3_4_pombe:
+    input:
+        pcc_df=f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_df.csv",
+#        sensor_connectivity_df = f"{OUTPUT_PATH}/sensor_connectivity_df.csv",
+        sensors_pcc = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_sensors_df_pombe.csv",
+        effector_pcc = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effectors_df_pombe.csv",
+    params:
+        save=False
+    conda:
+        "r_env.yml"
+    output: "reports/03-Fig3abde_4acd_pombe-{nw_type}.html"
+    script:
+        "notebooks/03-Fig3abde_4acd-051821.Rmd"
+rule figure3_4:
+    input:
+        pcc_df=f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_df.csv",
+#        sensor_connectivity_df = f"{OUTPUT_PATH}/sensor_connectivity_df.csv",
+        sensors_pcc = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_sensors_df.csv",
+        effector_pcc = f"{OUTPUT_PATH}/{{nw_type}}/{{nw_type}}_effectors_df.csv",
+    params:
+        save=False
+    output: "reports/03-Fig3abde_4acd-{nw_type}.html"
+    script:
+        "notebooks/03-Fig3abde_4acd-051821.Rmd"
 
 
 # rule figure_networks:

@@ -244,7 +244,8 @@ class Enm():
         df.loc[:,col_name] = df['orf_name'].map(dd)
         go_terms = {}
         for i in df.loc[pd.isna(df[col_name])==False,col_name].unique():
-            go_terms[i] = query_goatools(df.loc[df[col_name]==i,:], goea, geneid2name,systematic_gene_name_column=systematic_gene_name_column, fdr_method=fdr_method)
+            query_data = df.loc[df[col_name]==i,:]
+            go_terms[i] = query_goatools(query_data, goea, geneid2name,systematic_gene_name_column=systematic_gene_name_column, fdr_method=fdr_method)
         df['go_group'] = None
         if sensors:
             self.go_groups['sensors_go_groups'] = go_terms

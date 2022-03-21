@@ -56,7 +56,16 @@ def run_effector_sensor_go(pickle_file, gaf,obo,background_file,sgd_info, sensor
                                         else f"SC{sensors_df.at[i,'gid']}\n{sensors_df.at[i,'cluster_or_go']}" for i in range(sensors_df.shape[0])]
 
     sensors_df.to_csv(sensors_df_fname,index=False)
-    enm.effectors_df.to_csv(effectors_df_fname,index=False)
+    effectors_df = enm.effectors_df.reset_index(drop=True)
+    effectors_df['effector_cluster'] = effectors_df.fillna(value={'effector_cluster':'Unclustered'}).effector_cluster.astype("category")
+    effectors_df['gid'] = effectors_df.groupby('effector_cluster').ngroup()
+    effectors_df['cluster_or_go'] = ['Unclustered' if effectors_df.at[i,'effector_cluster'] == 'Unclustered' 
+                                else effectors_df.at[i,'gid'] if pd.isna(effectors_df.at[i,'go_group']) 
+                                else effectors_df.at[i,'go_group'] for i in range(effectors_df.shape[0])]
+    effectors_df['label'] = ["Unclustered" if effectors_df.at[i,'cluster_or_go']=='Unclustered' 
+                                        else f"EC{effectors_df.at[i,'gid']}" if type(effectors_df.at[i,'cluster_or_go'])==np.int64
+                                        else f"EC{effectors_df.at[i,'gid']}\n{effectors_df.at[i,'cluster_or_go']}" for i in range(effectors_df.shape[0])]
+    effectors_df.to_csv(effectors_df_fname,index=False)
 
     effector_sensor_combined_go_df = pd.DataFrame()
     for i,j in enm.go_groups['sensors_go_groups'].items():
