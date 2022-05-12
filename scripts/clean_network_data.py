@@ -15,7 +15,18 @@ def read_human_coessentiality(input_file, mapping, background_output, nw_output)
 #    pd.DataFrame(genelist).drop_duplicates().to_csv(background_output,index=False, header=None)
 
 
-    
+def read_pombe_corr(input_file, background_output, nw_output, thr):
+    df_raw = pd.read_csv(input_file,sep='\t')
+    df = df_raw.melt(id_vars='Gene',var_name="Gene2",value_name='pcc')
+    df.columns = ['gene1','gene2','pcc']
+    df = df.loc[df.pcc>=thr]
+    df['gene1'] = df['gene1'].str[:-1] + df['gene1'].str[-1].str.lower()
+    df['gene2'] = df['gene2'].str[:-1] + df['gene2'].str[-1].str.lower()
+    df.to_csv(nw_output,index=False)
+
+    genelist = [*df.iloc[:,0].unique(),*df.iloc[:,1].unique()]
+
+    pd.DataFrame(genelist).drop_duplicates().to_csv(background_output,index=False, header=None)
 def read_pombe_gi(input_file, background_output, nw_output, thr, is_gi=True):
     df = pd.read_csv(input_file,sep='\t')
     if is_gi:
@@ -98,5 +109,7 @@ if __name__ == "__main__":
         read_yeast_coex(args.input, args.sgd, args.background, args.network, args.threshold)
     elif args.input_type == 'roguev':
         read_pombe_gi(args.input,args.background, args.network, args.threshold)
+    elif args.input_type == "pombe":
+        read_pombe_corr(args.input,args.background, args.network, args.threshold)
     elif args.input_type =='coessentiality':
         read_human_coessentiality(args.input,args.sgd, args.background, args.network)

@@ -42,6 +42,7 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
     edge_color = kwargs.pop('edge_color', 'white')
     legend_elements = kwargs.pop('legend_elements',None)
     plot_legend = kwargs.pop('plot_legend',False)
+    edge_alpha = kwargs.pop('edge_alpha', 0.2)
     if legend_elements is None and plot_legend:
         print('ss')
         legend_elements = [Line2D([0], [0], marker='o', color=node_color, label=kwargs.pop('node_label', 'Genes'),
@@ -62,7 +63,7 @@ def plot_network_spring(Gc, figure_path, plot_go=False, go_df_list=None, level_l
                            # node_shape=matplotlib.markers.MarkerStyle(marker='o',fillstyle='full')
                            )
     nx.draw_networkx_edges(Gc,
-                           alpha=kwargs.pop('edge_alpha', 0.2),
+                           alpha=edge_alpha,
                            width=kwargs.pop('edge_width', 0.1),
                            edge_color=edge_color,
                            pos=spring_pos,
