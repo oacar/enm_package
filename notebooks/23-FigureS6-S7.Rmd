@@ -1,0 +1,265 @@
+---
+title: "23-Figure2-051321"
+output: 
+  html_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+Sys.setenv(TAR = "/bin/tar")
+```
+
+# Load packages
+```{r message=FALSE, warning=FALSE}
+if (!require('remotes')){
+install.packages('remotes', repos='http://cran.us.r-project.org')}
+if (!require('tidyverse')) {
+   remotes::install_version("tidyverse", version = "1.3.0", repos = "http://cran.us.r-project.org")
+   library(tidyverse)
+}
+if (!require('glue')) {
+   remotes::install_version("glue", version = "1.4.1", repos = "http://cran.us.r-project.org")
+   library(glue)
+}
+if (!require('cowplot')) {
+   remotes::install_version("cowplot", version = "1.0.0", repos = "http://cran.us.r-project.org")
+   library(cowplot)
+}
+if (!require('ggpubr')) {
+   remotes::install_version('foreign',version="0.8-72", repos = "http://cran.us.r-project.org")
+   remotes::install_version("ggpubr", version = "0.4.0", repos = "http://cran.us.r-project.org")
+   library(ggpubr)
+}
+if (!require('ggsignif')) {
+   remotes::install_version("ggsignif", version = "0.6.0", repos = "http://cran.us.r-project.org")
+   library(ggsignif)
+}
+if (!require('RColorBrewer')) {
+   remotes::install_version("RColorBrewer", version = "0.6.0", repos = "http://cran.us.r-project.org")
+   library(RColorBrewer)
+}
+
+plot_density_prs <- 			# 
+    function
+(
+ 	df , x , xlab= 'Effectiveness (a.u.)', ylab='Density', coord_trans='log10', linesize = 1
+)
+{
+    color_pal <- c('#00BFC4','#F8766D')
+dens_plot <- 
+    ggplot()+
+    #facet_grid(rows=vars(data))+
+#    geom_density()+
+    geom_line(data= df%>%filter(group=='real'),
+               aes(x={{x}} ,y=..scaled.., color=group),
+               stat = 'density')+#, binwidth = 0.1) + 
+    geom_line(data= df%>%filter(group=='random'),
+               aes(x={{x}} ,y=..scaled..,fill=random_id, color=group),linetype='dashed',
+               stat = 'density' ,show.legend=F)+#, binwidth = 0.1) + 
+    geom_vline(data= df%>%filter(group=='real')%>%mutate(g = T),aes(xintercept = mean({{x}}), linetype='Real'),color=color_pal[1],size=linesize, show.legend=NA)+
+    geom_vline(data= df%>%filter(group=='random')%>%mutate(g = F),aes(xintercept = mean({{x}}),linetype='Random', group=random_id),color=color_pal[2], size=linesize,show.legend=NA)+
+    scale_linetype_manual(name = "Limits", labels = c("real", "random"), values = c("Real" = 3, "Random" = 3)) +
+    guides(colour=guide_legend(override.aes = list(linetype=1)),
+           linetype=guide_legend(override.aes=list(colour=color_pal)))+
+    theme_bw()+
+    ylab(ylab)+
+    xlab(xlab)+
+    coord_trans(x = coord_trans)+
+scale_x_continuous(
+   breaks = scales::trans_breaks("log10", function(x) 10^x),
+   labels = scales::trans_format("log10", scales::math_format(10^.x))
+ ) +
+    scale_color_discrete(labels=c('Rewired\nnetworks','PSN'))+
+theme(legend.text = element_text(margin = margin(b = 10)), panel.grid.minor = element_blank(), legend.position='bottom', legend.title=element_blank())
+dens_plot
+}
+```
+
+# Load input dataframe
+```{r}
+# smake<-setClass("smake",slots=list(input="list"))
+# nw_type = 'coessentiality'
+# snakemake <- new("smake",input=list("sensor_connectivity_df"="../data/interim/sensor_connectivity_df.csv",
+#                                     "pcc_df"=glue('../data/interim/{nw_type}/{nw_type}_df_human.csv'),
+#                                     "pcc_df_random"=glue('../data/interim/{nw_type}/{nw_type}_df_random_500_human.csv')))
+
+```
+
+```{r}
+# smake<-setClass("smake",slots=list(input="list"))
+# nw_type = 'pombe'
+# snakemake <- new("smake",input=list("sensor_connectivity_df"="../data/interim/sensor_connectivity_df.csv",
+#                                     "pcc_df"=glue('../data/interim/{nw_type}/{nw_type}_df_corr.csv'),
+#                                     "pcc_df_random"=glue('../data/interim/{nw_type}/{nw_type}_df_random_500_corr.csv')))
+
+```
+
+```{r tags=c()}
+#df_filename <-snakemake$input$df_filename
+#random_df_filename <-snakemake$input$df_filename
+pcc_df <- read_csv(snakemake@input[['pcc_df']])
+pcc_df_random <- read_csv(snakemake@input[['pcc_df_random']])%>%mutate(random_id=factor(random_id))
+pcc_df <- pcc_df %>%
+  mutate(data = "pcc") %>%
+  mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real") %>%
+  bind_rows(
+    pcc_df_random %>% mutate(data = "pcc") %>% mutate(sens_norm = sens / nrow(pcc_df), eff_norm = eff / nrow(pcc_df), group = "random")
+  ) %>%
+  mutate(group = fct_relevel(group, c("real", "random")))
+
+
+```
+
+
+```{r}
+text_size = 15
+label_size = 17
+```
+
+# Figure2 A,B
+```{r}
+real_random_labels <- c("PSN", "Rewired\nnetwork")
+names(real_random_labels) <- c("real", "random")
+pcc_deg_eff <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+  ggplot(aes(x = deg, y = eff_norm)) +
+  geom_point() +
+  #    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+  theme_bw() +
+  ylab("Effectiveness (a.u.)") +
+  xlab("Degree") +
+  stat_cor(method = "pearson", cor.coef.name = "R", label.x.npc = 0.1,size=8) +
+  theme(strip.text.y = element_text(angle = 0),axis.text=element_text(size=text_size),axis.title = element_text(size=label_size)) +
+  scale_y_continuous(labels = scales::label_scientific(digits = 1))
+pcc_deg_sens <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
+  ggplot(aes(x = deg, y = sens_norm)) +
+  geom_point() +
+  #    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
+  theme_bw() +
+  ylab("Sensitivity (a.u.)") +
+  xlab("Degree") +
+  stat_cor(method = "spearman", cor.coef.name = "rho", label.x.npc = 0.1, size=8) +
+  theme(strip.text.y = element_text(angle = 0),axis.text=element_text(size=text_size),axis.title = element_text(size=label_size)) +
+  scale_y_continuous(labels = scales::label_scientific(digits = 1))
+deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
+  labels = c("A", "B"),
+  ncol = 2,label_size = 20
+)
+deg_scatter_plots
+#ggsave("reports/figures/paper_figures_0202_pcc_only/fig2.png", plot = deg_scatter_plots, width = 10, height = 10)
+print(cor.test(pcc_df$deg[pcc_df$deg<10&pcc_df$group=='real'],pcc_df$sens[pcc_df$deg<10&pcc_df$group=='real'],method='spearman',exact=FALSE))
+```
+
+# Figure2 C,D,E
+```{r tags=c()}
+pcc_rewire_df <- pcc_df_random%>%group_by(random_id)%>%
+  summarise(
+    eff_deg_pearson = cor.test(eff,deg)$estimate,
+    sens_deg_spearman = cor.test(sens,deg, method="spearman",exact=FALSE)$estimate
+  )
+rewire_df <- pcc_rewire_df %>% mutate(data = "pcc")
+network_labels <- c("Yeast GI Profile Similarity")
+facet_labels <- network_labels
+names(facet_labels) <- c("pcc")
+combined_rewire_df <- rewire_df %>%
+  select(data, eff_deg_pearson, sens_deg_spearman) %>%
+  mutate(type = "random") %>%
+  bind_rows(
+    data.frame(
+      sens_deg_spearman = c(cor(pcc_df[pcc_df$group == "real", ]$deg, pcc_df[pcc_df$group == "real", ]$sens, method = "spearman")),
+      eff_deg_pearson = c(cor(pcc_df[pcc_df$group == "real", ]$deg, pcc_df[pcc_df$group == "real", ]$eff, method = "pearson")), type = "real", data = c("pcc")
+    )
+  ) %>%
+  mutate(data = fct_relevel(data, c("pcc")))
+
+p3 <-
+  ggplot() +
+  #    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+  #    geom_boxplot()+
+  #    geom_jitter()+
+  geom_density(data = combined_rewire_df %>% filter(type != "real"), aes(x = eff_deg_pearson, color = type, y = ..scaled..), linetype = "dashed") +
+  geom_vline(data = combined_rewire_df %>% filter(type == "real"), aes(xintercept = eff_deg_pearson, color = type)) +
+  guides(color = guide_legend(title = "Data type"), shape = guide_legend(title = "Network type")) +
+  ylab("Density") +
+  xlab("Effectiveness degree correlation") +
+  theme_bw() +
+  theme(panel.spacing = unit(2, "lines"),axis.text=element_text(size=text_size),axis.title = element_text(size=label_size)) +
+  scale_y_continuous(expand = c(0, 0))
+p4 <-
+  ggplot() +
+  #    facet_grid(cols = vars(data), labeller = labeller(data=facet_labels))+
+  #    geom_boxplot()+
+  #    geom_jitter()+
+  geom_density(data = combined_rewire_df %>% filter(type != "real"), aes(x = sens_deg_spearman, y = ..scaled.., color = type), linetype = "dashed") +
+  geom_vline(data = combined_rewire_df %>% filter(type == "real"), aes(xintercept = sens_deg_spearman, color = type)) +
+  guides(color = guide_legend(title = "Data type"), shape = guide_legend(title = "Network type")) +
+  ylab("Density") +
+  xlab("Sensitivity degree correlation") +
+  theme_bw() +
+  theme(panel.spacing = unit(2, "lines"), legend.position = "bottom",axis.text=element_text(size=text_size),axis.title = element_text(size=label_size)) +
+  scale_color_discrete(labels = c("Random networks", "Genetic network")) +
+  scale_y_continuous(expand = c(0, 0))
+lgn34 <- cowplot::get_legend(p4)
+
+pcc_degree_dens <- cowplot::ggdraw(plot_density_prs(pcc_df, deg, xlab = "Degree") + theme(legend.position = "none",axis.text=element_text(size=text_size),axis.title = element_text(size=label_size))) #+
+distr_plots <- plot_grid(pcc_degree_dens + theme(legend.position = ""),
+  ggdraw(p3 + theme(legend.position = "")),
+  ggdraw(p4 + theme(legend.position = "")),
+  labels = c("C", "D", "E"), nrow = 1, rel_widths=c(0.3,0.35,0.35),label_size = 20
+)
+# distr_plots_withlgn <- plot_grid(distr_plots, lgn34,
+# nrow=2,rel_heights = c(0.9,0.1))
+# ggsave('reports/figures/paper_figures_0916/fig2.png',plot=distr_plots , width=7)
+distr_plots
+#plot_grid(deg_scatter_plots, distr_plots, pcc_dens_comb, nrow = 3, rel_heights = c(0.3, 0.4, .3))
+#
+#ggsave("reports/figures/paper_figures_0202_pcc_only/fig3.pdf", width = 10, height = 12)
+```
+
+```{r}
+combined_rewire_df %>% filter(type != "real")%>%summary()
+```
+
+# Figure2 G, F
+```{r}
+pcc_eff_dens <-
+  plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness (a.u.)")
+dens_lgn <- cowplot::get_legend(pcc_eff_dens + theme(legend.position = "right"))
+#  cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+pcc_eff_dens <-
+  cowplot::ggdraw(plot_density_prs(pcc_df, eff_norm, xlab = "Effectiveness (a.u.)") + theme(legend.position = "none",axis.text=element_text(size=text_size),axis.title = element_text(size=label_size)) +
+    coord_trans(x = "log10", xlim = c(NA, 10e-2)) +
+    scale_x_continuous(
+      breaks = scales::trans_breaks("log10", function(x) 10^x),
+      labels = scales::trans_format("log10", scales::math_format(10^.x))
+    )) #+
+#   cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+# annotate("text", x = 0.000001, y = 0.2, label=sprintf("p = %#.2f", eff_p), fontface='italic', size = 6)
+pcc_sensitivity_dens <-
+  cowplot::ggdraw(plot_density_prs(pcc_df, sens_norm, xlab = "Sensitivity (a.u.)") + theme(legend.position = "none",axis.text=element_text(size=text_size),axis.title = element_text(size=label_size))) #+
+#        cowplot::draw_plot(dens_lgn, .55,.55,.5,.5)
+# title <- cowplot::ggdraw() + cowplot::draw_label("Yeast GI Profile Similarity", fontface='bold')
+pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none"),
+  pcc_sensitivity_dens + theme(legend.position = "none"),
+  #+theme(legend.position='none'),
+  labels = c("F", "G"), ncol = 2,label_size = 20
+)
+# pcc_dens_comb_title = cowplot::plot_grid(title, pcc_dens_comb, nrow=2 ,rel_heights=c(0.1,0.9))
+# dens_lgn = cowplot::get_legend(pcc_sensitivity_dens)
+#dens_plots <- 
+  pcc_dens_comb
+
+```
+
+
+```{r}
+#if(snakemake@params['save']==TRUE){
+  figure_folder = glue("../reports/figures/paper_figures_{nw_type}/")
+combined_plot <- plot_grid(deg_scatter_plots, distr_plots, pcc_dens_comb, nrow = 3, rel_heights = c(0.3, 0.2, .3))
+ggsave(glue("{figure_folder}/fig2.png"),plot=combined_plot,width=12,height=12)
+#}
+```
+
+```{r}
+
+```
