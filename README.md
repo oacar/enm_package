@@ -80,5 +80,6 @@ Conda environment and R do not always play nicely. Rmarkdown files will install 
 
 Additionally `Snakefile_different_thresholds` file can be used to create supplementary figures and related data for Supplementary Figures S1, S3 and S4. 
 
+To see the code regarding Figs 6, S6, S7, S8 please switch to branch human_pombe and check Snakefile, notebooks and scripts. 
 
 <p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. Though many edits were applied. #cookiecutterdatascience</small></p>
