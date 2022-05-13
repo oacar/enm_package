@@ -58,7 +58,7 @@ rule rewire_network:
     output: 
         pcc_df_random = f"{OUTPUT_PATH}/pcc_df_random_{N_SIM}.csv"
     shell: "python3 scripts/rewire_network.py --input_pickle {input[0]} --random_output_file {output.pcc_df_random} --n_sim {params.n_sim}"
-    script: "scripts/rewiring.py"
+    #script: "scripts/rewiring.py"
 
 rule sensor_in_to_out_ratio:
     input: PICKLE_FILE_NAME

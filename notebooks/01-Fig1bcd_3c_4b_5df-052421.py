@@ -39,13 +39,29 @@ from enm.utils import *
 
 # %%
 #os.chdir('../')
-figure_folder = "reports/figures/paper_figures_052521"
+figure_folder = "../reports/figures/paper_figures_051222"
+
+
+# %%
+class smake:
+    def __init__(self):
+        self.input = {}
+        self.output={}
+
+
+# %%
+snakemake = smake()
+
+# %%
+snakemake.input['pickle_file_name'] = '../data/interim_bak_3/pcc.pickle'
+snakemake.input['sensors_pcc'] = '../data/interim_bak_3/sensors_df.csv'
+snakemake.input['effector_pcc'] = '../data/interim_bak_3/effectors_df.csv'
 
 # %% [markdown]
 # # Read Enm pickle object
 
 # %%
-with open(snakemake.input.pickle_file_name,'rb') as f:
+with open(snakemake.input['pickle_file_name'],'rb') as f:
     e_pcc = pickle.load(f)
 
 
@@ -292,7 +308,7 @@ change_go_group_names = True#snakemake.params['change_go_group_name']
 # }
 
 # %%
-sensors_pcc = pd.read_csv(snakemake.input.sensors_pcc)
+sensors_pcc = pd.read_csv(snakemake.input['sensors_pcc'])
 # sensor_colors = ["#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33"]
 # if change_go_group_names:
 #    sensors_pcc['go_group']=sensors_pcc['go_group'].map(sensor_go_rename,na_action='ignore')
@@ -415,7 +431,7 @@ lgd = ax.legend(handles=legend_elements,
                 loc = 'center',
                 bbox_to_anchor=(0., 0., 1, 1))
 # if snakemake.params['save']:
-#     fig.savefig(f'{figure_folder}/fig3c_legend.png', dpi=150, pad_inches=0)#, bbox_inches='tight')
+fig.savefig(f'{figure_folder}/fig3c_legend.pdf', dpi=300, pad_inches=0)#, bbox_inches='tight')
 
 # %%
 antenna_legend = []
@@ -448,13 +464,13 @@ lgd = ax.legend(handles=antenna_legend,
                 loc = 'center',
                 bbox_to_anchor=(0., 0., 1, 1))
 # if snakemake.params['save']:
-fig.savefig(f'{figure_folder}/fig3f_legend.png',dpi=150,bbox_inches='tight')
+fig.savefig(f'{figure_folder}/fig3f_legend.pdf',dpi=300,bbox_inches='tight')
 
 # %% [markdown]
 # # Figure 4B
 
 # %%
-effector_pcc = pd.read_csv(snakemake.input.effector_pcc)
+effector_pcc = pd.read_csv(snakemake.input['effector_pcc'])
 #effector_colors = ["#A65628", "#F781BF", "#999999"]
 effector_order_orig = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
 effector_colors = ["#A65628", "#F781BF", "#999999",'blue','yellow','red']
@@ -471,7 +487,7 @@ if True:
 effector_order = effector_pcc.groupby('go_group').eff.median().sort_values().index.tolist()
 
 # %%
-fig, ax = plt.subplots(figsize=(10,10))
+fig, ax = plt.subplots(figsize=(10,10), facecolor='white')
 #axs = ax.ravel()
 legend_elements = [    ]
 
@@ -515,13 +531,33 @@ legend_elements.extend(
                              markerfacecolor='#a6611a', markersize=0, linestyle="-",lw=10)
     ]
 )
-lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center', bbox_to_anchor=(0.5, -0.1), frameon=False, ncol=2)
+#lgd = ax.legend(handles=legend_elements, fontsize=22,loc='center', bbox_to_anchor=(0.5, -0.1), frameon=False, ncol=2)
 
 
 nx.draw_networkx_edges(nx.induced_subgraph(e_pcc.graph_gc, effector_pcc.orf_name.tolist()), ax=ax , pos=pos, edge_color='blue',alpha=0.5)
 ax.axis('off')
 # if snakemake.params['save']:
-plt.savefig(f'{figure_folder}/fig4b.png',bbox_inches='tight',dpi=150)
+plt.savefig(f'{figure_folder}/fig4b.png',bbox_inches='tight',dpi=300)
+
+# %%
+
+fig = plt.figure()
+figlegend = plt.figure(figsize=(3,3))
+ax = fig.add_subplot(111)
+#lines = ax.plot(range(10), plt.randn(10), range(10), plt.randn(10))
+ax.axis('off')
+lgd = ax.legend(handles=legend_elements,
+                handletextpad=0.1, 
+                labelspacing=0.4, 
+                borderpad=0,
+                columnspacing=0.4,
+                fontsize=8, 
+                ncol=2,
+                frameon=False, 
+                loc = 'center',
+                bbox_to_anchor=(0., 0., 1, 1))
+# if snakemake.params['save']:
+fig.savefig(f'{figure_folder}/fig4b_legend.pdf', dpi=300, pad_inches=0)#, bbox_inches='tight')
 
 # %% [markdown]
 # # Figure 5D/F

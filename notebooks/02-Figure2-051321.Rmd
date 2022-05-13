@@ -78,10 +78,16 @@ dens_plot
 
 # Load input dataframe
 ```{r}
-# smake<-setClass("smake",slots=list(input="list"))
-# snakemake <- new("smake",input=list("sensor_connectivity_df"="../data/interim/sensor_connectivity_df.csv", "pcc_df"='../data/interim/pcc_df.csv',"sensors_pcc"="../data/interim/sensors_df.csv",'effector_pcc'='../data/interim/effectors_df.csv',
-# "rwr_row"="../data/interim/rwr_ranked_goa_rows.csv","prs_row"="../data/interim/prs_ranked_goa_rows.csv",
-# "rwr_column"="../data/interim/rwr_ranked_goa_columns.csv","prs_column"="../data/interim/prs_ranked_goa_columns.csv"))
+ smake<-setClass("smake",slots=list(input="list"))
+ snakemake <- new("smake",input=list("sensor_connectivity_df"="../data/interim_bak_3/sensor_connectivity_df.csv", "pcc_df"='../data/interim_bak_3/pcc_df.csv',
+                                     "sensors_pcc"="../data/interim_bak_3/sensors_df.csv",'effector_pcc'='../data/interim_bak_3/effectors_df.csv',
+                                     "pcc_df_random" = "../data/interim_bak_3/pcc_df_random_100.csv",
+"rwr_row"="../data/interim/rwr_ranked_goa_rows.csv","prs_row"="../data/interim/prs_ranked_goa_rows.csv",
+"rwr_column"="../data/interim/rwr_ranked_goa_columns.csv","prs_column"="../data/interim/prs_ranked_goa_columns.csv"))
+```
+
+```{r}
+read_csv(snakemake@input[['pcc_df_random']])
 ```
 
 ```{r tags=c()}
@@ -102,8 +108,8 @@ pcc_df <- pcc_df %>%
 
 
 ```{r}
-text_size = 15
-label_size = 17
+text_size = 8
+label_size = 12
 ```
 
 # Figure2 A,B
@@ -117,7 +123,7 @@ pcc_deg_eff <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_n
   theme_bw() +
   ylab("Effectiveness (a.u.)") +
   xlab("Degree") +
-  stat_cor(method = "pearson", cor.coef.name = "R", label.x.npc = 0.1,size=8) +
+  stat_cor(method = "pearson", cor.coef.name = "R", label.x.npc = 0.1,size=4) +
   theme(strip.text.y = element_text(angle = 0),axis.text=element_text(size=text_size),axis.title = element_text(size=label_size)) +
   scale_y_continuous(labels = scales::label_scientific(digits = 1))
 pcc_deg_sens <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
@@ -127,7 +133,7 @@ pcc_deg_sens <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_
   theme_bw() +
   ylab("Sensitivity (a.u.)") +
   xlab("Degree") +
-  stat_cor(method = "spearman", cor.coef.name = "rho", label.x.npc = 0.1, size=8) +
+  stat_cor(method = "spearman", cor.coef.name = "rho", label.x.npc = 0.1, size=4) +
   theme(strip.text.y = element_text(angle = 0),axis.text=element_text(size=text_size),axis.title = element_text(size=label_size)) +
   scale_y_continuous(labels = scales::label_scientific(digits = 1))
 deg_scatter_plots <- cowplot::plot_grid(pcc_deg_eff, pcc_deg_sens,
@@ -238,9 +244,13 @@ pcc_dens_comb <- cowplot::plot_grid(pcc_eff_dens + theme(legend.position = "none
 
 
 ```{r}
-if(snakemake@params['save']==TRUE){
-  figure_folder = "reports/figures/paper_figures_052521/"
+#if(snakemake@params['save']==TRUE){
+  figure_folder = "../reports/figures/paper_figures_051222/"
 combined_plot <- plot_grid(deg_scatter_plots, distr_plots, pcc_dens_comb, nrow = 3, rel_heights = c(0.3, 0.2, .3))
-ggsave(glue("{figure_folder}/fig2.png"),plot=combined_plot,width=12,height=12)
-}
+ggsave(glue("{figure_folder}/fig2.pdf"),plot=combined_plot,width=6,height=6)
+#}
+```
+
+```{r}
+
 ```

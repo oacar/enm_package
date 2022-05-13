@@ -48,11 +48,11 @@ if(!require("FSA")){
 ```
 
 ```{r include=FALSE, eval=FALSE}
-# sessionInfo()
-# smake<-setClass("smake",slots=list(input="list"))
-# snakemake <- new("smake",input=list("sensor_connectivity_df"="../data/interim/sensor_connectivity_df.csv", "pcc_df"='../data/interim/pcc_df.csv',"sensors_pcc"="../data/interim/sensors_df.csv",'effector_pcc'='../data/interim/effectors_df.csv',
-# "rwr_row"="../data/interim/rwr_ranked_goa_rows.csv","prs_row"="../data/interim/prs_ranked_goa_rows.csv",
-# "rwr_column"="../data/interim/rwr_ranked_goa_columns.csv","prs_column"="../data/interim/prs_ranked_goa_columns.csv"))
+#sessionInfo()
+smake<-setClass("smake",slots=list(input="list"))
+snakemake <- new("smake",input=list("sensor_connectivity_df"="../data/interim_bak_3/sensor_connectivity_df.csv", "pcc_df"='../data/interim_bak_3/pcc_df.csv',"sensors_pcc"="../data/interim_bak_3/sensors_df.csv",'effector_pcc'='../data/interim_bak_3/effectors_df.csv',
+"rwr_row"="../data/interim/rwr_ranked_goa_rows.csv","prs_row"="../data/interim_bak_3/prs_ranked_goa_rows.csv",
+"rwr_column"="../data/interim/rwr_ranked_goa_columns.csv","prs_column"="../data/interim_bak_3/prs_ranked_goa_columns.csv"))
 ```
 # Load necessary data
 ```{r}
@@ -69,10 +69,22 @@ effector_pcc <- read_csv(snakemake@input[['effector_pcc']])#'../data/interim/eff
 ## A
 ```{r}
 #sensor_neighbor_degree_plot <- 
-pcc_df %>%
-  mutate(is_sensor = factor(ifelse(sens > quantile(sens, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
-  group_by(is_sensor)%>%
-    summarise(mean = mean(neighbor_degree), median = median(neighbor_degree))
+sensor_neighbor_degree_plot <- pcc_df %>%
+  mutate(sens_norm = sens / nrow(.), eff_norm = eff / nrow(.), group = "real")%>%
+  mutate(is_sensor = factor(ifelse(sens_norm > quantile(sens_norm, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
+  ggplot(aes(x = is_sensor, y = log(neighbor_degree))) +
+  geom_boxplot() +
+  theme_bw() +
+    theme(axis.text=element_text(size=text_size),axis.title = element_text(size=label_size))+
+  ylab("Log(Average neighbor degree)") +
+  xlab("") +
+  stat_compare_means() +
+  scale_x_discrete(labels = c("Effector", "Not Effector"))
+sensor_neighbor_degree_plot
+# pcc_df %>%
+#   mutate(is_sensor = factor(ifelse(sens > quantile(sens, 0.99), TRUE, FALSE), levels = c(TRUE, FALSE))) %>%
+#   group_by(is_sensor)%>%
+#     summarise(mean = mean(neighbor_degree), median = median(neighbor_degree))
 
 ```
 
@@ -86,16 +98,21 @@ pcc_df %>%
 
 ## B
 ```{r}
+text_size = 8
+label_size = 12
+```
+
+```{r}
 sensor_connectivity_plot <-
   ggplot() +
   geom_density(data = sensor_connectivity_df %>% filter(type != "real"), aes(x = ratio, color = type)) +
   geom_vline(data = sensor_connectivity_df %>% filter(type == "real"), aes(xintercept = ratio, color = type)) +
   guides(color = guide_legend(title = "Data type"), shape = guide_legend(title = "Network type")) +
   ylab("Density") +
-  xlab("% of between group edges\nto all edges") +
+  xlab("% of between group edges") +
   theme_bw() +
   scale_color_discrete(labels = c("Random sampled set", "Sensors")) +
-  theme(legend.position = "right") +
+  theme(legend.position = "right",axis.text=element_text(size=text_size),axis.title = element_text(size=label_size) ) +
   scale_y_continuous(expand = c(0, 0))
   sensor_connectivity_plot
 ```
@@ -160,8 +177,8 @@ sens_deg_comp <- ggplot(sensors_pcc %>% right_join(pcc_df)%>%
   ggpubr::stat_compare_means(method = "kruskal.test", label.x.npc = .3, size=3, vjust = 1.5) +
   theme_bw() +
   theme(
-        axis.title.y=element_text(size=14),
-        axis.text.y=element_text(size=10),
+        axis.title.y=element_text(size=label_size),
+        axis.text.y=element_text(size=text_size),
         axis.text.x = element_text(size=7), 
         legend.title = element_blank(),
     legend.text = element_text(margin = margin(t = 10, b = 10))
@@ -176,6 +193,10 @@ sens_deg_comp
 ```
 
 ```{r}
+comparisons[order(sapply(comparisons, function(x) x[1], simplify=TRUE), decreasing=TRUE)]
+```
+
+```{r}
 comparisons <- str_split(sensors_sens_pval$res[sensors_sens_pval$res$P.adj < 0.1, ]$Comparison,' - ',2)
 
 if(nrow(sensors_pcc%>%drop_na(go_group))!=0){
@@ -184,7 +205,7 @@ sens_sens_comp <- ggplot(sensors_pcc %>% mutate(label = fct_reorder(label, sens)
   geom_boxplot() +
   geom_signif(
     comparisons = comparisons[order(sapply(comparisons, function(x) x[1], simplify=TRUE), decreasing=TRUE)],
-    annotation = c("***","*" , "*" ,  "***"), y_position = c(0.007, 0.005,0.0058, 0.0078),
+    annotation = c("*","***" , "*" ,  "***"), y_position = c(0.005,0.007,  0.0053, 0.0075),
                                            textsize = 3#, 0.008)
   ) +
   xlab("") +
@@ -192,11 +213,11 @@ sens_sens_comp <- ggplot(sensors_pcc %>% mutate(label = fct_reorder(label, sens)
   scale_fill_manual(values = sensor_colors) +
   theme_bw() +
   theme(
-        axis.title.y=element_text(size=14),
-        axis.text.y=element_text(size=10),
+        axis.title.y=element_text(size=label_size),
+        axis.text.y=element_text(size=text_size),
         axis.text.x = element_text(size=7),
-        legend.title = element_blank())+
-        ylim(NA, 0.008)
+        legend.title = element_blank())#+
+        #ylim(NA, 0.008)
 
 sens_sens_comp}
 ```
@@ -210,6 +231,7 @@ eff_neighbor_degree_plot <- pcc_df %>%
   ggplot(aes(x = is_effector, y = log(neighbor_degree))) +
   geom_boxplot() +
   theme_bw() +
+    theme(axis.text=element_text(size=text_size),axis.title = element_text(size=label_size))+
   ylab("Log(Average neighbor degree)") +
   xlab("") +
   stat_compare_means() +
@@ -254,8 +276,8 @@ eff_deg_comp <- ggplot(effector_pcc %>% right_join(pcc_df)%>%
      y_position = c(115, 120, 130)
    ) +
   theme(
-       axis.text.y=element_text(size=10),
-        axis.title.y=element_text(size=14),legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
+       axis.text.y=element_text(size=text_size),
+        axis.title.y=element_text(size=label_size),legend.title = element_blank(), legend.text = element_text(margin = margin(t = 10, b = 10))) # , legend.spacing.y = unit(2,'in'))+
 eff_deg_comp
 ```
 
@@ -274,24 +296,24 @@ eff_eff_comp <- ggplot(effector_pcc %>% #mutate(go_group = fct_reorder(go_group,
 
   theme_bw() +
   theme(
-        axis.text.y=element_text(size=10),
-        axis.title.y=element_text(size=14), legend.title = element_blank())
+        axis.text.y=element_text(size=text_size),
+        axis.title.y=element_text(size=label_size), legend.title = element_blank())
 eff_eff_comp
 ```
 
 
 ```{r}
 #if(snakemake@params['save']==TRUE){
-  figure_folder = "reports/figures/paper_figures_052521/"
-ggsave(glue("{figure_folder}/fig3a.png"),plot=sensor_neighbor_degree_plot,width=3,height=3)
-ggsave(glue("{figure_folder}/fig3b.png"),plot=sensor_connectivity_plot,width=3.5,height=2.5)
-ggsave(glue("{figure_folder}/fig3d.png"),plot=sens_deg_comp+theme(legend.position='none'),width=3.9,height=2.1)
-ggsave(glue("{figure_folder}/fig3e.png"),plot=sens_sens_comp+theme(legend.position='none'),width=3.9,height=2.1)
+  figure_folder = "../reports/figures/paper_figures_051222/"
+ggsave(glue("{figure_folder}/fig3a.pdf"),plot=sensor_neighbor_degree_plot,width=2.1,height=)
+ggsave(glue("{figure_folder}/fig3b.pdf"),plot=sensor_connectivity_plot+theme(legend.position='none'),width=2.1,height=2.1)
+ggsave(glue("{figure_folder}/fig3d.pdf"),plot=sens_deg_comp+theme(legend.position='none'),width=3.2,height=2.1)
+ggsave(glue("{figure_folder}/fig3e.pdf"),plot=sens_sens_comp+theme(legend.position='none'),width=3.9,height=2.1)
 
 
-ggsave(glue("{figure_folder}/fig4a.png"),plot=eff_neighbor_degree_plot,width=3,height=3)
-ggsave(glue("{figure_folder}/fig4c.png"),plot=eff_deg_comp+theme(legend.position='none'),width=3,height=3)
-ggsave(glue("{figure_folder}/fig4d.png"),plot=eff_eff_comp+theme(legend.position='none'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig4a.pdf"),plot=eff_neighbor_degree_plot,width=3,height=3)
+ggsave(glue("{figure_folder}/fig4c.pdf"),plot=eff_deg_comp+theme(legend.position='none'),width=3,height=3)
+ggsave(glue("{figure_folder}/fig4d.pdf"),plot=eff_eff_comp+theme(legend.position='none'),width=3,height=3)
 
 
 
@@ -303,6 +325,21 @@ legend.key.height = unit(2, 'cm')))
 legend_plot <- ggdraw(legend)
 ggsave(glue("{figure_folder}/fig3d_legend.pdf"),plot=legend_plot, width=10, height=2)
 #}
+```
+
+```{r}
+ggsave(glue("{figure_folder}/fig3b_withlegend.pdf"),plot=sensor_connectivity_plot,width=2.1,height=2.1)
+
+```
+
+```{r}
+ggsave(glue("{figure_folder}/fig3d.pdf"),plot=sens_deg_comp+theme(legend.position='none'),width=3.2,height=2.1)
+
+```
+
+```{r}
+ggsave(glue("{figure_folder}/fig3e.pdf"),plot=sens_sens_comp+theme(legend.position='none'),width=3.2,height=2.1)
+
 ```
 
 ```{r}
