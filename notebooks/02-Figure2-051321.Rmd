@@ -86,10 +86,6 @@ dens_plot
 "rwr_column"="../data/interim/rwr_ranked_goa_columns.csv","prs_column"="../data/interim/prs_ranked_goa_columns.csv"))
 ```
 
-```{r}
-read_csv(snakemake@input[['pcc_df_random']])
-```
-
 ```{r tags=c()}
 #df_filename <-snakemake$input$df_filename
 #random_df_filename <-snakemake$input$df_filename
@@ -118,7 +114,7 @@ real_random_labels <- c("PSN", "Rewired\nnetwork")
 names(real_random_labels) <- c("real", "random")
 pcc_deg_eff <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
   ggplot(aes(x = deg, y = eff_norm)) +
-  geom_point() +
+  geom_point(size=0.1) +
   #    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
   theme_bw() +
   ylab("Effectiveness (a.u.)") +
@@ -128,7 +124,7 @@ pcc_deg_eff <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_n
   scale_y_continuous(labels = scales::label_scientific(digits = 1))
 pcc_deg_sens <- pcc_df %>% filter(group == "real") %>% # pivot_longer(cols=sens_norm:eff_norm, names_to="prs_data_type", values_to="prs_data_value")%>%
   ggplot(aes(x = deg, y = sens_norm)) +
-  geom_point() +
+  geom_point(size=0.1) +
   #    facet_grid(rows = vars(group), scales='free', labeller =labeller(group= real_random_labels ) ) +
   theme_bw() +
   ylab("Sensitivity (a.u.)") +
